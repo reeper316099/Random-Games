@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Minesweeper Ultra Deluxe</title>
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --line: rgba(255,255,255,.14);
+      --text:#e7eefc;
+      --muted:#a9b6d3;
+      --accent:#6aa6ff;
+      --danger:#ff6a6a;
+      --ok:#6affb6;
+      --warn:#ffd36a;
+      --radius:18px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(1200px 600px at 20% 10%, #12203a 0%, var(--bg) 55%) fixed;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      padding:24px;
+    }
+    .wrap{ width:min(1120px, 100%); display:grid; gap:14px; }
+
+    .topbar{
+      display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .title h1{ margin:0; font-size:18px; letter-spacing:.3px;}
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:2px;}
+
+    .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    button, input{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius: 12px;
+      font-weight:900;
+      font-size:12px;
+    }
+    button{ cursor:pointer; }
+    button:hover{ background: rgba(255,255,255,.09); }
+    button.primary{
+      border-color: rgba(106,166,255,.35);
+      background: rgba(106,166,255,.12);
+    }
+    button.toggled{
+      border-color: rgba(106,255,182,.35);
+      background: rgba(106,255,182,.10);
+    }
+    button.face{
+      font-size:16px;
+      line-height:1;
+      padding:10px 12px;
+      border-radius: 14px;
+      user-select:none;
+    }
+    input{
+      width: 160px;
+      outline:none;
+    }
+    input::placeholder{ color: rgba(231,238,252,.45); }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      font-weight:900;
+      font-size:12px;
+      user-select:none;
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background: var(--accent); box-shadow:0 0 0 3px rgba(106,166,255,.14); }
+    .dot.ok{ background: var(--ok); box-shadow:0 0 0 3px rgba(106,255,182,.14); }
+    .dot.bad{ background: var(--danger); box-shadow:0 0 0 3px rgba(255,106,106,.14); }
+    .dot.warn{ background: var(--warn); box-shadow:0 0 0 3px rgba(255,211,106,.14); }
+
+    .main{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:16px;
+      box-shadow: var(--shadow);
+      display:grid;
+      gap:12px;
+      justify-items:center;
+    }
+
+    .hud{
+      width:100%;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .board{
+      display:grid;
+      gap:6px;
+      user-select:none;
+      touch-action: manipulation;
+    }
+
+    .cell{
+      width: 34px;
+      height: 34px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius: 10px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-weight:900;
+      cursor:pointer;
+      position:relative;
+      transition: transform .05s ease, background .15s ease, border-color .2s ease, outline .2s ease;
+    }
+    .cell:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .cell:active{ transform: scale(.98); }
+
+    .cell.revealed{
+      background: rgba(0,0,0,.25);
+      cursor:default;
+    }
+    .cell.flagged{
+      background: rgba(106,166,255,.10);
+      border-color: rgba(106,166,255,.30);
+    }
+    .cell.mine{
+      background: rgba(255,106,106,.14);
+      border-color: rgba(255,106,106,.35);
+    }
+    .cell.boom{
+      background: rgba(255,106,106,.26);
+      border-color: rgba(255,106,106,.55);
+      box-shadow: inset 0 0 0 4px rgba(255,106,106,.18);
+    }
+    .cell.wrongflag{
+      text-decoration: line-through;
+      opacity:.75;
+    }
+
+    .cell.hint{
+      outline: 2px dashed rgba(106,166,255,.45);
+      outline-offset:-2px;
+    }
+    .cell.violation{
+      outline: 2px solid rgba(255,211,106,.55);
+      outline-offset:-2px;
+    }
+
+    .msg{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+      text-align:center;
+      white-space:pre-wrap;
+    }
+    .faint{ color: rgba(231,238,252,.55); }
+
+    .n1{ color: rgba(231,238,252,.95); }
+    .n2{ color: rgba(231,238,252,.90); }
+    .n3{ color: rgba(231,238,252,.86); }
+    .n4{ color: rgba(231,238,252,.82); }
+    .n5{ color: rgba(231,238,252,.78); }
+    .n6{ color: rgba(231,238,252,.74); }
+    .n7{ color: rgba(231,238,252,.70); }
+    .n8{ color: rgba(231,238,252,.66); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>Minesweeper Ultra Deluxe</h1>
+        <div class="sub">Left click reveal • Right click cycles blank → 🚩 → ? • Chord click revealed numbers • Seeded boards</div>
+      </div>
+      <div class="controls">
+        <button class="face" id="faceBtn" title="Reset">🙂</button>
+        <input id="seedInput" placeholder="Seed (optional)" />
+        <button id="assistBtn">Assist: OFF</button>
+        <button id="flagModeBtn">Flag Mode (Mobile)</button>
+        <button class="primary" id="newBtn">New</button>
+        <button id="easyBtn">Easy</button>
+        <button id="medBtn">Medium</button>
+        <button id="hardBtn">Hard</button>
+        <button id="customBtn">Custom</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="hud">
+        <span class="pill"><span class="dot" id="stateDot"></span><span id="stateText">Playing</span></span>
+        <span class="pill"><span class="dot ok"></span><span id="minesText">Mines: 10</span></span>
+        <span class="pill"><span class="dot"></span><span id="flagsText">Flags: 0</span></span>
+        <span class="pill"><span class="dot warn"></span><span id="remainText">Remaining: 10</span></span>
+        <span class="pill"><span class="dot"></span><span id="timeText">Time: 0.0s</span></span>
+        <span class="pill"><span class="dot"></span><span id="bestText">Best: —</span></span>
+      </div>
+
+      <div class="msg" id="msg"></div>
+      <div class="board" id="board"></div>
+      <div class="faint" style="text-align:center;font-size:12px">
+        Assist highlights contradictions around revealed numbers. It doesn’t “solve” — it just snitches on impossible states.
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const boardEl = document.getElementById("board");
+  const msgEl = document.getElementById("msg");
+
+  const minesText = document.getElementById("minesText");
+  const flagsText = document.getElementById("flagsText");
+  const remainText= document.getElementById("remainText");
+  const timeText  = document.getElementById("timeText");
+  const bestText  = document.getElementById("bestText");
+  const stateText = document.getElementById("stateText");
+  const stateDot  = document.getElementById("stateDot");
+
+  const flagModeBtn = document.getElementById("flagModeBtn");
+  const assistBtn = document.getElementById("assistBtn");
+  const faceBtn = document.getElementById("faceBtn");
+  const seedInput = document.getElementById("seedInput");
+
+  const newBtn = document.getElementById("newBtn");
+  const easyBtn = document.getElementById("easyBtn");
+  const medBtn = document.getElementById("medBtn");
+  const hardBtn = document.getElementById("hardBtn");
+  const customBtn = document.getElementById("customBtn");
+
+  // Difficulty identity for best-times
+  let diffKey = "easy"; // easy | medium | hard | custom
+
+  let rows=9, cols=9, mines=10;
+  let firstClick = true;
+  let gameOver = false;
+  let won = false;
+
+  let flagMode = false;
+  let assist = false;
+
+  // Timer
+  let tStart = 0;
+  let tNow = 0;
+  let timerId = null;
+
+  // Face press
+  let facePressed = false;
+
+  // Hover hint around revealed number
+  let hoverHint = null;
+
+  // Seeded RNG
+  let baseSeed = "";
+  let rng = Math.random;
+
+  // grid[r][c] = { mine, adj, revealed, mark:0 blank, 1 flag, 2 question }
+  let grid = [];
+  let cellEls = [];
+
+  const NBR = [
+    [-1,-1],[-1,0],[-1,1],
+    [0,-1],       [0,1],
+    [1,-1],[1,0],[1,1]
+  ];
+
+  function setMsg(t){ msgEl.textContent = t; }
+
+  function setState(kind){
+    if(kind==="playing"){
+      stateText.textContent = "Playing";
+      stateDot.className = "dot";
+      faceBtn.textContent = "🙂";
+    } else if(kind==="won"){
+      stateText.textContent = "Won";
+      stateDot.className = "dot ok";
+      faceBtn.textContent = "😎";
+    } else {
+      stateText.textContent = "Lost";
+      stateDot.className = "dot bad";
+      faceBtn.textContent = "😵";
+    }
+  }
+
+  function inBounds(r,c){ return r>=0 && r<rows && c>=0 && c<cols; }
+
+  // ===== Seeded RNG (mulberry32-ish via xmur3 hash) =====
+  function xmur3(str){
+    let h = 1779033703 ^ str.length;
+    for(let i=0;i<str.length;i++){
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function(){
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      h ^= h >>> 16;
+      return h >>> 0;
+    }
+  }
+  function mulberry32(a){
+    return function(){
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+  }
+  function setRngFromSeed(seed){
+    const h = xmur3(seed)();
+    rng = mulberry32(h);
+  }
+
+  function makeEmpty(){
+    grid = Array.from({length: rows}, () =>
+      Array.from({length: cols}, () => ({ mine:false, adj:0, revealed:false, mark:0 }))
+    );
+  }
+
+  function countAdjMines(r,c){
+    let n=0;
+    for(const [dr,dc] of NBR){
+      const rr=r+dr, cc=c+dc;
+      if(inBounds(rr,cc) && grid[rr][cc].mine) n++;
+    }
+    return n;
+  }
+
+  function placeMinesAvoiding(safeR, safeC){
+    // Avoid first cell + its neighbors (safe 3x3 zone)
+    const forbidden = new Set();
+    forbidden.add(`${safeR},${safeC}`);
+    for(const [dr,dc] of NBR){
+      const rr=safeR+dr, cc=safeC+dc;
+      if(inBounds(rr,cc)) forbidden.add(`${rr},${cc}`);
+    }
+
+    let placed = 0;
+    while(placed < mines){
+      const r = Math.floor(rng()*rows);
+      const c = Math.floor(rng()*cols);
+      if(forbidden.has(`${r},${c}`)) continue;
+      if(grid[r][c].mine) continue;
+      grid[r][c].mine = true;
+      placed++;
+    }
+
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        grid[r][c].adj = grid[r][c].mine ? 0 : countAdjMines(r,c);
+      }
+    }
+  }
+
+  function buildUI(){
+    boardEl.innerHTML = "";
+    boardEl.style.gridTemplateColumns = `repeat(${cols}, 34px)`;
+    cellEls = Array.from({length: rows}, () => Array(cols).fill(null));
+
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const d = document.createElement("div");
+        d.className = "cell";
+        d.dataset.r = r;
+        d.dataset.c = c;
+
+        // Left click
+        d.addEventListener("click", (e) => {
+          e.preventDefault();
+          if(flagMode) cycleMark(r,c);
+          else handleLeftClick(r,c);
+        });
+
+        // Right click cycles marks
+        d.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          cycleMark(r,c);
+        });
+
+        // Hover hint around revealed numbers
+        d.addEventListener("mouseenter", () => {
+          if(gameOver) return;
+          const cell = grid[r][c];
+          if(cell.revealed && cell.adj > 0){
+            hoverHint = {r,c};
+            render();
+          }
+        });
+        d.addEventListener("mouseleave", () => {
+          if(hoverHint && hoverHint.r===r && hoverHint.c===c){
+            hoverHint = null;
+            render();
+          }
+        });
+
+        // Face "😮" while mouse is down (classic feel)
+        d.addEventListener("pointerdown", () => {
+          if(gameOver) return;
+          facePressed = true;
+          faceBtn.textContent = "😮";
+        });
+        d.addEventListener("pointerup", () => {
+          facePressed = false;
+          // restore based on state
+          if(gameOver) faceBtn.textContent = won ? "😎" : "😵";
+          else faceBtn.textContent = "🙂";
+        });
+        d.addEventListener("pointerleave", () => {
+          if(facePressed){
+            facePressed = false;
+            if(gameOver) faceBtn.textContent = won ? "😎" : "😵";
+            else faceBtn.textContent = "🙂";
+          }
+        });
+
+        boardEl.appendChild(d);
+        cellEls[r][c] = d;
+      }
+    }
+  }
+
+  function flagsCount(){
+    let f=0;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(grid[r][c].mark===1) f++;
+    return f;
+  }
+
+  function unrevealedNonMines(){
+    let k=0;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cell = grid[r][c];
+        if(!cell.mine && !cell.revealed) k++;
+      }
+    }
+    return k;
+  }
+
+  function startTimer(){
+    if(timerId) return;
+    tStart = performance.now();
+    timerId = setInterval(() => {
+      tNow = (performance.now() - tStart) / 1000;
+      timeText.textContent = `Time: ${tNow.toFixed(1)}s`;
+    }, 100);
+  }
+
+  function stopTimer(){
+    if(timerId){
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
+
+  function bestKey(){
+    return `ms_best_${diffKey}_${rows}x${cols}_${mines}`;
+  }
+  function loadBest(){
+    const v = localStorage.getItem(bestKey());
+    if(!v) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  function saveBestIfBetter(seconds){
+    const current = loadBest();
+    if(current === null || seconds < current){
+      localStorage.setItem(bestKey(), String(seconds));
+      return true;
+    }
+    return false;
+  }
+
+  function revealAllMines(clicked=null){
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cell = grid[r][c];
+        const el = cellEls[r][c];
+        if(cell.mine){
+          el.classList.add("mine","revealed");
+          el.textContent = "💣";
+        }
+        if(cell.mark===1 && !cell.mine){
+          el.classList.add("wrongflag");
+        }
+      }
+    }
+    if(clicked){
+      const el = cellEls[clicked.r][clicked.c];
+      el.classList.add("boom");
+    }
+  }
+
+  function floodReveal(startR, startC){
+    const q = [[startR, startC]];
+    const seen = new Set([`${startR},${startC}`]);
+
+    while(q.length){
+      const [r,c] = q.shift();
+      const cell = grid[r][c];
+      if(cell.mark===1) continue;      // don't open flagged
+      if(cell.revealed) continue;
+      cell.revealed = true;
+
+      if(cell.adj === 0){
+        for(const [dr,dc] of NBR){
+          const rr=r+dr, cc=c+dc;
+          if(!inBounds(rr,cc)) continue;
+          const key = `${rr},${cc}`;
+          if(seen.has(key)) continue;
+          const ncell = grid[rr][cc];
+          if(ncell.mine) continue;
+          seen.add(key);
+          q.push([rr,cc]);
+        }
+      }
+    }
+  }
+
+  function checkWin(){
+    if(unrevealedNonMines() === 0 && !gameOver){
+      won = true;
+      gameOver = true;
+      stopTimer();
+      setState("won");
+
+      const improved = saveBestIfBetter(tNow);
+      const best = loadBest();
+
+      setMsg(
+        `You win.\nTime: ${tNow.toFixed(1)}s` +
+        (improved ? "\nNew best time! 🏆" : (best!==null ? `\nBest: ${best.toFixed(1)}s` : ""))
+      );
+      render();
+    }
+  }
+
+  function handleLeftClick(r,c){
+    if(gameOver) return;
+    const cell = grid[r][c];
+
+    // Chord on revealed numbers
+    if(cell.revealed && cell.adj > 0){
+      chord(r,c);
+      return;
+    }
+
+    reveal(r,c);
+  }
+
+  function reveal(r,c){
+    if(gameOver) return;
+    const cell = grid[r][c];
+    if(cell.mark===1 || cell.revealed) return; // don't open flagged
+    if(cell.mark===2){ /* question mark: still allowed to open */ }
+
+    if(firstClick){
+      firstClick = false;
+
+      // Seed is combined with first-click coord to make "same seed" still safe but consistent
+      const seed = (seedInput.value || "").trim();
+      baseSeed = seed;
+      setRngFromSeed(`${seed}|${rows}x${cols}|${mines}|first:${r},${c}`);
+
+      placeMinesAvoiding(r,c);
+      startTimer();
+      setMsg("Go. Numbers are constraints, not vibes.");
+    }
+
+    if(cell.mine){
+      cell.revealed = true;
+      gameOver = true;
+      stopTimer();
+      setState("lost");
+      setMsg("Boom.");
+      render();
+      revealAllMines({r,c});
+      return;
+    }
+
+    floodReveal(r,c);
+    render();
+    checkWin();
+  }
+
+  function cycleMark(r,c){
+    if(gameOver) return;
+    const cell = grid[r][c];
+    if(cell.revealed) return;
+
+    // blank(0) -> flag(1) -> question(2) -> blank(0)
+    cell.mark = (cell.mark + 1) % 3;
+    render();
+  }
+
+  function countNeighborFlags(r,c){
+    let f=0;
+    for(const [dr,dc] of NBR){
+      const rr=r+dr, cc=c+dc;
+      if(inBounds(rr,cc) && grid[rr][cc].mark===1) f++;
+    }
+    return f;
+  }
+
+  function countNeighborHiddenNotFlag(r,c){
+    let k=0;
+    for(const [dr,dc] of NBR){
+      const rr=r+dr, cc=c+dc;
+      if(!inBounds(rr,cc)) continue;
+      const n = grid[rr][cc];
+      if(!n.revealed && n.mark!==1) k++;
+    }
+    return k;
+  }
+
+  function chord(r,c){
+    const cell = grid[r][c];
+    if(!cell.revealed || cell.adj <= 0) return;
+
+    const f = countNeighborFlags(r,c);
+    if(f !== cell.adj){
+      setMsg(`Chord failed: ${f} flags around, need ${cell.adj}.`);
+      return;
+    }
+
+    for(const [dr,dc] of NBR){
+      const rr=r+dr, cc=c+dc;
+      if(!inBounds(rr,cc)) continue;
+      const ncell = grid[rr][cc];
+      if(ncell.mark===1 || ncell.revealed) continue;
+
+      if(ncell.mine){
+        gameOver = true;
+        stopTimer();
+        setState("lost");
+        setMsg("Chord boom: a flag was wrong.");
+        render();
+        revealAllMines({r:rr,c:cc});
+        return;
+      }
+      floodReveal(rr,cc);
+    }
+
+    render();
+    checkWin();
+  }
+
+  function computeViolations(){
+    // returns Set of "r,c" for cells that are revealed numbers in contradiction
+    const bad = new Set();
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cell = grid[r][c];
+        if(!cell.revealed || cell.adj<=0) continue;
+        const f = countNeighborFlags(r,c);
+        const h = countNeighborHiddenNotFlag(r,c);
+
+        // Contradictions:
+        // too many flags around number
+        if(f > cell.adj) bad.add(`${r},${c}`);
+        // not enough remaining hidden neighbors to satisfy required mines
+        if(f + h < cell.adj) bad.add(`${r},${c}`);
+      }
+    }
+    return bad;
+  }
+
+  function render(){
+    minesText.textContent = `Mines: ${mines}`;
+    const flags = flagsCount();
+    flagsText.textContent = `Flags: ${flags}`;
+    remainText.textContent = `Remaining: ${mines - flags}`;
+
+    flagModeBtn.classList.toggle("toggled", flagMode);
+    flagModeBtn.textContent = flagMode ? "Flag Mode: ON" : "Flag Mode (Mobile)";
+
+    assistBtn.classList.toggle("toggled", assist);
+    assistBtn.textContent = assist ? "Assist: ON" : "Assist: OFF";
+
+    const b = loadBest();
+    bestText.textContent = `Best: ${b === null ? "—" : b.toFixed(1) + "s"}`;
+    if(!timerId) timeText.textContent = `Time: ${tNow.toFixed(1)}s`;
+
+    // hover hint squares
+    const hinted = new Set();
+    if(hoverHint){
+      const {r,c} = hoverHint;
+      for(const [dr,dc] of NBR){
+        const rr=r+dr, cc=c+dc;
+        if(inBounds(rr,cc)) hinted.add(`${rr},${cc}`);
+      }
+    }
+
+    const violations = assist ? computeViolations() : new Set();
+
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cell = grid[r][c];
+        const el = cellEls[r][c];
+        el.className = "cell";
+
+        if(hinted.has(`${r},${c}`)) el.classList.add("hint");
+        if(violations.has(`${r},${c}`)) el.classList.add("violation");
+
+        if(cell.revealed) el.classList.add("revealed");
+        if(cell.mark===1) el.classList.add("flagged");
+
+        el.textContent = "";
+
+        if(!cell.revealed){
+          if(cell.mark===1) el.textContent = "🚩";
+          else if(cell.mark===2) el.textContent = "?";
+        } else {
+          if(cell.mine){
+            el.textContent = "💣";
+            el.classList.add("mine");
+          } else if(cell.adj > 0){
+            el.textContent = String(cell.adj);
+            el.classList.add("n"+cell.adj);
+          }
+        }
+      }
+    }
+  }
+
+  function newGame(){
+    firstClick = true;
+    gameOver = false;
+    won = false;
+    hoverHint = null;
+    stopTimer();
+    tNow = 0;
+    timeText.textContent = "Time: 0.0s";
+    setState("playing");
+
+    makeEmpty();
+    buildUI();
+    render();
+    setMsg("Click any tile to start.\n(First click + neighbors are safe.)");
+  }
+
+  function setDifficulty(r,c,m,key){
+    diffKey = key;
+    rows=r; cols=c; mines=m;
+
+    const maxM = rows*cols - 9;
+    if(mines > maxM) mines = maxM;
+    if(mines < 1) mines = 1;
+
+    newGame();
+  }
+
+  // ===== Controls =====
+  assistBtn.addEventListener("click", () => { assist = !assist; render(); });
+
+  flagModeBtn.addEventListener("click", () => { flagMode = !flagMode; render(); });
+
+  faceBtn.addEventListener("click", newGame);
+  newBtn.addEventListener("click", newGame);
+
+  easyBtn.addEventListener("click", () => setDifficulty(9,9,10,"easy"));
+  medBtn.addEventListener("click", () => setDifficulty(16,16,40,"medium"));
+  hardBtn.addEventListener("click", () => setDifficulty(16,30,99,"hard"));
+
+  customBtn.addEventListener("click", () => {
+    const r = Number(prompt("Rows? (5–30)", rows));
+    const c = Number(prompt("Cols? (5–40)", cols));
+    const m = Number(prompt("Mines?", mines));
+    if(!Number.isFinite(r) || !Number.isFinite(c) || !Number.isFinite(m)) return;
+    if(r<5 || c<5){ alert("Minimum is 5x5."); return; }
+    if(r>30 || c>40){ alert("Too big for this UI. Try <=30x40."); return; }
+    setDifficulty(r,c,m,"custom");
+  });
+
+  // Start
+  setDifficulty(9,9,10,"easy");
+})();
+</script>
+</body>
+</html>
