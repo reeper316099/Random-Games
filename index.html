@@ -4,56 +4,141 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Random Games Launcher</title>
+
+    <!-- Google Font -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
       :root {
-        color-scheme: light dark;
+        --bg1: #0f172a;
+        --bg2: #1e293b;
+        --card: rgba(255, 255, 255, 0.08);
+        --border: rgba(255, 255, 255, 0.15);
+        --text: #e2e8f0;
+        --accent: #60a5fa;
+        --accent2: #34d399;
       }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        max-width: 860px;
-        margin: 0 auto;
-        padding: 2rem 1rem 3rem;
-        line-height: 1.5;
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Inter", system-ui, sans-serif;
+        background: radial-gradient(circle at top, var(--bg2), var(--bg1));
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
       }
+
+      .container {
+        width: 100%;
+        max-width: 900px;
+        background: var(--card);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 2rem 2.5rem 2.5rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      }
+
       h1 {
-        margin-bottom: 0.25rem;
+        margin: 0;
+        font-size: 2.2rem;
+        letter-spacing: -0.5px;
       }
-      p {
-        margin-top: 0;
+
+      .subtitle {
+        opacity: 0.8;
+        margin-top: 0.25rem;
+        margin-bottom: 1.5rem;
       }
+
       section {
         margin-top: 1.5rem;
       }
-      ul {
-        padding-left: 1.25rem;
+
+      h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--accent);
       }
-      li {
-        margin: 0.4rem 0;
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem;
       }
-      a {
-        text-decoration-thickness: 2px;
+
+      .game {
+        display: block;
+        padding: 0.9rem 1rem;
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.2s ease;
+        font-weight: 500;
+      }
+
+      .game:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+        background: rgba(96, 165, 250, 0.15);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      }
+
+      footer {
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        opacity: 0.6;
+        text-align: center;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 1.5rem;
+        }
       }
     </style>
   </head>
+
   <body>
-    <h1>🎮 Random Games Launcher</h1>
-    <p>Select a game below to open it.</p>
+    <div class="container">
+      <h1>🎮 Random Games Launcher</h1>
+      <div class="subtitle">Select a game below to start playing</div>
 
-    <section>
-      <h2>One File Games</h2>
-      <ul>
-        <li><a href="One%20File%20Games/chess.html">Chess</a></li>
-        <li><a href="One%20File%20Games/minesweeper.html">Minesweeper</a></li>
-        <li><a href="One%20File%20Games/ultimate-ttt.html">Ultimate Tic-Tac-Toe</a></li>
-      </ul>
-    </section>
+      <section>
+        <h2>One File Games</h2>
+        <div class="grid">
+          <a class="game" href="One%20File%20Games/chess.html">♟️ Chess</a>
+          <a class="game" href="One%20File%20Games/minesweeper.html">💣 Minesweeper</a>
+          <a class="game" href="One%20File%20Games/ultimate-ttt.html">⭕ Ultimate Tic-Tac-Toe</a>
+        </div>
+      </section>
 
-    <section>
-      <h2>Multi-File Games</h2>
-      <ul>
-        <li><a href="Multi-File%20Games/Risk/index.html">Risk</a></li>
-        <li><a href="Multi-File%20Games/hotzone-na/index.html">Pandemic: Hot Zone North America</a></li>
-      </ul>
-    </section>
+      <section>
+        <h2>Multi-File Games</h2>
+        <div class="grid">
+          <a class="game" href="Multi-File%20Games/Risk/index.html">🌍 Risk</a>
+          <a class="game" href="Multi-File%20Games/hotzone-na/index.html">
+            🦠 Pandemic: Hot Zone NA
+          </a>
+        </div>
+      </section>
+
+      <footer>
+        Local Game Collection • HTML Launcher
+      </footer>
+    </div>
   </body>
 </html>
