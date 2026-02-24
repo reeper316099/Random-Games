@@ -1,0 +1,323 @@
+/* styles.css — Pandemic Hot Zone NA UI
+   Clean, board-game styled, responsive, and works with index.html layout
+*/
+
+:root {
+    --bg: #0f172a;
+    --panel: #111c33;
+    --panel2: #162448;
+    --accent: #5cc8ff;
+    --text: #e6ecff;
+    --muted: #9fb0d9;
+    --border: #2a3b6b;
+
+    --blue: #4ea3ff;
+    --red: #ff5c7a;
+    --yellow: #ffd166;
+    --green: #57e389;
+
+    --good: #57e389;
+    --warn: #ffd166;
+    --bad: #ff5c7a;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(160deg, #0b1228, #0f1a3d 60%, #0b1228);
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+}
+
+/* ---------- Header ---------- */
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10, 18, 40, .85);
+    backdrop-filter: blur(6px);
+}
+
+h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.sub {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+/* ---------- Layout ---------- */
+
+.wrap {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+    padding: 14px;
+    max-width: 1400px;
+    margin: auto;
+}
+
+.card {
+    background: linear-gradient(180deg, var(--panel), var(--panel2));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+}
+
+.card h2 {
+    margin: 0;
+    padding: 12px 14px;
+    font-size: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.body {
+    padding: 12px;
+}
+
+/* ---------- Pills / Status ---------- */
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #0c1530;
+    border: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #aaa;
+}
+
+.dot.good {
+    background: var(--good);
+}
+
+.dot.warn {
+    background: var(--warn);
+}
+
+.dot.bad {
+    background: var(--bad);
+}
+
+.dot.blue {
+    background: var(--blue);
+}
+
+.dot.red {
+    background: var(--red);
+}
+
+.dot.yellow {
+    background: var(--yellow);
+}
+
+/* ---------- Grid / Panels ---------- */
+
+.grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.panelBox {
+    background: #0c1530;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.miniTitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.okBox {
+    background: #0c1f16;
+    border: 1px solid #1d5e46;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+}
+
+/* ---------- Controls ---------- */
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+label.mini {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+select,
+button {
+    background: #0c1530;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+button {
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+button:hover {
+    background: #132052;
+    border-color: #3a5bb5;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+/* ---------- Players ---------- */
+
+.players {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.player {
+    background: #0c1530;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+}
+
+.playerHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.playerName {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.playerRole {
+    font-size: 12px;
+    color: var(--accent);
+}
+
+.hand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cardItem {
+    background: #162a66;
+    border: 1px solid #3450a5;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 11px;
+    white-space: pre-line;
+    cursor: default;
+}
+
+/* ---------- City List ---------- */
+
+.cityList {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px;
+}
+
+.city {
+    background: #0c1530;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 12px;
+}
+
+.city b {
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* ---------- Log ---------- */
+
+.log {
+    background: #050a1a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    font-size: 12px;
+    height: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+}
+
+/* ---------- Role Picker ---------- */
+
+.rolePicker {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.roleBtn {
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0c1530;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.roleBtn.selected {
+    border-color: var(--accent);
+    background: #132052;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width:1000px) {
+    .wrap {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Error panel (hidden by default) ---------- */
+
+#errorPanel {
+    display: none;
+}

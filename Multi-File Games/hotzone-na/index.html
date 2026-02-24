@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Hot Zone NA (Fan Code)</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>Pandemic: Hot Zone – North America <span class="sub">• fan-made browser implementation</span></h1>
+            <div class="sub" id="statusLine">Pick roles, then Start.</div>
+        </div>
+        <div class="row" style="margin:0;">
+            <button id="btnNew">New Setup</button>
+            <button id="btnStart">Start</button>
+            <button id="btnSave">Export Save</button>
+            <button id="btnLoad">Import Save</button>
+        </div>
+    </header>
+
+    <!-- Error panel (hidden unless a real JS error happens) -->
+    <div id="errorPanel" style="
+  display:none; margin:12px auto 0; max-width:1400px;
+  padding:12px; border-radius:12px;
+  border:1px solid #6a2c3c; background: rgba(255,92,122,.10); color:#ffd0d9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  white-space:pre-wrap;
+"></div>
+
+    <div class="wrap">
+        <section class="card">
+            <h2>
+                <span>Board</span>
+                <span class="pill"><span class="dot good"></span><span id="winTrack">Cures: 0/3</span></span>
+            </h2>
+
+            <div class="body">
+                <div class="row">
+                    <span class="pill"><span class="dot bad"></span><span id="outbreakTrack">Outbreaks:
+                            0/3</span></span>
+                    <span class="pill"><span class="dot"></span><span id="infectionRate">Infection rate: 2</span></span>
+                    <span class="pill"><span class="dot warn"></span><span id="turnsLeft">Turns left: —</span></span>
+                    <span class="pill"><span class="dot blue"></span><span id="supplyBlue">Blue cubes: 16</span></span>
+                    <span class="pill"><span class="dot red"></span><span id="supplyRed">Red cubes: 16</span></span>
+                    <span class="pill"><span class="dot yellow"></span><span id="supplyYellow">Yellow cubes:
+                            16</span></span>
+                </div>
+
+                <div class="grid2">
+                    <div class="panelBox">
+                        <div class="miniTitle">Setup</div>
+
+                        <div class="row">
+                            <label class="mini">Mode:</label>
+                            <select id="mode">
+                                <option value="solo1">Solo (1 pawn)</option>
+                                <option value="solo2" selected>Solo (2 pawns)</option>
+                                <option value="coop2">Co-op (2 pawns)</option>
+                                <option value="coop3">Co-op (3 pawns)</option>
+                                <option value="coop4">Co-op (4 pawns)</option>
+                            </select>
+
+                            <label class="mini">Difficulty:</label>
+                            <select id="difficulty">
+                                <option value="intro" selected>Intro (no Crisis)</option>
+                                <option value="standard">Standard (Crisis 1/pile)</option>
+                                <option value="heroic">Heroic (Crisis 2/pile)</option>
+                            </select>
+                        </div>
+
+                        <div class="mini" id="rolePickHint">
+                            Choose roles below. (Solo-2 is recommended so you still get teamwork decisions.)
+                        </div>
+
+                        <div id="rolePicker" class="rolePicker"></div>
+                    </div>
+
+                    <div id="endStateBox" class="okBox">
+                        <b>Ready</b><br>Pick mode + roles, then Start.
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top:10px;">
+                    <label class="mini">Select city:</label>
+                    <select id="citySelect"></select>
+
+                    <button id="btnDrive">Drive/Ferry (Auto path)</button>
+                    <button id="btnDirectFlight">Direct Flight</button>
+                    <button id="btnCharterFlight">Charter Flight</button>
+
+                    <button id="btnTreat">Treat</button>
+                    <button id="btnCure">Discover Cure (Atlanta)</button>
+                    <button id="btnEndActions">End Actions</button>
+                </div>
+
+                <!-- Discard controls -->
+                <div class="panelBox" style="margin-top:10px;">
+                    <div class="miniTitle">Discard (Manual)</div>
+                    <div class="row">
+                        <label class="mini">Player:</label>
+                        <select id="discardPlayer"></select>
+
+                        <label class="mini">Card:</label>
+                        <select id="discardCard"></select>
+
+                        <button id="btnDiscard">Discard Selected</button>
+                    </div>
+                    <div class="mini">
+                        Discarding is optional in this build (useful for managing hands). In official rules, discards
+                        usually happen due to hand limit or as part of actions.
+                    </div>
+                </div>
+
+                <!-- Trading controls (better Share Knowledge) -->
+                <div class="panelBox" style="margin-top:10px;">
+                    <div class="miniTitle">Share Knowledge (Trading)</div>
+                    <div class="row">
+                        <label class="mini">From:</label>
+                        <select id="tradeFrom"></select>
+
+                        <label class="mini">To:</label>
+                        <select id="tradeTo"></select>
+
+                        <label class="mini">Card:</label>
+                        <select id="tradeCard"></select>
+
+                        <button id="btnShare">Share Knowledge</button>
+                    </div>
+                    <div class="mini">
+                        Rule reminder: normally you can only share the <b>city card matching your current city</b>.
+                        <b>Researcher</b> can give any city card (but still must be in the same city as the other pawn).
+                    </div>
+                </div>
+
+                <!-- Dispatcher tools -->
+                <div class="panelBox" style="margin-top:10px;">
+                    <div class="miniTitle">Dispatcher Tools</div>
+                    <div class="row">
+                        <label class="mini">Target pawn:</label>
+                        <select id="dispatchTarget"></select>
+
+                        <label class="mini">Destination:</label>
+                        <select id="dispatchDest"></select>
+
+                        <button id="btnDispatchToPawn">Dispatch: Move to a pawn city</button>
+                        <button id="btnDispatchConnected">Dispatch: Move connected</button>
+                    </div>
+                    <div class="mini">
+                        Only works if the <b>current player is Dispatcher</b>.
+                    </div>
+                </div>
+
+                <!-- Medic free cleanup -->
+                <div class="row" style="margin-top:10px;">
+                    <button id="btnMedicClean">Medic: Free cured cleanup (here)</button>
+                </div>
+
+                <!-- Full city list under controls -->
+                <div class="cityList" id="cityList"></div>
+            </div>
+        </section>
+
+        <aside class="card">
+            <h2>
+                <span>Players & Turn</span>
+                <span class="pill"><span class="dot good"></span><span id="turnInfo">—</span></span>
+            </h2>
+            <div class="body">
+                <div class="players" id="players"></div>
+
+                <h2 style="margin-top:12px;">Log</h2>
+                <div class="log" id="log"></div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Show real JS errors (but don't spam diagnostics) -->
+    <script>
+        (function () {
+            const panel = document.getElementById("errorPanel");
+            function show(msg) {
+                panel.style.display = "block";
+                panel.textContent += msg + "\n";
+                document.getElementById("statusLine").textContent = "❌ Script error — see red error panel.";
+            }
+            window.addEventListener("error", (e) => {
+                show("JS ERROR: " + (e.message || "Unknown") + "\n" + (e.filename || "") + ":" + (e.lineno || ""));
+            });
+            window.addEventListener("unhandledrejection", (e) => {
+                show("PROMISE ERROR: " + (e.reason?.message || e.reason || "Unknown rejection"));
+            });
+        })();
+    </script>
+
+    <!-- Classic script mode (double-click works). Order matters. -->
+    <script src="data.js"></script>
+    <script src="game.js"></script>
+    <script src="storage.js"></script>
+    <script src="ui.js"></script>
+</body>
+
+</html>
