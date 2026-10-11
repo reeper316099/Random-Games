@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Disguised King Chess</title>
+<style>
+:root{
+  --primary:#7c5cff;
+  --secondary:#22d3ee;
+  --accent:#fbbf24;
+  --danger:#fb7185;
+  --bg1:#150d33;
+  --bg2:#0b2a47;
+  --card:rgba(255,255,255,.07);
+  --card-border:rgba(255,255,255,.14);
+  --text:#eef0ff;
+  --muted:#a9b0d6;
+  --sq-light:#e4eafb;
+  --sq-dark:#6f88bd;
+  --shadow:0 12px 36px rgba(0,0,0,.45);
+  --bs:min(94vw, 64vh, 560px);
+  --sq:calc(var(--bs) / 8);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  min-height:100vh;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--text);
+  background:linear-gradient(135deg,var(--bg1),var(--bg2)) fixed;
+  display:flex;flex-direction:column;align-items:center;
+  padding:14px 10px 40px;
+}
+h1{
+  margin:4px 0 2px;font-size:clamp(1.4rem,4.5vw,2.2rem);letter-spacing:.5px;
+  background:linear-gradient(90deg,var(--primary),var(--secondary),var(--accent));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:12px;text-align:center}
+.layout{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:flex-start;width:100%;max-width:980px}
+.card{
+  background:var(--card);border:1px solid var(--card-border);border-radius:18px;
+  box-shadow:var(--shadow);backdrop-filter:blur(8px);
+}
+.boardwrap{padding:12px}
+.status{
+  display:flex;align-items:center;gap:10px;justify-content:center;
+  font-weight:700;margin-bottom:8px;min-height:28px;text-align:center;
+}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px rgba(255,255,255,.5)}
+.dot.w{background:#fff}.dot.b{background:#111}
+.tray{min-height:26px;font-size:1.15rem;line-height:1.1;color:var(--muted);padding:2px 4px;display:flex;flex-wrap:wrap;gap:1px}
+.tray .pc{font-size:1.15rem;position:static;display:inline}
+.board{
+  width:var(--bs);height:var(--bs);
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  border-radius:10px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5);
+  border:3px solid rgba(255,255,255,.18);
+  user-select:none;-webkit-user-select:none;
+}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sq.l{background:var(--sq-light)}
+.sq.d{background:var(--sq-dark)}
+.sq.last::before{content:"";position:absolute;inset:0;background:rgba(251,191,36,.38)}
+.sq.sel::before{content:"";position:absolute;inset:0;background:rgba(124,92,255,.6)}
+.sq.pick::before{content:"";position:absolute;inset:0;background:rgba(251,191,36,.7);animation:pulse 1s infinite}
+.sq.mv::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,10,60,.42)}
+.sq.cp::after{content:"";position:absolute;inset:6%;border-radius:50%;border:4px solid rgba(251,113,133,.85)}
+.sq .co,.sq .fl{position:absolute;font-size:calc(var(--sq) * .2);font-weight:700;opacity:.65;z-index:3;pointer-events:none}
+.sq.l .co,.sq.l .fl{color:#4a5a86}.sq.d .co,.sq.d .fl{color:#e4eafb}
+.co{top:2px;left:3px}.fl{bottom:1px;right:3px}
+.pc{
+  position:relative;z-index:2;font-size:calc(var(--sq) * .8);line-height:1;
+  font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Apple Symbols",system-ui,sans-serif;
+  pointer-events:none;
+}
+.pc.w{color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 0 3px #000,0 3px 3px rgba(0,0,0,.4)}
+.pc.b{color:#17171f;text-shadow:0 0 1px rgba(255,255,255,.55),0 3px 3px rgba(0,0,0,.35)}
+.crown{
+  position:absolute;top:1%;right:2%;z-index:4;font-size:calc(var(--sq) * .3);
+  filter:drop-shadow(0 0 4px var(--accent));pointer-events:none;animation:bob 1.4s ease-in-out infinite;
+}
+.sq.reveal::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(251,191,36,.85),rgba(251,191,36,0) 70%)}
+@keyframes pulse{50%{opacity:.45}}
+@keyframes bob{50%{transform:translateY(-2px) scale(1.1)}}
+
+.side{width:min(94vw,340px);padding:14px;display:flex;flex-direction:column;gap:12px}
+.side h3{margin:0;font-size:.95rem;color:var(--secondary);text-transform:uppercase;letter-spacing:1px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{
+  font:inherit;font-weight:700;color:#fff;border:0;cursor:pointer;
+  padding:9px 14px;border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),#5b3fe0);
+  box-shadow:0 4px 14px rgba(124,92,255,.4);transition:transform .12s, filter .12s;
+}
+button:hover{filter:brightness(1.12)}button:active{transform:scale(.96)}
+button.alt{background:linear-gradient(135deg,#2b3a6b,#1f2b52);box-shadow:none;border:1px solid var(--card-border)}
+button.gold{background:linear-gradient(135deg,var(--accent),#f59e0b);color:#2a1a00;box-shadow:0 4px 14px rgba(251,191,36,.4)}
+button.cy{background:linear-gradient(135deg,var(--secondary),#0891b2);color:#04222b;box-shadow:0 4px 14px rgba(34,211,238,.35)}
+button:disabled{opacity:.4;cursor:not-allowed}
+#pickBar{display:none;margin-top:8px;justify-content:center}
+.log{
+  max-height:220px;overflow:auto;font-size:.85rem;color:var(--text);
+  display:grid;grid-template-columns:28px 1fr 1fr;gap:3px 8px;font-variant-numeric:tabular-nums;
+}
+.log .n{color:var(--muted)}
+.log .mvt{background:rgba(255,255,255,.06);border-radius:6px;padding:1px 6px}
+.hint{font-size:.78rem;color:var(--muted);line-height:1.4}
+.hint b{color:var(--accent)}
+
+.overlay{
+  position:fixed;inset:0;display:none;place-items:center;z-index:50;padding:16px;
+  background:rgba(8,6,20,.78);backdrop-filter:blur(6px);
+}
+.overlay.show{display:grid}
+.overlay.secret{background:#0a0720;backdrop-filter:none}
+.ovcard{
+  max-width:430px;width:100%;padding:22px;text-align:center;
+  background:linear-gradient(160deg,#241a58,#12304f);
+  border:1px solid var(--card-border);border-radius:20px;box-shadow:var(--shadow);
+  max-height:90vh;overflow:auto;
+}
+.ovcard h2{margin:0 0 8px;font-size:1.4rem}
+.ovcard p,.ovcard li{color:var(--muted);font-size:.92rem;line-height:1.45}
+.ovcard ul{text-align:left;padding-left:20px;margin:8px 0}
+.ovcard b{color:var(--accent)}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.opt{display:flex;gap:8px;justify-content:center;margin:10px 0;flex-wrap:wrap}
+.opt label{
+  display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;border-radius:12px;
+  background:rgba(255,255,255,.08);border:1px solid var(--card-border);font-weight:600;font-size:.9rem;
+}
+.opt input{accent-color:var(--primary)}
+.promo{font-size:2.6rem;padding:6px 14px;background:linear-gradient(135deg,#2b3a6b,#1f2b52)}
+.promo.w{color:#fff;text-shadow:0 0 2px #000,0 0 3px #000}
+.promo.b{color:#14141c;background:linear-gradient(135deg,#cfd8f5,#9fb0e0)}
+</style>
+</head>
+<body>
+<h1>♚ Disguised King Chess</h1>
+<div class="sub">Capture the secret pawn-king. The real king is just another piece now.</div>
+
+<div class="layout">
+  <div class="card boardwrap">
+    <div class="status" id="status"></div>
+    <div class="tray" id="trayTop"></div>
+    <div class="board" id="board"></div>
+    <div class="tray" id="trayBot"></div>
+    <div id="pickBar" class="row"><button class="gold" id="lockBtn" onclick="lockPick()">👑 Lock in this pawn</button></div>
+  </div>
+
+  <div class="card side">
+    <div>
+      <h3>Controls</h3>
+      <div class="btns" style="margin-top:8px">
+        <button class="alt" onclick="undo()">↶ Undo</button>
+        <button class="alt" onclick="flip()">⇅ Flip</button>
+        <button class="alt" onclick="showRules()">📖 Rules</button>
+        <button class="alt" onclick="showSetup()">⟳ New game</button>
+      </div>
+    </div>
+    <div id="peekWrap" style="display:none">
+      <button class="cy" id="peekBtn" style="width:100%;touch-action:none">👁 Hold to peek at my king</button>
+      <div class="hint" style="margin-top:6px">Hot-seat mode: only the player whose turn it is should hold this. Release before passing the device.</div>
+    </div>
+    <div>
+      <h3>Moves</h3>
+      <div class="log" id="log" style="margin-top:8px"></div>
+    </div>
+    <div class="hint">Your disguised king acts like a pawn (and can promote), but if it's captured <b>you lose instantly</b>. No check, no castling.</div>
+  </div>
+</div>
+
+<div class="overlay" id="ov"><div class="ovcard" id="ovCard"></div></div>
+
+<script>
+/* ============ Constants ============ */
+const G={k:'\u265A',q:'\u265B',r:'\u265C',b:'\u265D',n:'\u265E',p:'\u265F'};
+const VS='\uFE0E'; // force text (not emoji) glyph
+const VAL={p:100,n:320,b:330,r:500,q:900,k:250};
+const FILES='abcdefgh';
+const NAME={w:'White',b:'Black'};
+const sqName=i=>FILES[i&7]+(8-(i>>3));
+const $=id=>document.getElementById(id);
+let uid=0, S=null, lastMode='ai', lastSide='w';
+
+/* ============ Board + move generation ============ */
+function mk(c,t,origin){return {id:++uid,c,t,dk:false,origin:!!origin};}
+function newBoard(){
+  const b=Array(64).fill(null), back=['r','n','b','q','k','b','n','r'];
+  for(let f=0;f<8;f++){
+    b[f]=mk('b',back[f]); b[8+f]=mk('b','p',true);
+    b[48+f]=mk('w','p',true); b[56+f]=mk('w',back[f]);
+  }
+  return b;
+}
+const cloneB=b=>b.map(p=>p&&{...p});
+const KN=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+const KG=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const BD=[[1,1],[1,-1],[-1,1],[-1,-1]], RD=[[1,0],[-1,0],[0,1],[0,-1]];
+
+function genMoves(b,c,ep){
+  const out=[];
+  for(let i=0;i<64;i++){
+    const p=b[i]; if(!p||p.c!==c) continue;
+    const r=i>>3, f=i&7;
+    if(p.t==='p'){
+      const d=c==='w'?-1:1, sr=c==='w'?6:1, pr=c==='w'?0:7, r1=r+d;
+      if(r1<0||r1>7) continue;
+      if(!b[r1*8+f]){
+        out.push({f:i,t:r1*8+f,promo:r1===pr});
+        if(r===sr && !b[(r+2*d)*8+f]) out.push({f:i,t:(r+2*d)*8+f,dbl:true});
+      }
+      for(const df of [-1,1]){
+        const nf=f+df; if(nf<0||nf>7) continue;
+        const t=r1*8+nf, q=b[t];
+        if(q&&q.c!==c) out.push({f:i,t,promo:r1===pr});
+        else if(!q && ep===t) out.push({f:i,t,ep:true});
+      }
+    } else if(p.t==='n'||p.t==='k'){
+      for(const [dr,df] of (p.t==='n'?KN:KG)){
+        const nr=r+dr, nf=f+df; if(nr<0||nr>7||nf<0||nf>7) continue;
+        const t=nr*8+nf, q=b[t];
+        if(!q||q.c!==c) out.push({f:i,t});
+      }
+    } else {
+      const dirs=p.t==='b'?BD:p.t==='r'?RD:BD.concat(RD);
+      for(const [dr,df] of dirs){
+        let nr=r+dr, nf=f+df;
+        while(nr>=0&&nr<8&&nf>=0&&nf<8){
+          const t=nr*8+nf, q=b[t];
+          if(!q) out.push({f:i,t});
+          else { if(q.c!==c) out.push({f:i,t}); break; }
+          nr+=dr; nf+=df;
+        }
+      }
+    }
+  }
+  return out;
+}
+function doMove(b,m,pt){
+  const p=b[m.f]; let cap;
+  if(m.ep){ const cs=(m.f>>3)*8+(m.t&7); cap=b[cs]; b[cs]=null; }
+  else cap=b[m.t];
+  b[m.f]=null; b[m.t]=p;
+  if(m.promo) p.t=pt||'q';   // dk flag stays on the piece
+  return cap;
+}
+
+/* ============ Game flow ============ */
+function startGame(mode,side){
+  lastMode=mode; lastSide=side;
+  S={board:newBoard(),turn:'w',ep:null,mode,human:side,dk:{w:null,b:null},
+     phase:'pick',picker:mode==='ai'?side:'w',pickSel:null,over:false,winner:null,
+     log:[],cap:{w:[],b:[]},last:null,hist:[],sel:null,moves:[],peek:false,busy:false,
+     flip:(mode==='ai'&&side==='b')};
+  $('peekWrap').style.display=mode==='2p'?'block':'none';
+  closeModal(); render();
+  if(mode==='2p') secretOverlay('w','pick');
+}
+function secretOverlay(c,why){
+  const first = why==='pick';
+  modal(`<h2>${NAME[c]}'s turn to pick</h2>
+    <p>${NAME[c]==='White'?'Black':'White'}, <b>look away</b>!<br>${NAME[c]}: you'll secretly choose one of your pawns to be your <b>disguised king</b>.</p>
+    <div class="row"><button class="gold" onclick="closeModal()">I'm ${NAME[c]} — ready</button></div>`,true);
+}
+function lockPick(){
+  if(S.phase!=='pick'||S.pickSel==null) return;
+  const p=S.board[S.pickSel]; p.dk=true; S.dk[S.picker]=p.id; S.pickSel=null;
+  if(S.mode==='ai'){
+    const ai=S.human==='w'?'b':'w';
+    const pawns=S.board.filter(x=>x&&x.c===ai&&x.t==='p');
+    pawns[Math.floor(Math.random()*pawns.length)].dk=true;
+    S.dk[ai]=1; startPlay();
+  } else if(S.picker==='w'){
+    S.picker='b'; render(); secretOverlay('b','pick');
+  } else startPlay();
+}
+function startPlay(){
+  S.phase='play'; S.turn='w'; render();
+  if(S.mode==='2p') modal(`<h2>Game on!</h2><p>Both kings are hidden. <b>White</b> moves first.<br>Capture the other side's secret pawn to win.</p><div class="row"><button class="gold" onclick="closeModal()">Let's go</button></div>`);
+  maybeAI();
+}
+function onSq(i){
+  if(S.over||S.busy||$('ov').classList.contains('show')) return;
+  const p=S.board[i];
+  if(S.phase==='pick'){
+    if(p&&p.t==='p'&&p.c===S.picker){S.pickSel=i;render();}
+    return;
+  }
+  if(S.mode==='ai'&&S.turn!==S.human) return;
+  if(S.sel!=null){
+    const m=S.moves.find(m=>m.t===i);
+    if(m){ attempt(m); return; }
+  }
+  if(p&&p.c===S.turn){
+    S.sel=i; S.moves=genMoves(S.board,S.turn,S.ep).filter(m=>m.f===i);
+  } else { S.sel=null; S.moves=[]; }
+  render();
+}
+function attempt(m){
+  if(m.promo){
+    const c=S.turn;
+    modal(`<h2>Promote!</h2><p>Pick a piece.</p><div class="row">${['q','r','b','n'].map(t=>`<button class="promo ${c}" onclick="closeModal();play(${JSON.stringify(m).replace(/"/g,'&quot;')},'${t}')">${G[t]}${VS}</button>`).join('')}</div>`);
+  } else play(m);
+}
+function snap(){
+  S.hist.push({board:cloneB(S.board),turn:S.turn,ep:S.ep,log:S.log.slice(),
+    cap:{w:S.cap.w.slice(),b:S.cap.b.slice()},last:S.last});
+}
+function play(m,pt){
+  snap();
+  const mover=S.turn, piece=S.board[m.f];
+  const cap=doMove(S.board,m,pt);
+  let txt=`${piece.t==='p'?'':piece.t.toUpperCase()}${sqName(m.f)}${cap?'x':'-'}${sqName(m.t)}${m.ep?' e.p.':''}${m.promo?'='+(pt||'q').toUpperCase():''}`;
+  S.log.push(txt);
+  S.ep=m.dbl?(m.f+m.t)/2:null;
+  S.last={f:m.f,t:m.t}; S.sel=null; S.moves=[];
+  if(cap) S.cap[mover].push(cap);
+  if(cap&&cap.dk){ endGame(mover,sqName(m.ep?(m.f>>3)*8+(m.t&7):m.t)); return; }
+  S.turn=mover==='w'?'b':'w';
+  render();
+  if(genMoves(S.board,S.turn,S.ep).length===0){ endGame(null); return; }
+  maybeAI();
+}
+function endGame(winner,sq){
+  S.over=true; S.winner=winner; S.busy=false; render();
+  if(winner){
+    const loser=winner==='w'?'b':'w';
+    modal(`<h2>👑 ${NAME[winner]} wins!</h2>
+      <p>${NAME[loser]}'s disguised king was captured${sq?' on <b>'+sq+'</b>':''}.</p>
+      <p>Both secret kings are now revealed on the board.</p>
+      <div class="row"><button class="alt" onclick="closeModal()">View board</button>
+      <button class="gold" onclick="startGame(lastMode,lastSide)">Rematch</button>
+      <button onclick="showSetup()">New game</button></div>`);
+  } else {
+    modal(`<h2>Draw</h2><p>${NAME[S.turn]} has no legal moves.</p>
+      <div class="row"><button class="alt" onclick="closeModal()">View board</button><button class="gold" onclick="startGame(lastMode,lastSide)">Rematch</button></div>`);
+  }
+}
+function undo(){
+  if(!S||S.busy||S.phase!=='play'||!S.hist.length) return;
+  const restore=()=>{const h=S.hist.pop(); S.board=h.board;S.turn=h.turn;S.ep=h.ep;S.log=h.log;S.cap=h.cap;S.last=h.last;};
+  restore();
+  if(S.mode==='ai') while(S.turn!==S.human&&S.hist.length) restore();
+  S.over=false;S.winner=null;S.sel=null;S.moves=[];closeModal();render();maybeAI();
+}
+function flip(){ if(S){S.flip=!S.flip;render();} }
+
+/* ============ Computer opponent ============ */
+function maybeAI(){
+  if(S.mode!=='ai'||S.over||S.phase!=='play'||S.turn===S.human) return;
+  S.busy=true; render();
+  setTimeout(()=>{ S.busy=false; if(!S.over&&S.turn!==S.human) aiPlay(); },450);
+}
+function aiPlay(){
+  const c=S.turn, opp=c==='w'?'b':'w';
+  const moves=genMoves(S.board,c,S.ep);
+  if(!moves.length){ endGame(null); return; }
+  // Computer doesn't know which enemy piece is the king: every live pawn-origin piece is a candidate.
+  const cand=Math.max(1,S.board.filter(p=>p&&p.c===opp&&p.origin).length);
+  let best=null,bs=-1e9;
+  for(const m of moves){
+    const b=cloneB(S.board), tgt=m.ep?S.board[(m.f>>3)*8+(m.t&7)]:S.board[m.t], mv=b[m.f];
+    const cap=doMove(b,m,'q');
+    let gain=0;
+    if(cap){ gain+=VAL[cap.t]; if(cap.origin) gain+=800/cand; }
+    if(m.promo) gain+=700;
+    const nep=m.dbl?(m.f+m.t)/2:null;
+    let worst=0;
+    for(const r of genMoves(b,opp,nep)){
+      const rt=r.ep?b[(r.f>>3)*8+(r.t&7)]:b[r.t];
+      if(!rt||rt.c!==c) continue;
+      let loss=rt.dk?1e5:VAL[rt.t];
+      if(!rt.dk){
+        const b2=cloneB(b); doMove(b2,r,'q');
+        const recap=genMoves(b2,c,null).some(x=>x.t===r.t&&!x.ep);
+        if(recap) loss=Math.max(0,loss-VAL[b[r.f].t]);
+      }
+      if(loss>worst) worst=loss;
+    }
+    // light positional nudges
+    const tr=m.t>>3, tf=m.t&7;
+    let pos=(3.5-Math.abs(3.5-tf))*4+(3.5-Math.abs(3.5-tr))*3;
+    if(mv.t==='p') pos+=(c==='w'?(6-tr):(tr-1))*6;
+    if(mv.dk) pos-=8; // keep the king pawn a bit safer
+    const score=gain-worst+pos+Math.random()*12;
+    if(score>bs){bs=score;best=m;}
+  }
+  play(best,'q');
+}
+
+/* ============ Rendering ============ */
+function showCrown(p,i){
+  if(S.over) return p.dk;
+  if(S.phase==='pick') return i===S.pickSel;
+  if(!p.dk) return false;
+  if(S.mode==='ai') return p.c===S.human;
+  return S.peek&&p.c===S.turn;
+}
+function render(){
+  const bd=$('board'); let h='';
+  for(let k=0;k<64;k++){
+    const i=S.flip?63-k:k, r=i>>3, f=i&7, p=S.board[i];
+    let cls='sq '+(((r+f)&1)?'d':'l');
+    if(S.last&&(S.last.f===i||S.last.t===i)) cls+=' last';
+    if(S.sel===i) cls+=' sel';
+    if(S.phase==='pick'&&S.pickSel===i) cls+=' pick';
+    const mv=S.moves.find(m=>m.t===i);
+    if(mv) cls+=(p||mv.ep)?' cp':' mv';
+    const crown=p&&showCrown(p,i);
+    if(S.over&&p&&p.dk) cls+=' reveal';
+    h+=`<div class="${cls}" onclick="onSq(${i})">`;
+    if(k%8===0) h+=`<span class="co">${8-r}</span>`;
+    if(k>=56) h+=`<span class="fl">${FILES[f]}</span>`;
+    if(p) h+=`<span class="pc ${p.c}">${G[p.t]}${VS}</span>`;
+    if(crown) h+='<span class="crown">👑</span>';
+    h+='</div>';
+  }
+  bd.innerHTML=h;
+
+  // status
+  let st='';
+  if(S.over) st=S.winner?`🏆 ${NAME[S.winner]} wins!`:'🤝 Draw';
+  else if(S.phase==='pick') st=`<span class="dot ${S.picker}"></span>${NAME[S.picker]}: tap a pawn to be your secret king`;
+  else if(S.busy) st=`<span class="dot ${S.turn}"></span>Computer is thinking…`;
+  else st=`<span class="dot ${S.turn}"></span>${NAME[S.turn]} to move`;
+  $('status').innerHTML=st;
+  $('pickBar').style.display=S.phase==='pick'?'flex':'none';
+  $('lockBtn').disabled=S.pickSel==null;
+
+  // trays (what each side has captured)
+  const tray=c=>S.cap[c].map(p=>`<span class="pc ${p.c}">${G[p.t]}${VS}</span>`).join('');
+  const bottom=S.flip?'b':'w', top=bottom==='w'?'b':'w';
+  $('trayBot').innerHTML=tray(bottom); $('trayTop').innerHTML=tray(top);
+
+  // log
+  let lh='';
+  for(let i=0;i<S.log.length;i+=2){
+    lh+=`<span class="n">${i/2+1}.</span><span class="mvt">${S.log[i]}</span><span class="${S.log[i+1]?'mvt':''}">${S.log[i+1]||''}</span>`;
+  }
+  const lg=$('log'); lg.innerHTML=lh||'<span class="hint" style="grid-column:1/-1">No moves yet.</span>';
+  lg.scrollTop=lg.scrollHeight;
+}
+
+/* ============ Modals ============ */
+function modal(html,secret){
+  $('ov').className='overlay show'+(secret?' secret':'');
+  $('ovCard').innerHTML=html;
+}
+function closeModal(){ $('ov').className='overlay'; }
+function showSetup(){
+  modal(`<h2>♚ Disguised King Chess</h2>
+    <p>Pick a mode to start.</p>
+    <div class="opt">
+      <label><input type="radio" name="mode" value="ai" checked> vs Computer</label>
+      <label><input type="radio" name="mode" value="2p"> 2 Players (same device)</label>
+    </div>
+    <div class="opt" id="sideOpt">
+      <label><input type="radio" name="side" value="w" checked> Play White</label>
+      <label><input type="radio" name="side" value="b"> Play Black</label>
+    </div>
+    <div class="row"><button class="gold" onclick="beginFromSetup()">Start</button>
+    <button class="alt" onclick="showRules()">Rules</button></div>`);
+  document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=()=>{
+    $('sideOpt').style.display=document.querySelector('input[name=mode]:checked').value==='ai'?'flex':'none';
+  });
+}
+function beginFromSetup(){
+  const m=document.querySelector('input[name=mode]:checked').value;
+  const s=document.querySelector('input[name=side]:checked').value;
+  startGame(m,s);
+}
+function showRules(){
+  const keep=S&&S.phase?true:false;
+  modal(`<h2>📖 Rules</h2><ul>
+    <li><b>Setup:</b> before move 1, each player secretly picks one of their 8 pawns as their <b>disguised king</b>.</li>
+    <li>The disguised king moves, captures, double-steps, en-passants and <b>promotes</b> exactly like a pawn. After promotion it's still the king (it just looks like a queen/rook/etc.).</li>
+    <li><b>You lose the moment your disguised king is captured</b> — in any way, even en passant.</li>
+    <li>The real ♚ king is now a normal piece: it can be captured with no consequence. No check, no checkmate, no castling.</li>
+    <li>If a player has no legal moves, it's a draw.</li>
+    <li><b>Hot-seat:</b> your king is hidden; hold the 👁 Peek button on your turn to see it. vs Computer: your crown is always shown to you.</li>
+  </ul><div class="row"><button class="gold" onclick="closeModal()">Got it</button></div>`);
+}
+
+/* ============ Peek button (hot-seat) ============ */
+const pk=$('peekBtn');
+const peek=v=>()=>{ if(S&&S.mode==='2p'&&S.phase==='play'&&!S.over){S.peek=v;render();} };
+pk.addEventListener('pointerdown',e=>{e.preventDefault();peek(true)();});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>pk.addEventListener(ev,peek(false)));
+pk.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ============ Boot ============ */
+startGame('ai','w'); showSetup();
+</script>
+</body>
+</html>
