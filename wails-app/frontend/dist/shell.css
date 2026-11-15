@@ -15,6 +15,7 @@ body{
 }
 .brand{ font-weight:700; letter-spacing:.3px; }
 .tabs{ display:flex; gap:6px; }
+.tab.fs{ margin-left:auto; font-size:16px; padding:6px 10px; }
 .tab{
   border:1px solid transparent; background:transparent; color:var(--muted);
   padding:8px 14px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;

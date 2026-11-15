@@ -42,6 +42,16 @@
   $("tabGames").addEventListener("click", () => showTab("games"));
   $("tabScores").addEventListener("click", () => showTab("scores"));
 
+  // ---------- full screen (desktop app only) ----------
+  async function toggleFullscreen() {
+    const rt = window.runtime;
+    if (!rt || !rt.WindowIsFullscreen) return;
+    try { (await rt.WindowIsFullscreen()) ? rt.WindowUnfullscreen() : rt.WindowFullscreen(); } catch (e) {}
+  }
+  $("fsBtn").addEventListener("click", toggleFullscreen);
+  if (!(window.runtime && window.runtime.WindowFullscreen)) $("fsBtn").hidden = true;   // plain browser: nothing to toggle
+  document.addEventListener("keydown", e => { if (e.key === "F11") { e.preventDefault(); toggleFullscreen(); } });
+
   // ---------- scores view ----------
   let boards = [];
   function el(tag, cls, text) {

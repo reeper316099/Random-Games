@@ -7,6 +7,8 @@
   "info": {
     "productName": "Random Games",
     "productVersion": "1.0.0",
-    "comments": "A collection of browser games with a shared high-score table."
+    "comments": "A collection of browser games with a shared high-score table.",
+    "companyName": "Random Games",
+    "copyright": "Copyright (c) 2026 Random Games contributors"
   }
 }
