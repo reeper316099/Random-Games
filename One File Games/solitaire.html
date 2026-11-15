@@ -69,7 +69,7 @@
     }
     .card.down > *{ display:none; }
     .card.sel{ outline:3px solid var(--warn); outline-offset:1px; box-shadow:0 0 14px rgba(255,211,106,.7); z-index:50; }
-    .card.hint{ outline:3px solid var(--ok); }
+    .card.hint, .slot.hint{ outline:3px solid var(--ok); outline-offset:1px; }
     .card.buried{ filter:brightness(.62); cursor:not-allowed; }
     .stock .card{ cursor:pointer; }
     .stockCount{ position:absolute; bottom:4px; right:6px; font-size:11px; color:#fff; background:rgba(0,0,0,.55); padding:1px 6px; border-radius:999px; z-index:60; pointer-events:none; }
@@ -176,7 +176,7 @@
   let settings = { ...DEFAULTS };
   let stats = { klondike:{...DEF_STAT}, spider:{...DEF_STAT}, freecell:{...DEF_STAT} };
   let V = "klondike"; // active variant for the game in progress
-  let S, sel = null, hist = [], moves = 0, seconds = 0, timerId = null, started = false, won = false, hintTimer = null;
+  let S, sel = null, hist = [], seenSigs = [], moves = 0, seconds = 0, timerId = null, started = false, won = false, hintTimer = null;
 
   // ---------- storage (guarded) ----------
   function loadJSON(key){ try{ const o = JSON.parse(localStorage.getItem(key) || "null"); if(o && typeof o === "object") return o; }catch(e){} return null; }
@@ -226,7 +226,7 @@
       S = { cells:[null,null,null,null], found:[[],[],[],[]], tab:Array.from({length:8},()=>[]) };
       deck.forEach((c,i) => S.tab[i % 8].push(c));
     }
-    sel = null; hist = []; moves = 0; seconds = 0; started = false; won = false;
+    sel = null; hist = []; seenSigs = []; moves = 0; seconds = 0; started = false; won = false;
     stopTimer(); clearHint(); $("banner").classList.remove("show");
     setMsg("");
     render();
@@ -285,7 +285,17 @@
     if(V === "spider") return true;
     return isRed(t.s) !== isRed(c.s);
   }
-  function snapshot(){ hist.push(JSON.stringify(S)); if(hist.length > 500) hist.shift(); }
+  // compact signature of a position, used so hints never lead back to a position already visited
+  function sigOf(st){
+    const pile = p => p.map(c => c.r + c.s + (c.up ? "u" : "d")).join("");
+    return [st.tab.map(pile).join("|"), (st.found || []).map(f => typeof f === "string" ? f : pile(f)).join("|"),
+      (st.cells || []).map(c => c ? c.r + c.s : "-").join(""), pile(st.waste || []), pile(st.stock || [])].join("#");
+  }
+  function snapshot(){
+    hist.push(JSON.stringify(S)); seenSigs.push(sigOf(S));
+    if(hist.length > 500){ hist.shift(); seenSigs.shift(); }
+  }
+  function unsnapshot(){ hist.pop(); seenSigs.pop(); }
   function removeFrom(from){
     if(from.type === "waste") S.waste.pop();
     else if(from.type === "found") S.found[from.i].pop();
@@ -296,14 +306,19 @@
     const cards = getCards(from);
     if(!canPlace(cards, to)) return false;
     snapshot();
+    doMove(from, to);
+    afterMove();
+    return true;
+  }
+  // performs a (already validated) move on S with no side effects beyond S itself
+  function doMove(from, to){
+    const cards = getCards(from);
     removeFrom(from);
     if(to.type === "found") S.found[to.i].push(...cards);
     else if(to.type === "cell") S.cells[to.i] = cards[0];
     else S.tab[to.i].push(...cards);
     if(from.type === "tab" && V !== "freecell"){ const p = S.tab[from.i]; if(p.length && !top(p).up) top(p).up = true; }
     if(V === "spider") spiderCollect();
-    afterMove();
-    return true;
   }
   // Spider: remove any completed K..A same-suit run from the end of a column
   function spiderCollect(){
@@ -346,12 +361,12 @@
       for(let i=0;i<n;i++){ const c = S.stock.pop(); c.up = true; S.waste.push(c); }
     } else if(S.waste.length){
       if(settings.passes > 0 && S.passes >= settings.passes - 1){
-        hist.pop(); setMsg(`No more passes through the stock (limit: ${settings.passes} pass${settings.passes>1?"es":""}).`); return;
+        unsnapshot(); setMsg(`No more passes through the stock (limit: ${settings.passes} pass${settings.passes>1?"es":""}).`); return;
       }
       S.passes++;
       S.stock = S.waste.reverse().map(c => ({ ...c, up:false }));
       S.waste = [];
-    } else { hist.pop(); return; }
+    } else { unsnapshot(); return; }
     afterMove();
   }
   function win(){
@@ -405,7 +420,7 @@
   }
   function undo(){
     if(!hist.length || won) return;
-    S = JSON.parse(hist.pop()); sel = null; clearHint(); setMsg(""); render();
+    seenSigs.pop(); S = JSON.parse(hist.pop()); sel = null; clearHint(); setMsg(""); render();
   }
 
   // ---------- hints & auto-finish ----------
@@ -426,30 +441,98 @@
     }
     return out;
   }
-  function clearHint(){ if(hintTimer){ clearTimeout(hintTimer); hintTimer = null; } document.querySelectorAll(".card.hint").forEach(e => e.classList.remove("hint")); }
+  function clearHint(){ if(hintTimer){ clearTimeout(hintTimer); hintTimer = null; } document.querySelectorAll(".card.hint, .slot.hint").forEach(e => e.classList.remove("hint")); }
+  // would these two stacked cards already form a proper sequence in this variant?
+  function seqOK(a, b){
+    if(!a.up || a.r !== b.r + 1) return false;
+    return V === "spider" ? a.s === b.s : isRed(a.s) !== isRed(b.s);
+  }
+  function simulate(m){
+    const real = S;
+    S = JSON.parse(JSON.stringify(S));
+    try{ doMove(m.from, m.to); return sigOf(S); } finally { S = real; }
+  }
+  // FreeCell: parking a card in a free cell is only worth suggesting if it frees the card below to move somewhere
+  function parkingMoves(){
+    const out = [];
+    if(V !== "freecell") return out;
+    const free = S.cells.findIndex(c => !c);
+    if(free < 0) return out;
+    for(let i=0;i<S.tab.length;i++){
+      const p = S.tab[i];
+      if(p.length < 2) continue;
+      const below = p[p.length-2];
+      let sc = 0;
+      for(let f=0;f<4;f++) if(canPlace([below],{type:"found",i:f})) sc = 30;
+      if(!sc) for(let t=0;t<S.tab.length;t++) if(t !== i && S.tab[t].length && canPlace([below],{type:"tab",i:t})) sc = 15;
+      if(sc) out.push({ from:{ type:"tab", i, k:p.length-1 }, to:{ type:"cell", i:free }, park:sc });
+    }
+    return out;
+  }
+  // signature after the next stock draw / recycle (Klondike), so we never suggest cycling the same cards forever
+  function drawSig(){
+    const real = S;
+    S = JSON.parse(JSON.stringify(S));
+    try{
+      if(S.stock.length){ const n = Math.min(settings.draw, S.stock.length); for(let i=0;i<n;i++){ const c = S.stock.pop(); c.up = true; S.waste.push(c); } }
+      else S.stock = S.waste.reverse().map(c => ({ ...c, up:false })), S.waste = [];
+      return sigOf(S);
+    } finally { S = real; }
+  }
+  function scoreMove(m){
+    if(m.to.type === "cell") return m.park;
+    const cards = getCards(m.from), c = cards[0];
+    let sc = 0;
+    if(m.to.type === "found") sc += 100;
+    if(m.from.type === "tab"){
+      const p = S.tab[m.from.i], k = m.from.k;
+      if(k > 0 && !p[k-1].up) sc += 60;                      // reveals a face-down card
+      else if(k === 0) sc += 25;                              // empties a column
+      else if(seqOK(p[k-1], c)){                              // already sitting on a proper sequence
+        const better = V === "spider" && m.to.type === "tab" && S.tab[m.to.i].length && top(S.tab[m.to.i]).s === c.s;
+        if(!better) sc -= 50;
+      }
+    } else sc += 20;                                          // waste / free-cell cards
+    if(m.to.type === "tab" && S.tab[m.to.i].length){
+      const t = top(S.tab[m.to.i]);
+      if(V === "spider" && t.s === c.s) sc += 40;             // builds a same-suit run
+    }
+    if(m.to.type === "tab" && !S.tab[m.to.i].length) sc -= 5; // don't burn empty columns lightly
+    return sc;
+  }
+  function hintStock(){
+    const el = document.querySelector(".stock .card, .stock .slot");
+    if(el) el.classList.add("hint");
+    hintTimer = setTimeout(clearHint, 2500);
+  }
   function hint(){
     if(won) return;
     clearHint();
-    const m = findMoves();
-    if(!m.length){
-      if(V === "klondike") setMsg(S.stock.length || S.waste.length ? "No moves available — try drawing from the stock." : "No moves left. Try undo or a new game.");
-      else if(V === "spider") setMsg(S.stock.length ? "No moves available — deal from the stock." : "No moves left. Try undo or a new game.");
-      else setMsg(S.cells.some(c => !c) ? "No direct moves — try parking a card in a free cell." : "No moves left. Try undo or a new game.");
-      return;
+    const seen = new Set(seenSigs); seen.add(sigOf(S));
+    const cands = findMoves().concat(parkingMoves())
+      .filter(m => !seen.has(simulate(m)))                   // never lead back to a position you've already been in
+      .map(m => ({ m, sc: scoreMove(m) }))
+      .sort((a,b) => b.sc - a.sc);
+    const best = cands[0];
+    const canDraw = V === "klondike" ? ((S.stock.length > 0 || (S.waste.length > 0 && !(settings.passes > 0 && S.passes >= settings.passes - 1))) && !seen.has(drawSig()))
+      : V === "spider" ? S.stock.length > 0 && S.tab.every(p => p.length) : false;
+    if(!best || (best.sc <= 0 && canDraw)){
+      if(canDraw){ setMsg(V === "klondike" ? "Hint: draw from the stock." : "Hint: deal a new row from the stock."); hintStock(); return; }
+      if(!best){
+        if(V === "spider" && S.stock.length) setMsg("Hint: fill the empty column(s), then deal from the stock.");
+        else if(V === "freecell" && S.cells.some(c => !c)) setMsg("No useful moves — try parking a card in a free cell.");
+        else setMsg("No useful moves left. Try undo or a new game.");
+        return;
+      }
     }
-    let pick = m.find(x => x.to.type === "found");
-    if(!pick && V === "spider"){
-      pick = m.find(x => { const c = getCards(x.from)[0], t = top(S.tab[x.to.i]); return t && t.s === c.s; });
-    }
-    pick = pick || m[0];
-    const f = pick.from;
+    const f = best.m.from, to = best.m.to;
     const el = f.type === "waste" ? document.querySelector('[data-kind="waste"] .card:last-child')
       : f.type === "cell" ? document.querySelector(`[data-pile="cell${f.i}"] .card`)
       : document.querySelector(`[data-pile="tab${f.i}"] .card[data-k="${f.k}"]`);
     if(el) el.classList.add("hint");
-    const dest = pick.to.type === "found" ? "foundation" : `column ${pick.to.i+1}`;
     const c = getCards(f)[0];
-    setMsg(`Hint: move ${rl(c.r)}${c.s} to ${dest}.`);
+    const n = getCards(f).length;
+    setMsg(`Hint: move ${n > 1 ? n + " cards starting with " : ""}${rl(c.r)}${c.s} to ${to.type === "found" ? "a foundation" : to.type === "cell" ? "a free cell" : "column " + (to.i + 1)}.`);
     hintTimer = setTimeout(clearHint, 2500);
   }
   function canAuto(){
