@@ -10,6 +10,7 @@ A small collection of browser games, including both single-file games and multi-
 - `One File Games/disguised-king-chess.html` — Disguised King Chess
 - `One File Games/minesweeper.html` — Minesweeper Ultra Deluxe
 - `One File Games/poker.html` — Texas Hold'em Poker vs 3 bots (play-money chips)
+- `One File Games/solitaire.html` — Solitaire (Klondike, Spider and FreeCell; pick the game in Settings)
 - `One File Games/ultimate-ttt.html` — Ultimate Tic-Tac-Toe
 
 ### Multi-File Games
