@@ -155,8 +155,11 @@
   </div>
 </div>
 
+<script src="../scores.js"></script>
 <script>
 (() => {
+  // report a result to the high-score table (no-op if scores.js is unavailable)
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
   const $ = id => document.getElementById(id);
   const SUITS = ["♠","♥","♦","♣"];
   const RL = {1:"A",11:"J",12:"Q",13:"K"};
@@ -376,6 +379,9 @@
     if(st.bestTime === null || seconds < st.bestTime) st.bestTime = seconds;
     if(st.bestMoves === null || moves < st.bestMoves) st.bestMoves = moves;
     saveJSON("sol_stats", stats);
+    const cat = NAMES[V] + (V === "spider" ? ` · ${settings.suits} suit${settings.suits > 1 ? "s" : ""}` : V === "klondike" ? ` · Draw ${settings.draw}` : "");
+    rgReport("solitaire", cat, "Fastest win", seconds, { unit:"s", better:"low", detail:`${moves} moves` });
+    rgReport("solitaire", cat, "Fewest moves", moves, { unit:"moves", better:"low", detail:fmt(seconds) });
     $("bannerText").textContent = `${NAMES[V]} cleared in ${moves} moves${settings.timer ? " in " + fmt(seconds) : ""}.`;
     $("banner").classList.add("show");
     render();

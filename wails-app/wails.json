@@ -1,0 +1,12 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "RandomGames",
+  "outputfilename": "RandomGames",
+  "frontend:install": "",
+  "frontend:build": "",
+  "info": {
+    "productName": "Random Games",
+    "productVersion": "1.0.0",
+    "comments": "A collection of browser games with a shared high-score table."
+  }
+}

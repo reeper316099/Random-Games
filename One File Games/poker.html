@@ -157,8 +157,11 @@
   </div>
 </div>
 
+<script src="../scores.js"></script>
 <script>
 (() => {
+  // report a result to the high-score table (no-op if scores.js is unavailable)
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
   const $ = id => document.getElementById(id);
   const SUITS = ["♠","♥","♦","♣"];
   const RLABEL = {11:"J",12:"Q",13:"K",14:"A"};
@@ -260,6 +263,13 @@
 
   function startHand(){
     players.forEach(p => { if(p.stack <= 0 && !p.out){ p.out = true; log(`<b>${p.name}</b> is out of chips.`); } });
+    const gameCat = `vs ${settings.bots} bot${settings.bots > 1 ? "s" : ""}`;
+    if(players[0].out || alive().length === 1){
+      if(handNo > 0 && !over){
+        if(players[0].out) rgReport("poker", gameCat, "Hands survived", handNo, { unit:"hands", better:"high", detail:`${settings.stack} starting chips` });
+        else rgReport("poker", gameCat, "Fastest table win", handNo, { unit:"hands", better:"low", detail:`${settings.stack} starting chips` });
+      }
+    }
     if(players[0].out){ over = true; awaitingNext = false; setMsg("You're out of chips. Game over."); render(); renderActions(); return; }
     if(alive().length === 1){ over = true; awaitingNext = false; setMsg("🏆 You won the table!"); render(); renderActions(); return; }
 
@@ -361,7 +371,11 @@
     p.stack += amt; p.winner = true;
     players.forEach(q => q.total = 0);
     log(`<b>${p.name}</b> wins ${amt} (everyone else folded).`);
+    if(p.human) reportPot(amt);
     endHand(`${p.human ? "You win" : p.name + " wins"} ${amt}.`);
+  }
+  function reportPot(amt){
+    rgReport("poker", `vs ${settings.bots} bot${settings.bots > 1 ? "s" : ""}`, "Biggest pot won", amt, { unit:"chips", better:"high", detail:`hand ${handNo}` });
   }
   function showdown(){
     street = "showdown";
@@ -388,6 +402,7 @@
     live.forEach(p => { if(!won.has(p)) log(`${p.name} shows ${p.hole.map(cardText).join(" ")} — ${describe(p.result.score)}.`); });
     players.forEach(q => q.total = 0);
     const me = players[0];
+    if(won.has(me)) reportPot(won.get(me));
     endHand(won.has(me) ? `You win ${won.get(me)} with ${describe(me.result.score)}!` :
       `${[...won.keys()].map(w => w.name).join(" & ")} win${won.size===1?"s":""}.`);
   }

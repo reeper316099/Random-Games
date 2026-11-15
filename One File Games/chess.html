@@ -173,6 +173,33 @@
       overflow:auto;
     }
     .historyBox code{ color: rgba(231,238,252,.9); }
+
+    .sq.last{ box-shadow: inset 0 0 0 4px rgba(255,211,106,.4); }
+    .mvrow{ display:grid; grid-template-columns:34px 78px 78px; gap:4px; }
+    .mvn{ color: rgba(231,238,252,.5); }
+    .ply{ padding:0 4px; border-radius:6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .replaying .ply{ cursor:pointer; }
+    .replaying .ply:hover{ background:rgba(255,255,255,.1); }
+    .ply.cur{ background:rgba(106,166,255,.35); font-weight:800; }
+    .replayBar{ display:none; flex-direction:column; gap:8px; padding:10px; border:1px solid rgba(106,166,255,.45); border-radius:12px; background:rgba(106,166,255,.08); }
+    .replayBar.on{ display:flex; }
+    .replayBar .rtitle{ font-weight:800; font-size:13px; }
+    .replayBar .rrow{ display:flex; gap:6px; flex-wrap:wrap; }
+    .replayBar button{ padding:7px 10px; }
+    .savePanel{ padding-top:10px; border-top:1px solid rgba(255,255,255,.12); display:grid; gap:8px; }
+    .savePanel input[type=text], .savePanel textarea{
+      width:100%; padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--text); font:inherit; font-size:13px;
+    }
+    .savePanel textarea{ min-height:90px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .row2{ display:flex; gap:6px; flex-wrap:wrap; }
+    .row2 button{ padding:7px 10px; font-size:12px; }
+    button:disabled{ opacity:.4; cursor:not-allowed; }
+    .saveItem{ display:grid; gap:4px; padding:8px; border:1px solid rgba(255,255,255,.1); border-radius:10px; background:rgba(0,0,0,.18); }
+    .saveItem b{ font-size:13px; word-break:break-word; }
+    .saveItem small{ color:rgba(231,238,252,.55); }
+    .status{ font-size:12px; color:var(--ok); min-height:16px; }
+    .status.err{ color:var(--danger); }
+    button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   </style>
 </head>
 
@@ -195,7 +222,22 @@
         <div class="board" id="board"></div>
       </div>
 
-      <div class="side">
+      <div class="side" id="sidePanel">
+        <div class="replayBar" id="replayBar">
+          <div class="rtitle" id="replayTitle">Replay</div>
+          <div class="rrow">
+            <button id="rFirst" title="Start (Home)">⏮</button>
+            <button id="rPrev" title="Back (←)">◀</button>
+            <button id="rAuto" title="Auto-play">▶ Play</button>
+            <button id="rNext" title="Forward (→)">▶▶</button>
+            <button id="rLast" title="End (End)">⏭</button>
+          </div>
+          <div class="rrow">
+            <button id="rContinue" class="primary">Play on from here</button>
+            <button id="rExit">Exit replay</button>
+          </div>
+        </div>
+
         <div class="msg" id="msg"></div>
 
         <div class="movesPanel">
@@ -207,10 +249,32 @@
           <div class="sectionTitle">Move history</div>
           <div class="historyBox" id="history"></div>
         </div>
+
+        <div class="savePanel">
+          <div class="sectionTitle">Save &amp; load (algebraic notation)</div>
+          <input type="text" id="saveName" maxlength="80" placeholder="Name this game (optional)" aria-label="Game name" />
+          <div class="row2">
+            <button id="saveBtn" class="primary">💾 Save game</button>
+            <button id="copyBtn">📋 Copy PGN</button>
+            <button id="replayCurBtn">⏪ Replay this game</button>
+          </div>
+          <div class="status" id="saveStatus" role="status"></div>
+          <div class="sectionTitle">Saved games <span class="faint" id="saveWhere"></span></div>
+          <div id="saveList"></div>
+          <details>
+            <summary class="sectionTitle" style="cursor:pointer">Import a PGN</summary>
+            <textarea id="pgnIn" placeholder="Paste PGN or moves like: 1. e4 e5 2. Nf3 Nc6" aria-label="PGN text"></textarea>
+            <div class="row2" style="margin-top:6px">
+              <button id="pgnReplay">▶ Replay</button>
+              <button id="pgnSave">💾 Save</button>
+            </div>
+          </details>
+        </div>
       </div>
     </div>
   </div>
 
+<script src="../scores.js"></script>
 <script>
 (() => {
   // Piece codes: "wP", "bK", etc. Board is [r][c], r=0 top (black side), r=7 bottom (white side)
@@ -229,7 +293,9 @@
 
   let board, turn, selected, legalMoves, gameOver;
   let castling, epTarget; // castling rights {wK,wQ,bK,bQ}; en passant target square {r,c} or null
-  let moveList = [];
+  let moveList = [];            // SAN strings for the live game, e.g. "e4", "Nf3", "O-O", "exd5", "e8=Q#"
+  let result = "*", lastMove = null;
+  let replay = null, liveStash = null; // replay mode: {sans,states,lasts,idx,name,timer}
 
   function initPosition(){
     return [
@@ -250,7 +316,9 @@
     selected = null;
     legalMoves = [];
     gameOver = false;
+    if(replay){ stopAuto(); replay = null; liveStash = null; }
     moveList = [];
+    result = "*"; lastMove = null;
     castling = {wK:true, wQ:true, bK:true, bQ:true};
     epTarget = null;
     setMsg(
@@ -487,8 +555,244 @@
     selectedMovesEl.innerHTML = items.join("<br>");
   }
 
+    // ================= Algebraic notation (SAN) =================
+  const fileOf = c => "abcdefgh"[c];
+
+  // SAN for a move *before* it is played (no check/mate suffix yet).
+  function sanBase(sr, sc, mv){
+    if(mv.castle) return mv.castle==="K" ? "O-O" : "O-O-O";
+    const p = board[sr][sc], t = pieceType(p), col = pieceColor(p);
+    const capture = !!(board[mv.r][mv.c] || mv.ep);
+    let s = "";
+    if(t==="P"){
+      if(capture) s += fileOf(sc) + "x";
+      s += coordToAlg(mv.r, mv.c);
+      if(mv.r===0 || mv.r===7) s += "=Q"; // this game always promotes to a queen
+      return s;
+    }
+    s += t;
+    // disambiguate if another identical piece can also legally reach the square
+    const others = [];
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      if((r===sr && c===sc) || board[r][c] !== p) continue;
+      if(legalMovesFrom(board, r, c, col).some(m => m.r===mv.r && m.c===mv.c && !m.castle)) others.push({r,c});
+    }
+    if(others.length){
+      const sameFile = others.some(o => o.c===sc), sameRank = others.some(o => o.r===sr);
+      if(!sameFile) s += fileOf(sc);
+      else if(!sameRank) s += String(8 - sr);
+      else s += fileOf(sc) + String(8 - sr);
+    }
+    if(capture) s += "x";
+    return s + coordToAlg(mv.r, mv.c);
+  }
+
+  // Plays a legal move on the global position (board/turn/castling/epTarget) and returns its full SAN.
+  function commitMove(sr, sc, mv){
+    const moving = board[sr][sc], mover = turn;
+    const base = sanBase(sr, sc, mv);
+    applyMove(board, sr, sc, mv);
+    if(pieceType(moving)==="K"){ castling[mover+"K"] = false; castling[mover+"Q"] = false; }
+    for(const [cr,cc,key] of [[7,0,"wQ"],[7,7,"wK"],[0,0,"bQ"],[0,7,"bK"]]){
+      if((sr===cr && sc===cc) || (mv.r===cr && mv.c===cc)) castling[key] = false;
+    }
+    epTarget = (pieceType(moving)==="P" && Math.abs(mv.r-sr)===2) ? {r:(mv.r+sr)/2, c:mv.c} : null;
+    turn = mover==="w" ? "b" : "w";
+    const inCheck = isInCheck(board, turn), hasMove = anyLegalMove(board, turn);
+    return { san: base + (inCheck ? (hasMove ? "+" : "#") : ""), inCheck, hasMove, mover };
+  }
+
+  // Finds the legal move in the current position that matches a SAN token (or null).
+  function findMoveBySAN(token){
+    const want = token.replace(/[+#!?]+$/,"").replace(/0/g,"O");
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      if(pieceColor(board[r][c]) !== turn) continue;
+      for(const mv of legalMovesFrom(board, r, c, turn)){
+        if(sanBase(r, c, mv) === want) return { sr:r, sc:c, mv };
+      }
+    }
+    return null;
+  }
+
+  const snapshot = () => ({ board: cloneBoard(board), turn, castling: {...castling}, epTarget: epTarget ? {...epTarget} : null });
+  function restore(st){
+    board = cloneBoard(st.board); turn = st.turn; castling = {...st.castling};
+    epTarget = st.epTarget ? {...st.epTarget} : null; selected = null; legalMoves = [];
+  }
+  const freshState = () => ({ board:initPosition(), turn:"w", castling:{wK:true,wQ:true,bK:true,bQ:true}, epTarget:null });
+
+  // ================= PGN =================
+  function toPGN(sans, res, name){
+    const d = new Date(), pad = n => String(n).padStart(2,"0");
+    const esc = t => String(t).replace(/["\\\r\n]/g," ");
+    const head = [["Event", name || "Casual game"], ["Site","Random Games"], ["Date", `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`],
+      ["Round","-"], ["White","White"], ["Black","Black"], ["Result", res || "*"]]
+      .map(([k,v]) => `[${k} "${esc(v)}"]`).join("\n");
+    const parts = [];
+    sans.forEach((m,i) => { if(i%2===0) parts.push(`${i/2+1}.`); parts.push(m); });
+    parts.push(res || "*");
+    // wrap the move text at ~80 columns
+    const lines = []; let line = "";
+    for(const w of parts){ if((line + " " + w).trim().length > 80){ lines.push(line); line = w; } else line = (line + " " + w).trim(); }
+    if(line) lines.push(line);
+    return head + "\n\n" + lines.join("\n") + "\n";
+  }
+  // Returns {sans, name, result} from PGN text (headers, comments, variations, move numbers are ignored).
+  function parsePGN(text){
+    const name = (text.match(/\[Event\s+"([^"]*)"\]/) || [])[1] || "";
+    const res = (text.match(/\[Result\s+"([^"]*)"\]/) || [])[1] || "*";
+    let body = text.replace(/\[[^\]]*\]/g," ").replace(/\{[^}]*\}/g," ").replace(/;[^\n]*/g," ");
+    let prev; do { prev = body; body = body.replace(/\([^()]*\)/g," "); } while(body !== prev);
+    body = body.replace(/\$\d+/g," ").replace(/\d+\.(\.\.)?/g," ");
+    const sans = body.split(/\s+/).filter(t => t && !/^(1-0|0-1|1\/2-1\/2|\*)$/.test(t));
+    return { sans, name: name === "Casual game" ? "" : name, result: res };
+  }
+
+  // ================= Replay =================
+  function stopAuto(){ if(replay && replay.timer){ clearInterval(replay.timer); replay.timer = null; } }
+  // Builds every position of a game from its SAN list. Returns an error string or null.
+  function startReplay(sans, name){
+    if(!sans.length) return "There are no moves to replay.";
+    const keep = snapshot();
+    restore(freshState());
+    const states = [snapshot()], lasts = [null], norm = [];
+    for(let i=0;i<sans.length;i++){
+      const found = findMoveBySAN(sans[i]);
+      if(!found){
+        restore(keep);
+        const underpromo = /=[RBN]/.test(sans[i]) ? " (promotion to anything but a queen isn't supported)" : "";
+        return `Move ${Math.floor(i/2)+1}${i%2 ? "…" : "."} “${sans[i]}” isn't legal in that position${underpromo}.`;
+      }
+      const out = commitMove(found.sr, found.sc, found.mv);
+      norm.push(out.san); states.push(snapshot()); lasts.push({ sr:found.sr, sc:found.sc, r:found.mv.r, c:found.mv.c });
+    }
+    restore(keep);
+    if(!replay){
+      liveStash = { state: snapshot(), moveList: moveList.slice(), gameOver, result, lastMove, msg: msgEl.textContent };
+    } else stopAuto();
+    replay = { sans: norm, states, lasts, idx: 0, name: name || "Saved game", timer: null };
+    gameOver = false;
+    showPly(0);
+    return null;
+  }
+  function showPly(i){
+    if(!replay) return;
+    replay.idx = Math.max(0, Math.min(replay.sans.length, i));
+    restore(replay.states[replay.idx]);
+    const n = replay.sans.length, k = replay.idx;
+    setMsg(k===0 ? "Start position." : `After ${Math.ceil(k/2)}${k%2 ? "." : "…"} ${replay.sans[k-1]}` + (k===n ? "  (end of game)" : ""));
+    render();
+  }
+  function toggleAuto(){
+    if(!replay) return;
+    if(replay.timer){ stopAuto(); renderReplayBar(); return; }
+    if(replay.idx >= replay.sans.length) showPly(0);
+    replay.timer = setInterval(() => {
+      if(!replay || replay.idx >= replay.sans.length){ stopAuto(); renderReplayBar(); return; }
+      showPly(replay.idx + 1);
+    }, 900);
+    renderReplayBar();
+  }
+  function exitReplay(){
+    if(!replay) return;
+    stopAuto(); replay = null;
+    const l = liveStash; liveStash = null;
+    restore(l.state); moveList = l.moveList; gameOver = l.gameOver; result = l.result; lastMove = l.lastMove;
+    setMsg(l.msg); render();
+  }
+  function continueFromReplay(){
+    if(!replay) return;
+    stopAuto();
+    const k = replay.idx, st = replay.states[k], sans = replay.sans.slice(0, k), last = replay.lasts[k];
+    replay = null; liveStash = null;
+    restore(st); moveList = sans; lastMove = last; result = "*";
+    const inCheck = isInCheck(board, turn), hasMove = anyLegalMove(board, turn);
+    gameOver = !hasMove;
+    if(!hasMove){ result = inCheck ? (turn==="w" ? "0-1" : "1-0") : "1/2-1/2"; }
+    setMsg(!hasMove ? (inCheck ? `Checkmate! ${turn==="w" ? "Black" : "White"} wins.` : "Stalemate. It's a draw.") : `${turn==="w" ? "White" : "Black"} to move — continuing from the replay.`);
+    render();
+  }
+  function renderReplayBar(){
+    const bar = $id("replayBar");
+    bar.classList.toggle("on", !!replay);
+    $id("sidePanel").classList.toggle("replaying", !!replay);
+    if(!replay) return;
+    $id("replayTitle").textContent = `▶ ${replay.name} — move ${replay.idx}/${replay.sans.length}`;
+    $id("rAuto").textContent = replay.timer ? "⏸ Pause" : "▶ Play";
+    $id("rFirst").disabled = $id("rPrev").disabled = replay.idx === 0;
+    $id("rNext").disabled = $id("rLast").disabled = replay.idx >= replay.sans.length;
+  }
+
+  // ================= Save / load =================
+  const $id = id => document.getElementById(id);
+  const LOCAL_KEY = "chess_saves";
+  let inApp = false;
+  function localSaves(){ try{ const a = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(e){ return []; } }
+  function setLocalSaves(a){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(a)); return true; }catch(e){ return false; } }
+  function status(t, err){ const e = $id("saveStatus"); e.textContent = t; e.classList.toggle("err", !!err); }
+  async function detectHost(){ try{ inApp = !!(window.RGHost && await window.RGHost.available()); }catch(e){ inApp = false; } }
+
+  async function storeSave(name, pgn){
+    if(inApp){ await window.RGHost.call("SaveGame", "chess", name, pgn); return; }
+    const a = localSaves();
+    if(a.length >= 100) throw new Error("Too many saved games in this browser (100). Delete some first.");
+    a.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), name, data: pgn, created: new Date().toISOString() });
+    if(!setLocalSaves(a)) throw new Error("Browser storage is unavailable.");
+  }
+  async function listSaves(){
+    if(inApp){ const l = await window.RGHost.call("ListSaves", "chess"); return Array.isArray(l) ? l : []; }
+    return localSaves().slice().sort((a,b) => (b.created||"").localeCompare(a.created||""));
+  }
+  async function removeSave(id){
+    if(inApp) await window.RGHost.call("DeleteSave", id);
+    else setLocalSaves(localSaves().filter(x => x.id !== id));
+  }
+  function defaultName(){
+    return new Date().toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" }) + " · " + moveList.length + " moves";
+  }
+  async function saveCurrent(){
+    if(replay){ status("Exit the replay to save the live game.", true); return; }
+    if(!moveList.length){ status("Play at least one move first.", true); return; }
+    const name = $id("saveName").value.trim() || defaultName();
+    try{ await storeSave(name, toPGN(moveList, result, name)); status("Saved “" + name + "”."); $id("saveName").value = ""; }
+    catch(e){ status("Could not save: " + e.message, true); return; }
+    refreshSaves();
+  }
+  async function copyText(text){
+    try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+    try{
+      const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+    }catch(e){ return false; }
+  }
+  async function refreshSaves(){
+    const box = $id("saveList");
+    let list = [];
+    try{ list = await listSaves(); }catch(e){ box.textContent = "Could not load saved games: " + e.message; return; }
+    $id("saveWhere").textContent = inApp ? "(stored in the app)" : "(stored in this browser)";
+    box.innerHTML = "";
+    if(!list.length){ const p = document.createElement("div"); p.className = "faint"; p.textContent = "None yet."; box.appendChild(p); return; }
+    list.forEach(sv => {
+      const item = document.createElement("div"); item.className = "saveItem";
+      const b = document.createElement("b"); b.textContent = sv.name || "Untitled";
+      const sm = document.createElement("small");
+      const parsed = parsePGN(sv.data || "");
+      sm.textContent = `${parsed.sans.length} plies · ${parsed.result} · ${sv.created ? new Date(sv.created).toLocaleDateString() : ""}`;
+      const row = document.createElement("div"); row.className = "row2";
+      const mk = (label, fn) => { const bt = document.createElement("button"); bt.textContent = label; bt.addEventListener("click", fn); row.appendChild(bt); return bt; };
+      mk("▶ Replay", () => { const err = startReplay(parsed.sans, sv.name); status(err || "", !!err); });
+      mk("📋 Copy", async () => status((await copyText(sv.data)) ? "PGN copied." : "Could not copy.", false));
+      const del = mk("✕ Delete", async () => {
+        if(del.dataset.armed !== "1"){ del.dataset.armed = "1"; del.textContent = "Sure?"; setTimeout(() => { del.dataset.armed = ""; del.textContent = "✕ Delete"; }, 3000); return; }
+        try{ await removeSave(sv.id); }catch(e){ status("Could not delete: " + e.message, true); return; }
+        refreshSaves();
+      });
+      item.append(b, sm, row); box.appendChild(item);
+    });
+  }
+
   function onSquareClick(r,c){
-    if(gameOver) return;
+    if(gameOver || replay) return;
 
     const p = board[r][c];
     const col = pieceColor(p);
@@ -529,46 +833,28 @@
     }
 
     const sr=selected.r, sc=selected.c;
-    const moving = board[sr][sc];
     const mv = legalMoves.find(m => m.r===r && m.c===c);
-    const captured = applyMove(board, sr, sc, mv);
-
-    // update castling rights: king moved, or a rook moved/was captured on its corner
-    if(pieceType(moving)==="K"){ castling[turn+"K"] = false; castling[turn+"Q"] = false; }
-    for(const [cr,cc,key] of [[7,0,"wQ"],[7,7,"wK"],[0,0,"bQ"],[0,7,"bK"]]){
-      if((sr===cr && sc===cc) || (r===cr && c===cc)) castling[key] = false;
-    }
-    // en passant target: square passed over by a two-square pawn push
-    epTarget = (pieceType(moving)==="P" && Math.abs(r-sr)===2) ? {r:(r+sr)/2, c} : null;
-
-    const label = mv.castle ? (mv.castle==="K" ? "O-O" : "O-O-O")
-      : `${coordToAlg(sr,sc)}→${coordToAlg(r,c)}${captured ? "x" : ""}${mv.ep ? " e.p." : ""}`;
-    const moveStr =
-      `${turn==="w" ? (Math.ceil((moveList.length+1)/2) + ".") : ""} ${label}`;
-    moveList.push(moveStr);
-
-    // swap turn
-    turn = (turn==="w") ? "b" : "w";
+    const out = commitMove(sr, sc, mv);
+    moveList.push(out.san);
+    lastMove = { sr, sc, r, c };
     selected = null;
     legalMoves = [];
 
-    // AUTO END: checkmate / stalemate detection
-    const inCheck = isInCheck(board, turn);
-    const hasMove = anyLegalMove(board, turn);
-
+    // AUTO END: checkmate / stalemate detection (turn has already passed to the opponent)
+    const inCheck = out.inCheck, hasMove = out.hasMove;
     if(!hasMove){
       gameOver = true;
       if(inCheck){
+        result = out.mover === "w" ? "1-0" : "0-1";
         setMsg(`Checkmate! ${turn==="w" ? "Black" : "White"} wins.`);
       } else {
+        result = "1/2-1/2";
         setMsg(`Stalemate. It's a draw.`);
       }
+    } else if(inCheck){
+      setMsg(`${turn==="w" ? "White" : "Black"} is in check. Only moves that escape check are allowed.`);
     } else {
-      if(inCheck){
-        setMsg(`${turn==="w" ? "White" : "Black"} is in check. Only moves that escape check are allowed.`);
-      } else {
-        setMsg(`${turn==="w" ? "White" : "Black"} to move.`);
-      }
+      setMsg(`${turn==="w" ? "White" : "Black"} to move.`);
     }
 
     render();
@@ -576,13 +862,25 @@
 
   function render(){
     // Turn pill
-    turnText.textContent = `Turn: ${turn==="w" ? "White" : "Black"}`;
+    turnText.textContent = replay ? "Replay" : `Turn: ${turn==="w" ? "White" : "Black"}`;
     turnDot.className = "dot " + (turn==="w" ? "w" : "b");
 
-    // history
-    historyEl.innerHTML = moveList.length
-      ? moveList.map(m=>`<code>${m}</code>`).join("<br>")
-      : `<span class="faint">None yet</span>`;
+    // history (algebraic notation, one row per full move)
+    const sans = replay ? replay.sans : moveList;
+    const cur = replay ? replay.idx : -1;
+    let hist = "";
+    for(let i=0;i<sans.length;i+=2){
+      const cell = k => k < sans.length ? `<span class="ply${cur===k+1 ? " cur" : ""}" data-ply="${k+1}">${sans[k]}</span>` : "<span></span>";
+      hist += `<div class="mvrow"><span class="mvn">${i/2+1}.</span>${cell(i)}${cell(i+1)}</div>`;
+    }
+    historyEl.innerHTML = hist || `<span class="faint">None yet</span>`;
+    if(replay){ const c = historyEl.querySelector(".cur"); if(c) c.scrollIntoView({block:"nearest"}); }
+    else historyEl.scrollTop = historyEl.scrollHeight;
+    renderReplayBar();
+    $id("saveBtn").disabled = !!replay || moveList.length === 0;
+    $id("replayCurBtn").disabled = !!replay || moveList.length === 0;
+    $id("copyBtn").disabled = !!replay || moveList.length === 0;
+    const lm = replay ? replay.lasts[replay.idx] : lastMove;
 
     // check highlight info
     const king = findKing(board, turn);
@@ -596,6 +894,7 @@
         sq.className = "sq " + (((r+c)%2===0) ? "light" : "dark");
 
         if(selected && selected.r===r && selected.c===c) sq.classList.add("sel");
+        if(lm && ((lm.sr===r && lm.sc===c) || (lm.r===r && lm.c===c))) sq.classList.add("last");
 
         if(legalMoves.some(m => m.r===r && m.c===c)){
           sq.classList.add("legal");
@@ -615,7 +914,50 @@
   }
 
   resetBtn.addEventListener("click", reset);
+  historyEl.addEventListener("click", e => {
+    const t = e.target.closest(".ply");
+    if(replay && t) { stopAuto(); showPly(Number(t.dataset.ply)); }
+  });
+  $id("rFirst").addEventListener("click", () => { stopAuto(); showPly(0); });
+  $id("rPrev").addEventListener("click", () => { stopAuto(); showPly(replay.idx - 1); });
+  $id("rNext").addEventListener("click", () => { stopAuto(); showPly(replay.idx + 1); });
+  $id("rLast").addEventListener("click", () => { stopAuto(); showPly(replay.sans.length); });
+  $id("rAuto").addEventListener("click", toggleAuto);
+  $id("rExit").addEventListener("click", exitReplay);
+  $id("rContinue").addEventListener("click", continueFromReplay);
+  document.addEventListener("keydown", e => {
+    if(!replay || ["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName)) return;
+    if(e.key === "ArrowLeft"){ e.preventDefault(); stopAuto(); showPly(replay.idx - 1); }
+    else if(e.key === "ArrowRight"){ e.preventDefault(); stopAuto(); showPly(replay.idx + 1); }
+    else if(e.key === "Home"){ e.preventDefault(); stopAuto(); showPly(0); }
+    else if(e.key === "End"){ e.preventDefault(); stopAuto(); showPly(replay.sans.length); }
+    else if(e.key === " "){ e.preventDefault(); toggleAuto(); }
+  });
+  $id("saveBtn").addEventListener("click", saveCurrent);
+  $id("copyBtn").addEventListener("click", async () => {
+    status((await copyText(toPGN(moveList, result, "Casual game"))) ? "PGN copied to the clipboard." : "Could not copy.", false);
+  });
+  $id("replayCurBtn").addEventListener("click", () => { const err = startReplay(moveList.slice(), "This game"); status(err || "", !!err); });
+  function importedGame(){
+    const g = parsePGN($id("pgnIn").value);
+    if(!g.sans.length){ status("No moves found in that text.", true); return null; }
+    return g;
+  }
+  $id("pgnReplay").addEventListener("click", () => { const g = importedGame(); if(!g) return; const err = startReplay(g.sans, g.name || "Imported game"); status(err || "", !!err); });
+  $id("pgnSave").addEventListener("click", async () => {
+    const g = importedGame(); if(!g) return;
+    // validate by building the replay positions without switching views
+    const keep = snapshot(); restore(freshState()); let bad = null;
+    for(let i=0;i<g.sans.length && !bad;i++){ const f = findMoveBySAN(g.sans[i]); if(!f) bad = `Move ${Math.floor(i/2)+1}${i%2?"…":"."} “${g.sans[i]}” isn't legal.`; else commitMove(f.sr, f.sc, f.mv); }
+    restore(keep);
+    if(bad){ status(bad, true); return; }
+    const name = g.name || $id("saveName").value.trim() || "Imported game";
+    try{ await storeSave(name, toPGN(g.sans, g.result, name)); status("Saved “" + name + "”."); }catch(e){ status("Could not save: " + e.message, true); return; }
+    refreshSaves();
+  });
+
   reset();
+  detectHost().then(refreshSaves);
 })();
 </script>
 </body>

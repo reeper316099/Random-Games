@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Random Games</title>
+  <link rel="stylesheet" href="shell.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">🎮 Random Games</div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" id="tabGames" role="tab" aria-selected="true" aria-controls="viewGames">Games</button>
+      <button class="tab" id="tabScores" role="tab" aria-selected="false" aria-controls="viewScores">🏆 High Scores</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="viewGames" class="view" role="tabpanel">
+      <iframe id="gameFrame" src="games/index.html" title="Games"></iframe>
+    </section>
+
+    <section id="viewScores" class="view" role="tabpanel" hidden>
+      <div class="scoresWrap">
+        <div class="scoresHead">
+          <h1>High Scores</h1>
+          <div class="actions">
+            <select id="gameFilter" aria-label="Filter by game"></select>
+            <button id="resetBtn" class="danger">Reset…</button>
+          </div>
+        </div>
+        <div id="scoresBody"></div>
+        <p class="path" id="scoresPath"></p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="shell.js"></script>
+</body>
+</html>

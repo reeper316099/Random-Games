@@ -1,2 +1,5 @@
 private-fixtures/
 .DS_Store
+wails-app/frontend/dist/games/
+wails-app/build/bin/
+wails-app/frontend/wailsjs/

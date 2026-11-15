@@ -223,8 +223,11 @@
     </div>
   </div>
 
+<script src="../scores.js"></script>
 <script>
 (() => {
+  // report a result to the high-score table (no-op if scores.js is unavailable)
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
   const boardEl = document.getElementById("board");
   const msgEl = document.getElementById("msg");
 
@@ -544,6 +547,10 @@
       setState("won");
 
       const improved = saveBestIfBetter(tNow);
+      if(diffKey !== "custom"){
+        rgReport("minesweeper", diffKey[0].toUpperCase() + diffKey.slice(1), "Fastest win", Math.round(tNow*10)/10,
+          { unit:"s", better:"low", detail:`${rows}x${cols}, ${mines} mines` });
+      }
       const best = loadBest();
 
       setMsg(

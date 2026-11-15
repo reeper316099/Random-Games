@@ -28,3 +28,12 @@ A small collection of browser games, including both single-file games and multi-
 ## License
 
 See [LICENSE](LICENSE).
+
+## Desktop app
+
+A Go + [Wails](https://wails.io) desktop version lives in [`wails-app/`](wails-app/). It adds a **High Scores** tab
+covering all games and lets you **save chess games in algebraic notation (PGN) and replay them move by move**.
+Pushing a `v*` tag builds it for Windows, macOS and Linux and publishes a GitHub Release. See
+[`wails-app/README.md`](wails-app/README.md).
+
+The chess page also saves and replays games on its own (in the browser's storage) when run from the website.

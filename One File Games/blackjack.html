@@ -164,15 +164,18 @@
   </div>
 </div>
 
+<script src="../scores.js"></script>
 <script>
 (() => {
+  // report a result to the high-score table (no-op if scores.js is unavailable)
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
   const $ = id => document.getElementById(id);
   const SUITS = ["♠","♥","♦","♣"], RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
   const DEFAULTS = { start:1000, decks:6, payout:1.5, h17:false };
   const MAX_HANDS = 4;
   let settings = { ...DEFAULTS };
 
-  let shoe = [], bank = 0, bet = 0, lastBet = 0;
+  let shoe = [], bank = 0, bet = 0, lastBet = 0, runPeak = 0;
   let hands = [], active = 0, dealer = [], phase = "bet", results = null;
 
   // ---- persistence (guarded: storage may be unavailable) ----
@@ -342,6 +345,9 @@
       net -= h.bet; return {cls:"lose", text:`Lose −${h.bet}`};
     });
     saveBank();
+    if(net > 0) rgReport("blackjack", "", "Biggest single win", net, { unit:"chips", better:"high", detail:`${hands.length} hand${hands.length>1?"s":""}` });
+    runPeak = Math.max(runPeak, bank); saveRunPeak();
+    if(bank <= 0) endRun();
     phase = "over";
     setMsg(bank <= 0 ? "You're out of chips." : net > 0 ? `You won ${net} chips.` : net < 0 ? `You lost ${-net} chips.` : "Push — bets returned.");
     render();
@@ -367,7 +373,14 @@
     $("setH17").value = settings.h17 ? "hit" : "stand";
     $("rulesLine").textContent = `Play-money chips only • ${settings.decks}-deck shoe • Dealer ${settings.h17 ? "hits" : "stands on"} soft 17 • Blackjack pays ${payoutLabel[String(settings.payout)]} • Double, split (up to 4 hands)`;
   }
+  // a "run" is everything between starting chips and going broke / restarting
+  function saveRunPeak(){ try{ localStorage.setItem("bj_runpeak", String(runPeak)); }catch(e){} }
+  function endRun(){
+    if(runPeak > settings.start) rgReport("blackjack", "", "Highest chip total", runPeak, { unit:"chips", better:"high", detail:`started with ${settings.start}` });
+    runPeak = settings.start; saveRunPeak();
+  }
   function restart(){
+    endRun();
     bank = settings.start; lastBet = 0; saveBank(); newShoe(); toBetting();
   }
   $("applySettings").addEventListener("click", () => {
@@ -391,6 +404,7 @@
   loadSettings();
   fillSettingsForm();
   bank = loadBank();
+  try{ runPeak = Math.max(bank, Number(localStorage.getItem("bj_runpeak")) || 0); }catch(e){ runPeak = bank; }
   newShoe();
   toBetting();
 })();
