@@ -185,6 +185,7 @@
   </style>
 </head>
 <body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
   <div class="wrap">
     <div class="topbar">
       <div class="title">
@@ -474,7 +475,8 @@
     return `ms_best_${diffKey}_${rows}x${cols}_${mines}`;
   }
   function loadBest(){
-    const v = localStorage.getItem(bestKey());
+    let v = null;
+    try { v = localStorage.getItem(bestKey()); } catch(e) { /* storage unavailable */ }
     if(!v) return null;
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
@@ -482,7 +484,7 @@
   function saveBestIfBetter(seconds){
     const current = loadBest();
     if(current === null || seconds < current){
-      localStorage.setItem(bestKey(), String(seconds));
+      try { localStorage.setItem(bestKey(), String(seconds)); } catch(e) { /* storage unavailable */ }
       return true;
     }
     return false;
@@ -780,10 +782,13 @@
   hardBtn.addEventListener("click", () => setDifficulty(16,30,99,"hard"));
 
   customBtn.addEventListener("click", () => {
-    const r = Number(prompt("Rows? (5–30)", rows));
-    const c = Number(prompt("Cols? (5–40)", cols));
-    const m = Number(prompt("Mines?", mines));
-    if(!Number.isFinite(r) || !Number.isFinite(c) || !Number.isFinite(m)) return;
+    const ask = (q, d) => { const v = prompt(q, d); return v === null ? NaN : Math.floor(Number(v)); };
+    const r = ask("Rows? (5–30)", rows);
+    if(!Number.isFinite(r)) return;
+    const c = ask("Cols? (5–40)", cols);
+    if(!Number.isFinite(c)) return;
+    const m = ask("Mines?", mines);
+    if(!Number.isFinite(m)) return;
     if(r<5 || c<5){ alert("Minimum is 5x5."); return; }
     if(r>30 || c>40){ alert("Too big for this UI. Try <=30x40."); return; }
     setDifficulty(r,c,m,"custom");

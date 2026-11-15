@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Texas Hold'em Poker</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+      --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a;
+      --felt:#0f5a3a; --felt2:#0a3f29; --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:radial-gradient(1200px 600px at 20% 10%, #12203a 0%, var(--bg) 55%) fixed;
+      color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      padding:24px;
+    }
+    .wrap{ width:min(980px,100%); display:grid; gap:14px; }
+    .topbar{
+      display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .title h1{ margin:0; font-size:18px; letter-spacing:.3px; }
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+    .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.04); font-size:13px; }
+    button{
+      border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--text);
+      padding:10px 16px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer;
+      transition:filter .12s, transform .12s;
+    }
+    button:hover:not(:disabled){ filter:brightness(1.2); }
+    button:active:not(:disabled){ transform:scale(.97); }
+    button:disabled{ opacity:.35; cursor:not-allowed; }
+    button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.35), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.5); }
+    button.good{ background:linear-gradient(180deg, rgba(106,255,182,.28), rgba(106,255,182,.12)); border-color:rgba(106,255,182,.45); }
+    button.bad{ background:linear-gradient(180deg, rgba(255,106,106,.28), rgba(255,106,106,.12)); border-color:rgba(255,106,106,.45); }
+    button:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+    .table{
+      background:radial-gradient(ellipse at center, var(--felt) 0%, var(--felt2) 100%);
+      border:1px solid rgba(255,255,255,.18); border-radius:28px; box-shadow:var(--shadow), inset 0 0 60px rgba(0,0,0,.45);
+      padding:18px; display:grid; gap:16px;
+    }
+    .bots{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .seat{
+      background:rgba(0,0,0,.3); border:2px solid transparent; border-radius:14px; padding:10px; text-align:center; min-height:132px;
+      display:flex; flex-direction:column; align-items:center; gap:6px;
+    }
+    .seat.turn{ border-color:var(--warn); background:rgba(255,211,106,.1); }
+    .seat.folded{ opacity:.45; }
+    .seat.out{ opacity:.25; }
+    .seat.winner{ border-color:var(--ok); background:rgba(106,255,182,.12); }
+    .seat .name{ font-weight:700; font-size:13px; display:flex; gap:6px; align-items:center; }
+    .seat .stack{ font-size:13px; color:var(--warn); font-weight:600; }
+    .seat .tag{ font-size:11px; color:var(--muted); min-height:14px; }
+    .dealerBtn{ background:#fff; color:#111; border-radius:50%; width:18px; height:18px; font-size:11px; display:inline-grid; place-items:center; font-weight:800; }
+    .cards{ display:flex; justify-content:center; min-height:70px; }
+    .card{
+      width:46px; height:66px; border-radius:7px; background:#fff; color:#111; position:relative;
+      box-shadow:0 3px 8px rgba(0,0,0,.4); margin:0 2px; font-weight:700;
+    }
+    .card.red{ color:#c81e3a; }
+    .card .c1{ position:absolute; top:3px; left:5px; font-size:13px; line-height:1; text-align:center; }
+    .card .big{ position:absolute; inset:0; display:grid; place-items:center; font-size:22px; padding-top:12px; }
+    .card.back{ background:repeating-linear-gradient(45deg,#2a3f9a,#2a3f9a 5px,#1d2d73 5px,#1d2d73 10px); border:3px solid #fff; }
+    .card.back *{ display:none; }
+    .card.empty{ background:rgba(255,255,255,.07); border:1px dashed rgba(255,255,255,.25); box-shadow:none; }
+    .card.hl{ outline:3px solid var(--ok); outline-offset:1px; }
+    .center{ display:grid; justify-items:center; gap:8px; }
+    .center .cards .card{ width:56px; height:80px; }
+    .center .cards .card .c1{ font-size:15px; } .center .cards .card .big{ font-size:28px; padding-top:14px; }
+    .pot{ font-weight:700; font-size:15px; }
+    .msg{ text-align:center; min-height:22px; font-weight:600; font-size:14px; }
+    .me{ justify-self:center; min-width:min(360px,100%); }
+    .me .seat{ min-height:150px; }
+    .me .card{ width:56px; height:80px; } .me .card .c1{ font-size:15px; } .me .card .big{ font-size:28px; padding-top:14px; }
+
+    .panel{
+      display:grid; gap:12px; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+    input[type=range]{ width:min(260px,60vw); accent-color:var(--accent); }
+    input[type=number]{ width:90px; padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--text); font-size:14px; }
+    details.settings{ border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:rgba(0,0,0,.2); }
+    details.settings summary{ cursor:pointer; font-weight:600; font-size:14px; }
+    .fields{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:12px 0; }
+    .fields label{ display:grid; gap:4px; font-size:12px; color:var(--muted); }
+    .fields input, .fields select{ padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); font-size:14px; width:100%; }
+    .fields select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+    .log{ max-height:130px; overflow:auto; font-size:12px; color:var(--muted); line-height:1.5; }
+    .log b{ color:var(--text); }
+    @media (max-width:640px){
+      body{ padding:12px; }
+      .card{ width:38px; height:54px; } .card .big{ font-size:18px; padding-top:10px; } .card .c1{ font-size:11px; }
+      .center .cards .card{ width:44px; height:64px; } .me .card{ width:48px; height:70px; }
+      .seat{ padding:6px; min-height:112px; } .seat .name{ font-size:11px; }
+    }
+  </style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>Texas Hold'em Poker</h1>
+      <div class="sub" id="rulesLine"></div>
+    </div>
+    <div class="row">
+      <span class="pill">Hand <b id="handNo">0</b></span>
+      <span class="pill">Blinds <b id="blinds">10/20</b></span>
+      <button id="newGame">New game</button>
+    </div>
+  </div>
+
+  <div class="table">
+    <div class="bots" id="bots"></div>
+    <div class="center">
+      <div class="cards" id="board"></div>
+      <div class="pot" id="pot">Pot: 0</div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="me" id="me"></div>
+  </div>
+
+  <div class="panel">
+    <div class="row" id="actions"></div>
+    <div class="log" id="log"></div>
+    <details class="settings">
+      <summary>⚙ Settings</summary>
+      <div class="fields">
+        <label>Starting chips
+          <input type="number" id="setStack" min="100" max="1000000" step="100">
+        </label>
+        <label>Opponents (bots)
+          <select id="setBots"><option value="1">1 (heads-up)</option><option value="2">2</option><option value="3">3</option></select>
+        </label>
+        <label>Starting small blind
+          <input type="number" id="setSb" min="1" max="10000" step="1">
+        </label>
+        <label>Blinds rise every N hands (0 = never)
+          <input type="number" id="setEvery" min="0" max="100" step="1">
+        </label>
+        <label>Bot speed
+          <select id="setSpeed"><option value="150">Fast</option><option value="750">Normal</option><option value="1500">Slow</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <button class="good" id="applySettings">Apply &amp; new game</button>
+        <button class="bad" id="clearCache">🗑 Clear cache</button>
+      </div>
+      <div class="log" style="margin-top:8px">Settings are saved in this browser. Clear cache erases them and restores the defaults.</div>
+    </details>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const SUITS = ["♠","♥","♦","♣"];
+  const RLABEL = {11:"J",12:"Q",13:"K",14:"A"};
+  const rl = r => RLABEL[r] || String(r);
+  const DEFAULTS = { stack:1000, bots:3, sb:10, every:8, speed:750 };
+  let settings = { ...DEFAULTS };
+  function sanitize(o){
+    const n = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+    const sb = n(o.sb, 1, 10000, DEFAULTS.sb);
+    const stack = n(o.stack, 100, 1000000, DEFAULTS.stack);
+    return { stack: Math.max(stack, sb*2*10), bots:n(o.bots,1,3,DEFAULTS.bots), sb, every:n(o.every,0,100,DEFAULTS.every),
+             speed:[150,750,1500].includes(Number(o.speed)) ? Number(o.speed) : DEFAULTS.speed };
+  }
+  function loadSettings(){ try{ const o = JSON.parse(localStorage.getItem("poker_settings") || "null"); if(o && typeof o === "object") settings = sanitize({ ...DEFAULTS, ...o }); }catch(e){} }
+  function saveSettings(){ try{ localStorage.setItem("poker_settings", JSON.stringify(settings)); }catch(e){} }
+  let BLINDS = [];
+  function buildBlinds(){
+    BLINDS = [1,1.5,2.5,5,10,20].map(m => { const sb = Math.max(1, Math.round(settings.sb*m)); return [sb, sb*2]; });
+  }
+  const HAND_NAMES = ["High card","Pair","Two pair","Three of a kind","Straight","Flush","Full house","Four of a kind","Straight flush"];
+
+  let players, deck, board, dealer, street, currentBet, minRaise, turn, handNo, level, busy, over, awaitingNext;
+
+  // ================= Hand evaluation =================
+  // Returns array [category, ...tiebreakers]; compared lexicographically.
+  function eval5(cs){
+    const ranks = cs.map(c => c.r).sort((a,b) => b-a);
+    const flush = cs.every(c => c.s === cs[0].s);
+    const counts = {};
+    ranks.forEach(r => counts[r] = (counts[r]||0)+1);
+    const groups = Object.entries(counts).map(([r,n]) => [Number(r),n]).sort((a,b) => b[1]-a[1] || b[0]-a[0]);
+    let straightHigh = 0;
+    const uniq = [...new Set(ranks)];
+    if(uniq.length === 5){
+      if(ranks[0]-ranks[4] === 4) straightHigh = ranks[0];
+      else if(ranks.join() === "14,5,4,3,2") straightHigh = 5;
+    }
+    if(straightHigh && flush) return [8, straightHigh];
+    if(groups[0][1] === 4) return [7, groups[0][0], groups[1][0]];
+    if(groups[0][1] === 3 && groups[1][1] === 2) return [6, groups[0][0], groups[1][0]];
+    if(flush) return [5, ...ranks];
+    if(straightHigh) return [4, straightHigh];
+    if(groups[0][1] === 3) return [3, groups[0][0], groups[1][0], groups[2][0]];
+    if(groups[0][1] === 2 && groups[1][1] === 2) return [2, groups[0][0], groups[1][0], groups[2][0]];
+    if(groups[0][1] === 2) return [1, groups[0][0], groups[1][0], groups[2][0], groups[3][0]];
+    return [0, ...ranks];
+  }
+  function cmp(a,b){
+    for(let i=0;i<Math.max(a.length,b.length);i++){
+      const d = (a[i]||0)-(b[i]||0);
+      if(d) return d;
+    }
+    return 0;
+  }
+  function best(cards){
+    let bestScore = null, bestCombo = null;
+    const n = cards.length;
+    for(let a=0;a<n-4;a++) for(let b=a+1;b<n-3;b++) for(let c=b+1;c<n-2;c++) for(let d=c+1;d<n-1;d++) for(let e=d+1;e<n;e++){
+      const combo = [cards[a],cards[b],cards[c],cards[d],cards[e]];
+      const sc = eval5(combo);
+      if(!bestScore || cmp(sc,bestScore) > 0){ bestScore = sc; bestCombo = combo; }
+    }
+    return {score:bestScore, combo:bestCombo};
+  }
+  function describe(sc){
+    const n = HAND_NAMES[sc[0]];
+    if(sc[0] === 0 || sc[0] === 5) return `${n}, ${rl(sc[1])} high`;
+    if(sc[0] === 1 || sc[0] === 3 || sc[0] === 7) return `${n} of ${rl(sc[1])}s`.replace("Pair of","Pair of");
+    if(sc[0] === 2) return `Two pair, ${rl(sc[1])}s and ${rl(sc[2])}s`;
+    if(sc[0] === 6) return `Full house, ${rl(sc[1])}s over ${rl(sc[2])}s`;
+    return `${n}, ${rl(sc[1])} high`;
+  }
+
+  // ================= Setup =================
+  function newDeck(){
+    const d = [];
+    for(const s of SUITS) for(let r=2;r<=14;r++) d.push({r,s});
+    for(let i=d.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]] = [d[j],d[i]]; }
+    return d;
+  }
+  function newGame(){
+    buildBlinds();
+    const names = ["You","Ace","Maverick","Luna"].slice(0, settings.bots + 1);
+    const style = [0, 0.55, 0.3, 0.8].slice(0, settings.bots + 1); // bot aggression 0..1
+    players = names.map((n,i) => ({
+      name:n, human:i===0, stack:settings.stack, hole:[], bet:0, total:0, folded:false, allIn:false, acted:false,
+      out:false, aggr:style[i], tag:"", winner:false
+    }));
+    dealer = Math.floor(Math.random()*players.length);
+    handNo = 0; level = 0; over = false; busy = false; awaitingNext = false;
+    $("log").innerHTML = "";
+    log("New game. Everyone starts with <b>1000</b> chips.");
+    startHand();
+  }
+  const log = html => { const l = $("log"); l.innerHTML += `<div>${html}</div>`; l.scrollTop = l.scrollHeight; };
+  const setMsg = t => $("msg").textContent = t;
+  const alive = () => players.filter(p => !p.out);
+  const nextSeat = (i, pred = () => true) => { for(let k=1;k<=players.length;k++){ const j=(i+k)%players.length; if(pred(players[j])) return j; } return -1; };
+
+  function startHand(){
+    players.forEach(p => { if(p.stack <= 0 && !p.out){ p.out = true; log(`<b>${p.name}</b> is out of chips.`); } });
+    if(players[0].out){ over = true; awaitingNext = false; setMsg("You're out of chips. Game over."); render(); renderActions(); return; }
+    if(alive().length === 1){ over = true; awaitingNext = false; setMsg("🏆 You won the table!"); render(); renderActions(); return; }
+
+    handNo++;
+    level = settings.every ? Math.min(BLINDS.length-1, Math.floor((handNo-1)/settings.every)) : 0;
+    const [sb,bb] = BLINDS[level];
+    players.forEach(p => { p.hole=[]; p.bet=0; p.total=0; p.folded=p.out; p.allIn=false; p.acted=false; p.tag=""; p.winner=false; });
+    dealer = nextSeat(dealer, p => !p.out);
+    deck = newDeck(); board = []; street = "preflop"; awaitingNext = false;
+    for(let r=0;r<2;r++) alive().forEach(p => p.hole.push(deck.pop()));
+
+    const heads = alive().length === 2;
+    const sbI = heads ? dealer : nextSeat(dealer, p => !p.out);
+    const bbI = nextSeat(sbI, p => !p.out);
+    post(players[sbI], sb); post(players[bbI], bb);
+    players[sbI].tag = "SB"; players[bbI].tag = "BB";
+    currentBet = bb; minRaise = bb;
+    log(`— Hand ${handNo}: blinds ${sb}/${bb} —`);
+    turn = nextSeat(bbI, p => !p.folded && !p.allIn);
+    if(heads) turn = sbI; // heads-up: dealer/SB acts first preflop
+    step();
+  }
+  function post(p, amt){
+    const a = Math.min(amt, p.stack);
+    p.stack -= a; p.bet += a; p.total += a;
+    if(p.stack === 0) p.allIn = true;
+  }
+
+  // ================= Betting flow =================
+  function pending(){
+    const live = players.filter(p => !p.folded);
+    const canAct = live.filter(p => !p.allIn);
+    if(canAct.length === 0) return [];
+    if(canAct.length === 1 && canAct[0].bet >= currentBet) return [];
+    return canAct.filter(p => !p.acted || p.bet < currentBet);
+  }
+  const pot = () => players.reduce((a,p) => a+p.total, 0);
+
+  function step(){
+    render();
+    const live = players.filter(p => !p.folded);
+    if(live.length === 1){ return awardUncontested(live[0]); }
+    const pend = pending();
+    if(pend.length === 0) return endStreet();
+    if(!pend.includes(players[turn])) turn = nextSeat(turn, p => pend.includes(p));
+    const p = players[turn];
+    if(p.human){ busy = false; renderActions(); setMsg("Your move."); return; }
+    busy = true; renderActions();
+    setMsg(`${p.name} is thinking…`);
+    setTimeout(() => { botAct(p); }, settings.speed);
+  }
+
+  function act(p, type, to){
+    const toCall = Math.max(0, currentBet - p.bet);
+    if(type === "fold"){ p.folded = true; p.tag = "Fold"; log(`${p.name} folds.`); }
+    else if(type === "call"){
+      const a = Math.min(toCall, p.stack); post(p, a);
+      if(toCall === 0){ p.tag = "Check"; log(`${p.name} checks.`); }
+      else { p.tag = p.allIn ? "All-in" : "Call"; log(`${p.name} calls ${a}${p.allIn?" (all-in)":""}.`); }
+    } else { // raise to `to` (total bet this street)
+      let target = Math.min(to, p.bet + p.stack);
+      const raiseBy = target - currentBet;
+      post(p, target - p.bet);
+      if(target > currentBet){
+        if(raiseBy >= minRaise) minRaise = raiseBy;
+        const verb = currentBet === 0 ? "bets" : "raises to";
+        currentBet = target;
+        players.forEach(q => { if(q !== p && !q.folded && !q.allIn) q.acted = false; });
+        p.tag = p.allIn ? "All-in" : (verb === "bets" ? "Bet" : "Raise");
+        log(`${p.name} ${verb} ${target}${p.allIn?" (all-in)":""}.`);
+      } else { p.tag = "All-in"; log(`${p.name} is all-in.`); }
+    }
+    p.acted = true;
+    turn = nextSeat(turn, q => !q.folded && !q.allIn);
+    if(turn === -1) turn = 0;
+    step();
+  }
+
+  function endStreet(){
+    players.forEach(p => { p.bet = 0; p.acted = false; if(!p.folded && !p.allIn) p.tag = ""; });
+    currentBet = 0; minRaise = BLINDS[level][1];
+    const live = players.filter(p => !p.folded);
+    const canAct = live.filter(p => !p.allIn);
+    if(street === "preflop"){ street = "flop"; board.push(deck.pop(), deck.pop(), deck.pop()); }
+    else if(street === "flop"){ street = "turn"; board.push(deck.pop()); }
+    else if(street === "turn"){ street = "river"; board.push(deck.pop()); }
+    else return showdown();
+    log(`<b>${street[0].toUpperCase()+street.slice(1)}:</b> ${board.map(cardText).join(" ")}`);
+    turn = nextSeat(dealer, p => !p.folded && !p.allIn);
+    render();
+    if(canAct.length <= 1){ busy = true; renderActions(); setTimeout(step, 900); } // run-out
+    else step();
+  }
+  const cardText = c => rl(c.r) + c.s;
+
+  // ================= Showdown & payouts =================
+  function awardUncontested(p){
+    const amt = pot();
+    p.stack += amt; p.winner = true;
+    players.forEach(q => q.total = 0);
+    log(`<b>${p.name}</b> wins ${amt} (everyone else folded).`);
+    endHand(`${p.human ? "You win" : p.name + " wins"} ${amt}.`);
+  }
+  function showdown(){
+    street = "showdown";
+    const live = players.filter(p => !p.folded);
+    live.forEach(p => { p.result = best([...p.hole, ...board]); });
+    const levels = [...new Set(players.filter(p => p.total > 0).map(p => p.total))].sort((a,b) => a-b);
+    let prev = 0; const won = new Map();
+    for(const lvl of levels){
+      let potAmt = 0;
+      players.forEach(p => { potAmt += Math.min(p.total,lvl) - Math.min(p.total,prev); });
+      let elig = live.filter(p => p.total >= lvl);
+      if(!elig.length) elig = live;
+      let top = null, winners = [];
+      for(const p of elig){
+        const c = top ? cmp(p.result.score, top) : 1;
+        if(c > 0){ top = p.result.score; winners = [p]; } else if(c === 0) winners.push(p);
+      }
+      const share = Math.floor(potAmt / winners.length);
+      let rem = potAmt - share*winners.length;
+      winners.forEach(w => { w.stack += share + (rem-- > 0 ? 1 : 0); won.set(w, (won.get(w)||0) + share); });
+      prev = lvl;
+    }
+    won.forEach((amt, w) => { w.winner = true; log(`<b>${w.name}</b> wins ${amt} with ${describe(w.result.score)}.`); });
+    live.forEach(p => { if(!won.has(p)) log(`${p.name} shows ${p.hole.map(cardText).join(" ")} — ${describe(p.result.score)}.`); });
+    players.forEach(q => q.total = 0);
+    const me = players[0];
+    endHand(won.has(me) ? `You win ${won.get(me)} with ${describe(me.result.score)}!` :
+      `${[...won.keys()].map(w => w.name).join(" & ")} win${won.size===1?"s":""}.`);
+  }
+  function endHand(msg){
+    setMsg(msg); awaitingNext = true; busy = false;
+    render(); renderActions();
+  }
+
+  // ================= Bots =================
+  function preflopStrength(h){
+    const a = Math.max(h[0].r,h[1].r), b = Math.min(h[0].r,h[1].r);
+    if(a === b) return 0.45 + 0.5*(a-2)/12;
+    let s = (a + 0.6*b) / (14*1.6) * 0.6;
+    if(h[0].s === h[1].s) s += 0.08;
+    if(a - b <= 1) s += 0.05; else if(a - b === 2) s += 0.02;
+    return Math.min(0.62, s);
+  }
+  function postflopStrength(p){
+    const all = [...p.hole, ...board];
+    const sc = best(all).score, cat = sc[0];
+    const holeRanks = p.hole.map(c => c.r);
+    let s;
+    if(cat === 0) s = 0.12 + (Math.max(...holeRanks) >= 12 ? 0.05 : 0);
+    else if(cat === 1){
+      const usesHole = holeRanks.includes(sc[1]);
+      const boardTop = Math.max(...board.map(c => c.r));
+      s = !usesHole ? 0.2 : (sc[1] >= boardTop ? 0.58 : 0.42);
+    }
+    else if(cat === 2) s = 0.72; else if(cat === 3) s = 0.8; else if(cat === 4) s = 0.88;
+    else if(cat === 5) s = 0.9; else if(cat === 6) s = 0.96; else s = 1;
+    if(board.length < 5 && cat < 4){
+      const sc2 = {}; all.forEach(c => sc2[c.s] = (sc2[c.s]||0)+1);
+      if(Object.values(sc2).some(n => n === 4)) s += 0.15;
+      const rs = new Set(all.map(c => c.r)); if(rs.has(14)) rs.add(1);
+      for(let lo=1; lo<=10; lo++){ let n=0; for(let k=0;k<5;k++) if(rs.has(lo+k)) n++; if(n === 4){ s += 0.1; break; } }
+    }
+    return Math.min(1, s);
+  }
+  function botAct(p){
+    if(over || players[turn] !== p) return;
+    const toCall = Math.max(0, currentBet - p.bet);
+    const s = (street === "preflop" ? preflopStrength(p.hole) : postflopStrength(p)) + (Math.random()-0.5)*0.12;
+    const potNow = pot();
+    const potOdds = toCall / (potNow + toCall || 1);
+    const bb = BLINDS[level][1];
+    const raiseTo = frac => {
+      const raise = Math.max(minRaise, Math.round(potNow*frac/ bb)*bb);
+      return Math.min(p.bet + p.stack, currentBet + raise);
+    };
+    const wantRaise = s > 0.62 - p.aggr*0.12 && Math.random() < 0.45 + p.aggr*0.4;
+    const bluff = s < 0.3 && Math.random() < 0.04 + p.aggr*0.08;
+    if(toCall === 0){
+      if(wantRaise || bluff) return act(p, "raise", raiseTo(0.4 + Math.random()*0.5 + p.aggr*0.2));
+      return act(p, "call");
+    }
+    const cheap = toCall <= bb*2;
+    if(wantRaise && s > 0.7 && toCall < p.stack) return act(p, "raise", raiseTo(0.6 + p.aggr*0.4));
+    if(s > potOdds + 0.12 || (cheap && s > 0.25) || (bluff && toCall < potNow*0.5)) return act(p, "call");
+    if(toCall >= p.stack && s > 0.82) return act(p, "call");
+    act(p, "fold");
+  }
+
+  // ================= Human UI =================
+  function renderActions(){
+    const box = $("actions"); box.innerHTML = "";
+    if(over){
+      const b = btn("Play again", "good", newGame); box.appendChild(b); return;
+    }
+    if(awaitingNext){ box.appendChild(btn("Next hand", "good", startHand)); return; }
+    const me = players[0];
+    const myTurn = !busy && players[turn] === me && !me.folded && !me.allIn && street !== "showdown";
+    if(!myTurn){ box.innerHTML = `<span style="color:var(--muted);font-size:13px">${me.folded ? "You folded — waiting for the hand to finish…" : "Waiting…"}</span>`; return; }
+    const toCall = Math.max(0, currentBet - me.bet);
+    const maxTo = me.bet + me.stack;
+    const minTo = Math.min(maxTo, currentBet + minRaise);
+    box.appendChild(btn("Fold", "bad", () => humanAct("fold")));
+    box.appendChild(btn(toCall === 0 ? "Check" : (toCall >= me.stack ? `Call all-in (${me.stack})` : `Call ${toCall}`), "primary", () => humanAct("call")));
+    if(maxTo > currentBet){
+      const wrap = document.createElement("div"); wrap.className = "row";
+      const range = document.createElement("input"); range.type = "range"; range.min = minTo; range.max = maxTo; range.step = 1; range.value = minTo;
+      range.setAttribute("aria-label","Raise amount");
+      const num = document.createElement("input"); num.type = "number"; num.min = minTo; num.max = maxTo; num.value = minTo;
+      range.oninput = () => num.value = range.value;
+      num.oninput = () => range.value = num.value;
+      const go = btn(currentBet === 0 ? "Bet" : "Raise to", "good", () => {
+        const v = Math.max(minTo, Math.min(maxTo, Math.round(Number(num.value) || minTo)));
+        humanAct("raise", v);
+      });
+      const quick = (label, f) => btn(label, "", () => { const v = Math.max(minTo, Math.min(maxTo, currentBet + Math.round(f*pot()))); range.value = num.value = v; });
+      wrap.append(quick("½ pot", 0.5), quick("Pot", 1), btn("All-in", "", () => { range.value = num.value = maxTo; }), range, num, go);
+      box.appendChild(wrap);
+    }
+  }
+  function btn(label, cls, fn){ const b = document.createElement("button"); b.textContent = label; if(cls) b.className = cls; b.onclick = fn; return b; }
+  function humanAct(type, to){
+    if(busy || players[turn] !== players[0]) return;
+    busy = true; act(players[0], type, to);
+  }
+
+  // ================= Rendering =================
+  function cardEl(c, hidden, hl){
+    const d = document.createElement("div");
+    if(!c){ d.className = "card empty"; return d; }
+    d.className = "card" + (hidden ? " back" : "") + ((c.s === "♥" || c.s === "♦") ? " red" : "") + (hl ? " hl" : "");
+    if(!hidden) d.innerHTML = `<div class="c1">${rl(c.r)}<br>${c.s}</div><div class="big">${c.s}</div>`;
+    return d;
+  }
+  function seatEl(p, i){
+    const d = document.createElement("div");
+    const showdownNow = street === "showdown";
+    d.className = "seat" + (p.out ? " out" : "") + (p.folded && !p.out ? " folded" : "") + (!awaitingNext && players[turn] === p && !p.folded && !over ? " turn" : "") + (p.winner ? " winner" : "");
+    const hole = document.createElement("div"); hole.className = "cards";
+    if(p.out){ /* no cards */ }
+    else if(p.hole.length){
+      const reveal = p.human || (showdownNow && !p.folded);
+      const hl = new Set(showdownNow && p.winner && p.result ? p.result.combo : []);
+      p.hole.forEach(c => hole.appendChild(cardEl(c, !reveal, hl.has(c))));
+    }
+    const dealerChip = (i === dealer && !p.out) ? '<span class="dealerBtn" title="Dealer">D</span>' : "";
+    d.innerHTML = `<div class="name">${p.name}${dealerChip}</div>`;
+    d.appendChild(hole);
+    const info = document.createElement("div");
+    info.innerHTML = `<div class="stack">${p.out ? "Out" : "💰 " + p.stack}</div><div class="tag">${p.bet ? "Bet " + p.bet + " " : ""}${p.tag || ""}</div>` +
+      (showdownNow && !p.folded && p.result ? `<div class="tag">${describe(p.result.score)}</div>` : "");
+    d.appendChild(info);
+    return d;
+  }
+  function render(){
+    $("handNo").textContent = handNo;
+    $("blinds").textContent = BLINDS[level].join("/");
+    $("rulesLine").textContent = `Play-money chips only • You vs ${settings.bots} bot${settings.bots>1?"s":""} • No-limit • Blinds ${BLINDS[0].join("/")}${settings.every ? ` (rise every ${settings.every} hands)` : " (fixed)"}`;
+    const bots = $("bots"); bots.innerHTML = "";
+    bots.style.gridTemplateColumns = `repeat(${players.length-1},1fr)`;
+    for(let i=1;i<players.length;i++) bots.appendChild(seatEl(players[i], i));
+    const me = $("me"); me.innerHTML = ""; me.appendChild(seatEl(players[0], 0));
+    const bd = $("board"); bd.innerHTML = "";
+    const winCombo = new Set(street === "showdown" ? players.filter(p => p.winner && p.result).flatMap(p => p.result.combo) : []);
+    for(let i=0;i<5;i++) bd.appendChild(cardEl(board[i] || null, false, board[i] && winCombo.has(board[i])));
+    $("pot").textContent = "Pot: " + pot();
+  }
+
+  function fillForm(){
+    $("setStack").value = settings.stack; $("setBots").value = String(settings.bots); $("setSb").value = settings.sb;
+    $("setEvery").value = settings.every; $("setSpeed").value = String(settings.speed);
+  }
+  $("applySettings").addEventListener("click", () => {
+    if(!over && !awaitingNext && handNo > 0 && !confirm("Apply settings and start a new game? The current game will be lost.")) return;
+    settings = sanitize({ stack:$("setStack").value, bots:$("setBots").value, sb:$("setSb").value, every:$("setEvery").value, speed:$("setSpeed").value });
+    saveSettings(); fillForm(); newGame();
+  });
+  $("clearCache").addEventListener("click", () => {
+    if(!confirm("Clear saved Poker settings and restore defaults? This starts a new game.")) return;
+    try{ localStorage.removeItem("poker_settings"); }catch(e){}
+    settings = { ...DEFAULTS }; fillForm(); newGame();
+  });
+  $("newGame").addEventListener("click", () => { if(!busy || over || awaitingNext || confirm("Abandon the current game?")) newGame(); });
+  loadSettings(); fillForm();
+  newGame();
+})();
+</script>
+</body>
+</html>

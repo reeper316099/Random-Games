@@ -3,9 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A collection of browser games: chess, minesweeper, ultimate tic-tac-toe, and more." />
+    <meta name="theme-color" content="#0f172a" />
     <title>Random Games Launcher</title>
-
-    <!-- Google Font -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎮%3C/text%3E%3C/svg%3E"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
       rel="stylesheet"
@@ -18,8 +22,8 @@
         --card: rgba(255, 255, 255, 0.08);
         --border: rgba(255, 255, 255, 0.15);
         --text: #e2e8f0;
+        --muted: #94a3b8;
         --accent: #60a5fa;
-        --accent2: #34d399;
       }
 
       * {
@@ -30,18 +34,19 @@
         margin: 0;
         min-height: 100vh;
         font-family: "Inter", system-ui, sans-serif;
-        background: radial-gradient(circle at top, var(--bg2), var(--bg1));
+        background: radial-gradient(circle at top, var(--bg2), var(--bg1)) fixed;
         color: var(--text);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 2rem;
+        padding: 2rem 1rem;
       }
 
       .container {
         width: 100%;
         max-width: 900px;
         background: var(--card);
+        -webkit-backdrop-filter: blur(14px);
         backdrop-filter: blur(14px);
         border: 1px solid var(--border);
         border-radius: 18px;
@@ -51,95 +56,145 @@
 
       h1 {
         margin: 0;
-        font-size: 2.2rem;
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
         letter-spacing: -0.5px;
       }
 
       .subtitle {
-        opacity: 0.8;
-        margin-top: 0.25rem;
-        margin-bottom: 1.5rem;
-      }
-
-      section {
-        margin-top: 1.5rem;
+        color: var(--muted);
+        margin: 0.25rem 0 1.5rem;
       }
 
       h2 {
         font-size: 1.1rem;
         font-weight: 600;
-        margin-bottom: 0.75rem;
+        margin: 1.75rem 0 0.75rem;
         color: var(--accent);
       }
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 0.75rem;
       }
 
       .game {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
         padding: 0.9rem 1rem;
         border-radius: 10px;
         text-decoration: none;
         color: var(--text);
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: all 0.2s ease;
-        font-weight: 500;
+        transition: transform 0.2s ease, border-color 0.2s ease,
+          background 0.2s ease, box-shadow 0.2s ease;
       }
 
-      .game:hover {
+      .game strong {
+        font-weight: 600;
+      }
+
+      .game span {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .game:hover,
+      .game:focus-visible {
         transform: translateY(-2px);
         border-color: var(--accent);
         background: rgba(96, 165, 250, 0.15);
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
       }
 
+      .game:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .game.soon {
+        opacity: 0.5;
+        pointer-events: none;
+        border-style: dashed;
+      }
+
       footer {
         margin-top: 2rem;
         font-size: 0.85rem;
-        opacity: 0.6;
+        color: var(--muted);
         text-align: center;
       }
 
       @media (max-width: 600px) {
         .container {
-          padding: 1.5rem;
+          padding: 1.5rem 1.25rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .game {
+          transition: none;
+        }
+        .game:hover,
+        .game:focus-visible {
+          transform: none;
         }
       }
     </style>
   </head>
 
   <body>
-    <div class="container">
+    <main class="container">
       <h1>🎮 Random Games Launcher</h1>
-      <div class="subtitle">Select a game below to start playing</div>
+      <p class="subtitle">Select a game below to start playing</p>
 
-      <section>
-        <h2>One File Games</h2>
+      <section aria-labelledby="one-file">
+        <h2 id="one-file">One File Games</h2>
         <div class="grid">
-          <a class="game" href="One%20File%20Games/chess.html">♟️ Chess</a>
-          <a class="game" href="One%20File%20Games/minesweeper.html">💣 Minesweeper</a>
-          <a class="game" href="One%20File%20Games/ultimate-ttt.html">⭕ Ultimate Tic-Tac-Toe</a>
-          <a class="game" href="One%20File%20Games/disguised-king-chess.html">♟️ Disguised King Chess</a>
-        </div>
-      </section>
-
-      <section>
-        <h2>Multi-File Games</h2>
-        <div class="grid">
-          <a class="game" href="Multi-File%20Games/Risk/index.html">🌍 Risk</a>
-          <a class="game" href="Multi-File%20Games/hotzone-na/index.html">
-            🦠 Pandemic: Hot Zone NA
+          <a class="game" href="One%20File%20Games/chess.html">
+            <strong>♟️ Chess</strong>
+            <span>Classic chess with full rules</span>
+          </a>
+          <a class="game" href="One%20File%20Games/disguised-king-chess.html">
+            <strong>👑 Disguised King Chess</strong>
+            <span>A chess variant where the king is hidden</span>
+          </a>
+          <a class="game" href="One%20File%20Games/blackjack.html">
+            <strong>🃏 Blackjack</strong>
+            <span>Beat the dealer with play-money chips</span>
+          </a>
+          <a class="game" href="One%20File%20Games/poker.html">
+            <strong>♠️ Texas Hold'em Poker</strong>
+            <span>No-limit hold'em against three bots</span>
+          </a>
+          <a class="game" href="One%20File%20Games/minesweeper.html">
+            <strong>💣 Minesweeper</strong>
+            <span>Ultra Deluxe edition</span>
+          </a>
+          <a class="game" href="One%20File%20Games/ultimate-ttt.html">
+            <strong>⭕ Ultimate Tic-Tac-Toe</strong>
+            <span>Nine boards, one game</span>
           </a>
         </div>
       </section>
 
-      <footer>
-        Local Game Collection • HTML Launcher
-      </footer>
-    </div>
+      <section aria-labelledby="multi-file">
+        <h2 id="multi-file">Multi-File Games</h2>
+        <div class="grid">
+          <a class="game" href="Multi-File%20Games/hotzone-na/index.html">
+            <strong>🦠 Pandemic: Hot Zone NA</strong>
+            <span>Cooperative disease-fighting strategy</span>
+          </a>
+          <a class="game soon" aria-disabled="true" tabindex="-1">
+            <strong>🌍 Risk</strong>
+            <span>Coming soon</span>
+          </a>
+        </div>
+      </section>
+
+      <footer>Local Game Collection • HTML Launcher</footer>
+    </main>
   </body>
 </html>

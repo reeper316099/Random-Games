@@ -242,6 +242,7 @@
 </head>
 
 <body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
   <div class="wrap">
     <div class="topbar">
       <div class="title">
@@ -389,7 +390,9 @@
     if (forcedBoard !== null && !isBoardPlayable(forcedBoard)) forcedBoard = null;
 
     // Check big winner
-    const bw = bigWinner();
+    let bw = bigWinner();
+    // No winner and no playable boards left: the big board is a draw
+    if (!bw && !boards.some((_, n) => isBoardPlayable(n))) bw = "T";
     if (bw) {
       gameOver = true;
       showWinner(bw);
