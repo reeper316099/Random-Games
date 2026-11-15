@@ -548,17 +548,17 @@
     $("setStack").value = settings.stack; $("setBots").value = String(settings.bots); $("setSb").value = settings.sb;
     $("setEvery").value = settings.every; $("setSpeed").value = String(settings.speed);
   }
-  $("applySettings").addEventListener("click", () => {
-    if(!over && !awaitingNext && handNo > 0 && !confirm("Apply settings and start a new game? The current game will be lost.")) return;
+  $("applySettings").addEventListener("click", async () => {
+    if(!over && !awaitingNext && handNo > 0 && !(await RGDialog.confirm("Apply settings and start a new game? The current game will be lost."))) return;
     settings = sanitize({ stack:$("setStack").value, bots:$("setBots").value, sb:$("setSb").value, every:$("setEvery").value, speed:$("setSpeed").value });
     saveSettings(); fillForm(); newGame();
   });
-  $("clearCache").addEventListener("click", () => {
-    if(!confirm("Clear saved Poker settings and restore defaults? This starts a new game.")) return;
+  $("clearCache").addEventListener("click", async () => {
+    if(!(await RGDialog.confirm("Clear saved Poker settings and restore defaults? This starts a new game."))) return;
     try{ localStorage.removeItem("poker_settings"); }catch(e){}
     settings = { ...DEFAULTS }; fillForm(); newGame();
   });
-  $("newGame").addEventListener("click", () => { if(!busy || over || awaitingNext || confirm("Abandon the current game?")) newGame(); });
+  $("newGame").addEventListener("click", async () => { if(!busy || over || awaitingNext || await RGDialog.confirm("Abandon the current game?")) newGame(); });
   loadSettings(); fillForm();
   newGame();
 })();

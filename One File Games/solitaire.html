@@ -715,18 +715,18 @@
     syncFormVisibility();
   }
   $("setVariant").addEventListener("change", syncFormVisibility);
-  $("applySettings").addEventListener("click", () => {
-    if(started && !won && !confirm("Apply settings and start a new game? The current game will be lost.")) return;
+  $("applySettings").addEventListener("click", async () => {
+    if(started && !won && !(await RGDialog.confirm("Apply settings and start a new game? The current game will be lost."))) return;
     settings = sanitize({ variant:$("setVariant").value, suits:$("setSuits").value, draw:$("setDraw").value, passes:$("setPasses").value, timer:$("setTimer").value });
     saveJSON("sol_settings", settings); fillForm(); newGame();
   });
-  $("clearCache").addEventListener("click", () => {
-    if(!confirm("Clear saved Solitaire settings and stats and restore defaults? This starts a new game.")) return;
+  $("clearCache").addEventListener("click", async () => {
+    if(!(await RGDialog.confirm("Clear saved Solitaire settings and stats and restore defaults? This starts a new game."))) return;
     try{ localStorage.removeItem("sol_settings"); localStorage.removeItem("sol_stats"); }catch(e){}
     settings = { ...DEFAULTS }; stats = loadStats(); fillForm(); newGame();
   });
 
-  $("newBtn").addEventListener("click", () => { if(!started || won || confirm("Abandon this game and deal a new one?")) newGame(); });
+  $("newBtn").addEventListener("click", async () => { if(!started || won || await RGDialog.confirm("Abandon this game and deal a new one?")) newGame(); });
   $("bannerNew").addEventListener("click", newGame);
   $("undoBtn").addEventListener("click", undo);
   $("hintBtn").addEventListener("click", hint);

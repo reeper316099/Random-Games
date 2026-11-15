@@ -66,3 +66,54 @@
   }
   window.RGHost = { available: available, call: call };
 })();
+
+/* RGDialog.confirm(message) -> Promise<boolean>
+ * An in-page replacement for window.confirm(), which desktop webviews often block inside iframes
+ * (it silently returns false, so buttons that ask "are you sure?" appear to do nothing). */
+(function () {
+  "use strict";
+  function confirmDialog(message) {
+    return new Promise(function (resolve) {
+      var prevFocus = document.activeElement;
+      var wrap = document.createElement("div");
+      wrap.setAttribute("role", "dialog");
+      wrap.setAttribute("aria-modal", "true");
+      wrap.style.cssText = "position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:16px;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
+      var box = document.createElement("div");
+      box.style.cssText = "max-width:380px;width:100%;background:#161d2b;color:#e8ecf4;border:1px solid #2c3750;border-radius:12px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.5)";
+      var p = document.createElement("p");
+      p.textContent = message;
+      p.style.cssText = "margin:0 0 16px;line-height:1.45;font-size:15px";
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;gap:8px;justify-content:flex-end";
+      function mk(label, primary) {
+        var b = document.createElement("button");
+        b.type = "button"; b.textContent = label;
+        b.style.cssText = "cursor:pointer;font:inherit;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid " +
+          (primary ? "#4f8cff;background:#4f8cff;color:#fff" : "#2c3750;background:#222b3d;color:#e8ecf4");
+        return b;
+      }
+      var no = mk("Cancel", false), yes = mk("Continue", true);
+      row.appendChild(no); row.appendChild(yes); box.appendChild(p); box.appendChild(row); wrap.appendChild(box);
+      function done(v) {
+        document.removeEventListener("keydown", onKey, true);
+        wrap.remove();
+        try { if (prevFocus && prevFocus.focus) prevFocus.focus(); } catch (e) {}
+        resolve(v);
+      }
+      function onKey(e) {
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(false); }
+        else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); done(document.activeElement === no ? false : true); }
+        else if (e.key === "Tab") { e.preventDefault(); (document.activeElement === yes ? no : yes).focus(); }
+        else e.stopPropagation();
+      }
+      no.addEventListener("click", function () { done(false); });
+      yes.addEventListener("click", function () { done(true); });
+      wrap.addEventListener("click", function (e) { if (e.target === wrap) done(false); });
+      document.addEventListener("keydown", onKey, true);
+      document.body.appendChild(wrap);
+      yes.focus();
+    });
+  }
+  window.RGDialog = { confirm: confirmDialog };
+})();

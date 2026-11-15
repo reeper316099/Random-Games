@@ -383,13 +383,13 @@
     endRun();
     bank = settings.start; lastBet = 0; saveBank(); newShoe(); toBetting();
   }
-  $("applySettings").addEventListener("click", () => {
-    if(phase === "play" && !confirm("This will end the current hand and restart. Continue?")) return;
+  $("applySettings").addEventListener("click", async () => {
+    if(phase === "play" && !(await RGDialog.confirm("This will end the current hand and restart. Continue?"))) return;
     settings = sanitize({ start:$("setStart").value, decks:$("setDecks").value, payout:$("setPayout").value, h17:$("setH17").value === "hit" });
     saveSettings(); fillSettingsForm(); restart();
   });
-  $("clearCache").addEventListener("click", () => {
-    if(!confirm("Clear all saved Blackjack data (chips and settings) and restore defaults?")) return;
+  $("clearCache").addEventListener("click", async () => {
+    if(!(await RGDialog.confirm("Clear all saved Blackjack data (chips and settings) and restore defaults?"))) return;
     try{ localStorage.removeItem("bj_bank"); localStorage.removeItem("bj_settings"); }catch(e){}
     settings = { ...DEFAULTS }; fillSettingsForm(); restart();
   });
