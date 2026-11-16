@@ -5,12 +5,15 @@ A small collection of browser games, including both single-file games and multi-
 ## What's included
 
 ### One File Games
-- `One File Games/blackjack.html` — Blackjack (play-money chips)
+- `One File Games/blackjack.html` — Blackjack (play-money chips, animated dealing, strategy hints)
+- `One File Games/checkers.html` — Checkers vs the computer (three skill levels) or a friend
 - `One File Games/chess.html` — Chess
+- `One File Games/dice.html` — High Roller Dice, a craps-style table (play-money chips)
 - `One File Games/disguised-king-chess.html` — Disguised King Chess
 - `One File Games/minesweeper.html` — Minesweeper Ultra Deluxe
-- `One File Games/poker.html` — Texas Hold'em Poker vs 3 bots (play-money chips)
-- `One File Games/solitaire.html` — Solitaire (Klondike, Spider and FreeCell; pick the game in Settings)
+- `One File Games/poker.html` — Texas Hold'em Poker vs up to 3 bots (play-money chips)
+- `One File Games/slots.html` — Lucky Reels, a 5-reel slot machine with wilds and free spins (play-money credits)
+- `One File Games/solitaire.html` — Solitaire (Klondike, Spider and FreeCell; pick the game in Settings; drag-and-drop or tap)
 - `One File Games/ultimate-ttt.html` — Ultimate Tic-Tac-Toe
 
 ### Multi-File Games
@@ -22,6 +25,9 @@ A small collection of browser games, including both single-file games and multi-
 1. Clone or download this repository.
 2. Open `index.html` in your browser.
 3. Click any game to start playing. Each game has a "← Games" link back to the launcher.
+
+The chip and credit games use pretend money only. Two small shared files sit next to the launcher: `scores.js`
+(high-score reporting) and `fx.js` (sound effects, confetti and a mute button in the top-right corner).
 
 > Tip: Some browsers apply stricter local file security rules. If a game doesn't load correctly via `file://`, run a local static server (for example `python3 -m http.server`) and open `http://localhost:8000`.
 

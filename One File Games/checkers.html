@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Checkers</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+      --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a;
+      --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+      --board:max(280px, min(600px, calc(100vw - 56px), calc(100vh - 250px)));
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; display:flex; justify-content:center;
+      background:radial-gradient(1100px 600px at 50% -10%, #2a1c12 0%, #14100d 45%, var(--bg) 85%) fixed;
+      color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      padding:44px 16px 24px;
+    }
+    .wrap{ width:min(760px,100%); display:grid; gap:14px; align-content:start; justify-items:center; }
+    .topbar, .panel{
+      width:100%; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+    .title h1{ margin:0; font-size:20px; letter-spacing:.3px; }
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+    .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+    .pill{ display:inline-flex; gap:8px; align-items:center; padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+    .pill.turn{ border-color:var(--gold); box-shadow:0 0 12px rgba(255,211,106,.45); }
+    .dot{ width:16px; height:16px; border-radius:50%; display:inline-block; box-shadow:inset 0 -2px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.5); }
+    .dot.red{ background:radial-gradient(circle at 35% 30%, #ff8d8d, #d3152f 60%, #8d0a1c); }
+    .dot.black{ background:radial-gradient(circle at 35% 30%, #6d7480, #23272e 60%, #0c0e11); border:1px solid rgba(255,255,255,.25); }
+    button{
+      border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text);
+      padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s;
+    }
+    button:hover:not(:disabled){ filter:brightness(1.2); }
+    button:active:not(:disabled){ transform:scale(.96); }
+    button:disabled{ opacity:.35; cursor:not-allowed; }
+    button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.35), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.5); }
+    button.good{ background:linear-gradient(180deg, rgba(106,255,182,.28), rgba(106,255,182,.12)); border-color:rgba(106,255,182,.45); }
+    button.bad{ background:linear-gradient(180deg, rgba(255,106,106,.28), rgba(255,106,106,.12)); border-color:rgba(255,106,106,.45); }
+    button:focus-visible, select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+    .frame{
+      position:relative; padding:14px; border-radius:18px;
+      background:linear-gradient(145deg,#8a5a2b,#5b3516 50%,#3a2009);
+      box-shadow:0 0 0 2px #2b1707, 0 24px 60px rgba(0,0,0,.6), inset 0 2px 0 rgba(255,255,255,.25), inset 0 -3px 6px rgba(0,0,0,.4);
+    }
+    .board{ position:relative; width:var(--board); height:var(--board); display:grid; grid-template:repeat(8,1fr)/repeat(8,1fr); border-radius:6px; overflow:hidden; box-shadow:inset 0 0 0 2px rgba(0,0,0,.5); }
+    .sq{ position:relative; padding:0; border:0; border-radius:0; transition:none; }
+    .sq.light{ background:linear-gradient(145deg,#f1d9b0,#e2c08d); }
+    .sq.dark{ background:linear-gradient(145deg,#8b5a34,#6f4424); cursor:pointer; }
+    .sq:hover:not(:disabled), .sq:active:not(:disabled){ filter:none; transform:none; }
+    .sq:disabled{ opacity:1; cursor:default; }
+    .sq.last::after{ content:""; position:absolute; inset:0; background:rgba(255,211,106,.3); }
+    .sq.dest::before{ content:""; position:absolute; left:50%; top:50%; width:32%; height:32%; transform:translate(-50%,-50%); border-radius:50%; background:rgba(106,255,182,.85); box-shadow:0 0 12px rgba(106,255,182,.9); z-index:1; animation:destPulse 1s ease-in-out infinite; }
+    .sq.hint{ box-shadow:inset 0 0 0 4px var(--accent); }
+    @keyframes destPulse{ 50%{ transform:translate(-50%,-50%) scale(1.25); } }
+    .sq:focus-visible{ outline:3px solid var(--accent); outline-offset:-3px; z-index:2; }
+    .pieces{ position:absolute; inset:0; pointer-events:none; }
+    .pc{
+      position:absolute; width:12.5%; height:12.5%; display:grid; place-items:center;
+      transition:left .28s cubic-bezier(.3,.8,.3,1), top .28s cubic-bezier(.3,.8,.3,1), opacity .25s, transform .25s; z-index:2;
+    }
+    .pc i{
+      width:78%; height:78%; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:calc(var(--board) / 8 * .42); line-height:1; color:var(--gold);
+      text-shadow:0 1px 2px rgba(0,0,0,.7);
+    }
+    .pc.red i{ background:radial-gradient(circle at 50% 50%, #e2203b 0 44%, #a90d22 45% 52%, #e2203b 53% 62%, #a90d22 63% 70%, #d3152f 71%), #d3152f;
+      box-shadow:0 4px 0 #6d0715, 0 7px 10px rgba(0,0,0,.55), inset 0 2px 3px rgba(255,255,255,.45); }
+    .pc.black i{ background:radial-gradient(circle at 50% 50%, #3a4049 0 44%, #16191e 45% 52%, #3a4049 53% 62%, #16191e 63% 70%, #2a2f37 71%), #2a2f37;
+      box-shadow:0 4px 0 #07080a, 0 7px 10px rgba(0,0,0,.55), inset 0 2px 3px rgba(255,255,255,.3); }
+    .pc.can i{ outline:2px solid rgba(255,255,255,.55); outline-offset:1px; }
+    .pc.must i{ outline:3px solid var(--warn); outline-offset:1px; }
+    .pc.sel{ z-index:5; transform:scale(1.1) translateY(-3%); }
+    .pc.sel i{ outline:3px solid var(--ok); outline-offset:1px; box-shadow:0 8px 0 rgba(0,0,0,.35), 0 14px 18px rgba(0,0,0,.55), 0 0 18px rgba(106,255,182,.8), inset 0 2px 3px rgba(255,255,255,.45); }
+    .pc.moving{ z-index:6; }
+    .pc.gone{ opacity:0; transform:scale(.3); }
+    .pc.crowned i{ animation:crown .6s ease-out; }
+    @keyframes crown{ 30%{ transform:scale(1.35); box-shadow:0 0 30px var(--gold); } }
+    .banner{ position:absolute; inset:14px; display:none; place-items:center; background:rgba(5,5,8,.72); border-radius:6px; z-index:20; text-align:center; padding:16px; }
+    .banner.show{ display:grid; }
+    .banner h2{ margin:0 0 6px; font-size:28px; }
+    .banner p{ margin:0 0 14px; color:var(--muted); }
+    .msg{ text-align:center; font-weight:700; min-height:22px; }
+    .panel{ display:grid; gap:12px; }
+    .faint{ color:var(--muted); font-size:12px; text-align:center; }
+    details.settings{ border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:rgba(0,0,0,.2); }
+    details.settings summary{ cursor:pointer; font-weight:600; font-size:14px; }
+    .fields{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:12px 0; }
+    .fields label{ display:grid; gap:4px; font-size:12px; color:var(--muted); }
+    .fields label.off{ opacity:.45; }
+    .fields select{ padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); font-size:14px; width:100%; }
+    @media (max-width:560px){ body{ padding:44px 8px 16px; } .frame{ padding:8px; } .banner{ inset:8px; } :root{ --board:min(600px, calc(100vw - 34px)); } }
+    @media (prefers-reduced-motion:reduce){ .pc{ transition:none; } .sq.dest::before, .pc.crowned i{ animation:none; } }
+  </style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>Checkers</h1>
+      <div class="sub" id="subLine"></div>
+    </div>
+    <div class="row">
+      <span class="pill" id="pillRed"><span class="dot red"></span> Red <b id="cntRed">12</b></span>
+      <span class="pill" id="pillBlack"><span class="dot black"></span> Black <b id="cntBlack">12</b></span>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="board" id="board">
+      <div class="pieces" id="pieces"></div>
+    </div>
+    <div class="banner" id="banner">
+      <div>
+        <h2 id="bannerTitle"></h2>
+        <p id="bannerText"></p>
+        <button class="good" id="bannerNew">Play again</button>
+      </div>
+    </div>
+  </div>
+  <div class="msg" id="msg" aria-live="polite"></div>
+
+  <div class="panel">
+    <div class="row">
+      <button class="primary" id="newBtn">New game</button>
+      <button id="undoBtn">↶ Undo</button>
+      <button id="hintBtn">💡 Hint</button>
+    </div>
+    <div class="faint" id="statsLine"></div>
+    <details class="settings">
+      <summary>⚙ Settings</summary>
+      <div class="fields">
+        <label>Opponent
+          <select id="setMode"><option value="ai">Computer</option><option value="two">Two players (same screen)</option></select>
+        </label>
+        <label id="lblLevel">Computer skill
+          <select id="setLevel"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
+        </label>
+        <label id="lblColor">You play
+          <select id="setColor"><option value="red">Red</option><option value="black">Black</option></select>
+        </label>
+        <label>Who moves first
+          <select id="setFirst"><option value="black">Black (traditional)</option><option value="red">Red</option></select>
+        </label>
+        <label>Jumps
+          <select id="setForced"><option value="on">Must jump when you can (standard)</option><option value="off">Jumping is optional</option></select>
+        </label>
+        <label>Show where pieces can move
+          <select id="setShow"><option value="on">Yes</option><option value="off">No</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <button class="good" id="applySettings">Apply &amp; new game</button>
+        <button class="bad" id="clearCache">🗑 Clear cache</button>
+      </div>
+      <div class="faint" style="margin-top:8px">Standard American rules: pieces move diagonally forward, jump to capture, keep jumping while they can, and become kings on the far row. Settings and results are saved in this browser.</div>
+    </details>
+  </div>
+</div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, floatText(){}, fmt:n => String(n), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ===== CHECKERS ENGINE (pure rules + search, no DOM) =====
+  // Board: Int8Array(64), index = row*8 + col. 1 = red man, 2 = red king, -1 = black man, -2 = black king.
+  // Red starts at the bottom (rows 5-7) and moves up; black starts at the top and moves down.
+  const RED = 1, BLACK = -1;
+  const DIRS = { "1":[[-1,-1],[-1,1]], "-1":[[1,-1],[1,1]], "2":[[-1,-1],[-1,1],[1,-1],[1,1]], "-2":[[-1,-1],[-1,1],[1,-1],[1,1]] };
+  function startBoard(){
+    const b = new Int8Array(64);
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++) if((r + c) % 2 === 1){ if(r < 3) b[r*8+c] = BLACK; else if(r > 4) b[r*8+c] = RED; }
+    return b;
+  }
+  // collects every maximal jump sequence for the piece `v` currently standing on (r,c)
+  function jumpsFrom(b, r, c, v, path, caps, out){
+    let found = false;
+    for(const [dr, dc] of DIRS[v]){
+      const tr = r + 2*dr, tc = c + 2*dc;
+      if(tr < 0 || tr > 7 || tc < 0 || tc > 7) continue;
+      const mid = (r + dr)*8 + c + dc, to = tr*8 + tc, m = b[mid];
+      if(m === 0 || (m > 0) === (v > 0)) continue;       // nothing to jump, or it's our own piece
+      if(caps.includes(mid)) continue;                   // can't jump the same piece twice
+      if(b[to] !== 0 && to !== path[0]) continue;        // landing square must be empty (our own start square counts as empty)
+      found = true;
+      const np = path.concat(to), nc = caps.concat(mid);
+      if((v === 1 && tr === 0) || (v === -1 && tr === 7)) out.push({ path:np, caps:nc }); // reaching the king row ends the move
+      else jumpsFrom(b, tr, tc, v, np, nc, out);
+    }
+    if(!found && caps.length) out.push({ path, caps });
+  }
+  function legalMoves(b, side, forced){
+    const jumps = [], steps = [];
+    for(let i=0;i<64;i++){
+      const v = b[i];
+      if(v === 0 || (v > 0) !== (side > 0)) continue;
+      const r = i >> 3, c = i & 7;
+      jumpsFrom(b, r, c, v, [i], [], jumps);
+      for(const [dr, dc] of DIRS[v]){
+        const tr = r + dr, tc = c + dc;
+        if(tr >= 0 && tr <= 7 && tc >= 0 && tc <= 7 && b[tr*8+tc] === 0) steps.push({ path:[i, tr*8+tc], caps:[] });
+      }
+    }
+    if(jumps.length && forced) return jumps;
+    return jumps.concat(steps);
+  }
+  function applyMove(b, m){
+    const nb = b.slice(), from = m.path[0], to = m.path[m.path.length - 1];
+    let v = nb[from];
+    nb[from] = 0;
+    for(const c of m.caps) nb[c] = 0;
+    if(v === 1 && (to >> 3) === 0) v = 2;
+    if(v === -1 && (to >> 3) === 7) v = -2;
+    nb[to] = v;
+    return nb;
+  }
+  // score from red's point of view
+  function evaluate(b){
+    let s = 0;
+    for(let i=0;i<64;i++){
+      const v = b[i]; if(!v) continue;
+      const r = i >> 3, c = i & 7, mid = (c >= 2 && c <= 5) ? 3 : 0;
+      if(v === 1) s += 100 + (7 - r)*4 + (r === 7 ? 9 : 0) + mid;
+      else if(v === -1) s -= 100 + r*4 + (r === 0 ? 9 : 0) + mid;
+      else if(v === 2) s += 185 + mid*2 + ((r >= 2 && r <= 5) ? 4 : 0);
+      else s -= 185 + mid*2 + ((r >= 2 && r <= 5) ? 4 : 0);
+    }
+    return s;
+  }
+  const TIMEOUT = {};
+  let nodes = 0, deadline = Infinity;
+  function negamax(b, side, depth, alpha, beta, forced, ply){
+    if((++nodes & 1023) === 0 && Date.now() > deadline) throw TIMEOUT;
+    const moves = legalMoves(b, side, forced);
+    if(!moves.length) return -100000 + ply;                       // side to move has lost
+    const noisy = moves[0].caps.length > 0;
+    if(depth <= 0 && (!noisy || ply > 30)) return side * evaluate(b);
+    if(noisy) moves.sort((x, y) => y.caps.length - x.caps.length);
+    let best = -Infinity;
+    for(const m of moves){
+      const sc = -negamax(applyMove(b, m), -side, depth - 1, -beta, -alpha, forced, ply + 1);
+      if(sc > best) best = sc;
+      if(sc > alpha) alpha = sc;
+      if(alpha >= beta) break;
+    }
+    return best;
+  }
+  // opts: { depth, ms, forced, wobble } — wobble lets weaker levels pick slightly worse moves at random
+  function chooseMove(b, side, opts){
+    const moves = legalMoves(b, side, opts.forced);
+    if(!moves.length) return null;
+    if(moves.length === 1) return moves[0];
+    deadline = Date.now() + (opts.ms || 1000); nodes = 0;
+    let scored = moves.map(m => ({ m, sc:0 }));
+    for(let d=1; d<=opts.depth; d++){
+      try{
+        const cur = [];
+        let alpha = -Infinity;
+        for(const { m } of scored){
+          // a full window keeps every root score exact when we want to pick among near-equal moves
+          const sc = -negamax(applyMove(b, m), -side, d - 1, -Infinity, opts.wobble ? Infinity : -alpha, opts.forced, 1);
+          cur.push({ m, sc });
+          if(sc > alpha) alpha = sc;
+        }
+        cur.sort((x, y) => y.sc - x.sc);
+        scored = cur;
+        if(Math.abs(scored[0].sc) > 90000) break;                  // forced win or loss found
+      }catch(e){ if(e !== TIMEOUT) throw e; break; }
+    }
+    deadline = Infinity;
+    if(opts.wobble){
+      const ok = scored.filter(x => x.sc >= scored[0].sc - opts.wobble);
+      return ok[Math.floor(Math.random() * ok.length)].m;
+    }
+    return scored[0].m;
+  }
+  // ===== END CHECKERS ENGINE =====
+
+  // ---------- settings & stats ----------
+  const LEVELS = { easy:{ depth:2, ms:300, wobble:45, label:"Easy" }, medium:{ depth:5, ms:600, wobble:6, label:"Medium" }, hard:{ depth:14, ms:1100, wobble:0, label:"Hard" } };
+  const DEFAULTS = { mode:"ai", level:"medium", color:"red", first:"black", forced:true, show:true };
+  let settings = { ...DEFAULTS };
+  let stats = { easy:{ w:0, l:0, d:0 }, medium:{ w:0, l:0, d:0 }, hard:{ w:0, l:0, d:0 } };
+  const load = k => { try{ const o = JSON.parse(localStorage.getItem(k) || "null"); return o && typeof o === "object" ? o : null; }catch(e){ return null; } };
+  const save = (k, o) => { try{ localStorage.setItem(k, JSON.stringify(o)); }catch(e){} };
+  function sanitize(o){
+    return {
+      mode: o.mode === "two" ? "two" : "ai",
+      level: LEVELS[o.level] ? o.level : "medium",
+      color: o.color === "black" ? "black" : "red",
+      first: o.first === "red" ? "red" : "black",
+      forced: o.forced !== false && o.forced !== "off",
+      show: o.show !== false && o.show !== "off"
+    };
+  }
+  function loadStats(){
+    const o = load("checkers_stats"); if(!o) return;
+    for(const k of Object.keys(stats)) if(o[k]) for(const f of ["w","l","d"]) if(Number.isInteger(o[k][f]) && o[k][f] >= 0) stats[k][f] = o[k][f];
+  }
+
+  // ---------- game state ----------
+  let board, ids, turn, view = null, sel = null, chain = null, busy = false, over = false;
+  let hist = [], lastMove = [], quiet = 0, myMoves = 0, hintSq = [], gameId = 0, nextId = 1;
+  const human = () => settings.color === "red" ? RED : BLACK;
+  const isAI = side => settings.mode === "ai" && side !== human();
+  const flipped = () => settings.mode === "ai" && settings.color === "black";
+  const name = side => side === RED ? "Red" : "Black";
+
+  function newGame(){
+    gameId++;
+    board = startBoard(); ids = new Int16Array(64);
+    for(let i=0;i<64;i++) if(board[i]) ids[i] = nextId++;
+    turn = settings.first === "red" ? RED : BLACK;
+    view = null; sel = null; chain = null; busy = false; over = false;
+    hist = []; lastMove = []; quiet = 0; myMoves = 0; hintSq = [];
+    $("banner").classList.remove("show"); $("pieces").innerHTML = ""; pcEls.clear();
+    render(); announceTurn();
+    if(isAI(turn)) aiTurn();
+  }
+
+  // ---------- rendering ----------
+  const sqEls = [];
+  function buildBoard(){
+    const bd = $("board");
+    for(let n=0;n<64;n++){
+      const s = document.createElement("button");
+      s.type = "button"; s.className = "sq"; s.dataset.n = n;
+      s.addEventListener("click", () => onSquare(Number(s.dataset.i)));
+      bd.insertBefore(s, $("pieces")); sqEls.push(s);
+    }
+  }
+  const pcEls = new Map();
+  function render(){
+    const b = view ? view.b : board, pid = view ? view.ids : ids, fl = flipped();
+    const moves = (!over && !busy && !isAI(turn)) ? (chain ? chain.moves : legalMoves(board, turn, settings.forced)) : [];
+    const movable = new Set(chain ? [] : moves.map(m => m.path[0]));
+    const mustJump = moves.length && moves[0].caps.length > 0 && settings.forced;
+    const dests = new Set();
+    if(chain) chain.moves.forEach(m => dests.add(m.path[chain.step]));
+    else if(sel !== null && settings.show) moves.forEach(m => { if(m.path[0] === sel) dests.add(m.path[1]); });
+    const files = "abcdefgh";
+    // squares
+    for(let n=0;n<64;n++){
+      const dr = n >> 3, dc = n & 7, r = fl ? 7 - dr : dr, c = fl ? 7 - dc : dc, i = r*8 + c, dark = (r + c) % 2 === 1, el = sqEls[n];
+      el.dataset.i = i;
+      el.className = "sq " + (dark ? "dark" : "light") + (lastMove.includes(i) ? " last" : "") + (dests.has(i) ? " dest" : "") + (hintSq.includes(i) ? " hint" : "");
+      el.disabled = !dark;
+      if(dark){
+        const v = b[i];
+        el.setAttribute("aria-label", `${files[c]}${8 - r}${v ? ", " + name(v > 0 ? RED : BLACK).toLowerCase() + (Math.abs(v) === 2 ? " king" : " piece") : ", empty"}${dests.has(i) ? ", can move here" : ""}`);
+      } else el.setAttribute("aria-hidden", "true");
+    }
+    // pieces: keep one element per piece id so moves animate
+    const seen = new Set(), box = $("pieces");
+    for(let i=0;i<64;i++){
+      const v = b[i]; if(!v) continue;
+      const id = pid[i]; seen.add(id);
+      let el = pcEls.get(id);
+      if(!el){ el = document.createElement("div"); el.appendChild(document.createElement("i")); box.appendChild(el); pcEls.set(id, el); el.dataset.king = "0"; }
+      const r = i >> 3, c = i & 7, dr = fl ? 7 - r : r, dc = fl ? 7 - c : c, king = Math.abs(v) === 2;
+      el.style.left = dc * 12.5 + "%"; el.style.top = dr * 12.5 + "%";
+      const crownedNow = king && el.dataset.king === "0" && el.dataset.placed === "1";
+      el.dataset.king = king ? "1" : "0"; el.dataset.placed = "1";
+      el.className = "pc " + (v > 0 ? "red" : "black") + (sel === i ? " sel" : "") +
+        (settings.show && movable.has(i) && sel !== i ? (mustJump ? " must" : " can") : "") + (view && view.moving === id ? " moving" : "") + (crownedNow ? " crowned" : "");
+      el.firstChild.textContent = king ? "♛" : "";
+    }
+    pcEls.forEach((el, id) => { if(!seen.has(id)){ el.classList.add("gone"); pcEls.delete(id); setTimeout(() => el.remove(), 300); } });
+
+    let nr = 0, nb = 0; for(let i=0;i<64;i++){ if(board[i] > 0) nr++; else if(board[i] < 0) nb++; }
+    $("cntRed").textContent = nr; $("cntBlack").textContent = nb;
+    $("pillRed").classList.toggle("turn", !over && turn === RED); $("pillBlack").classList.toggle("turn", !over && turn === BLACK);
+    $("undoBtn").disabled = busy || over || !hist.some(h => !isAI(h.turn));
+    $("hintBtn").disabled = busy || over || isAI(turn);
+    $("subLine").textContent = settings.mode === "ai"
+      ? `You are ${settings.color} • Computer: ${LEVELS[settings.level].label} • ${settings.forced ? "Jumps are compulsory" : "Jumps are optional"}`
+      : `Two players on one screen • ${settings.forced ? "Jumps are compulsory" : "Jumps are optional"}`;
+    const s = stats[settings.level];
+    $("statsLine").textContent = settings.mode === "ai" ? `vs ${LEVELS[settings.level].label} computer: won ${s.w} • lost ${s.l} • drawn ${s.d}` : "Results are only tracked against the computer.";
+  }
+  const setMsg = t => $("msg").textContent = t;
+  function announceTurn(){
+    if(over) return;
+    const moves = legalMoves(board, turn, settings.forced);
+    const jump = moves.length && moves[0].caps.length && settings.forced ? " — a jump is available, so you must take it" : "";
+    if(settings.mode === "ai") setMsg(isAI(turn) ? "Computer is thinking…" : `Your move${jump}.`);
+    else setMsg(`${name(turn)} to move${jump}.`);
+  }
+
+  // ---------- making moves ----------
+  function snapshot(){ hist.push({ board:board.slice(), ids:ids.slice(), turn, quiet, myMoves, lastMove:lastMove.slice() }); if(hist.length > 400) hist.shift(); }
+  // plays a full move hop by hop so multi-jumps are easy to follow, then commits it
+  async function playMove(m, fromStep){
+    const g = gameId;
+    busy = true; hintSq = [];
+    if(!view) view = { b:board.slice(), ids:ids.slice(), moving:ids[m.path[0]] };
+    for(let s = fromStep || 1; s < m.path.length; s++){
+      hop(view, m, s);
+      FX.sound(m.caps.length ? "capture" : "move");
+      sel = null; render();
+      if(s < m.path.length - 1) await sleep(FX.reducedMotion ? 60 : 330);
+      if(g !== gameId) return;
+    }
+    snapshotCommit(m);
+  }
+  function hop(v, m, s){
+    const a = m.path[s-1], t = m.path[s];
+    const pv = v.b[a], pid = v.ids[a];
+    v.b[a] = 0; v.ids[a] = 0;
+    if(m.caps.length){ v.b[m.caps[s-1]] = 0; v.ids[m.caps[s-1]] = 0; }
+    v.b[t] = pv; v.ids[t] = pid;
+  }
+  function snapshotCommit(m){
+    const from = m.path[0], to = m.path[m.path.length - 1], pid = ids[from], mover = board[from];
+    const nb = applyMove(board, m), crowned = Math.abs(nb[to]) === 2 && Math.abs(mover) === 1;
+    ids[from] = 0; m.caps.forEach(c => ids[c] = 0); ids[to] = pid;
+    board = nb; view = null; sel = null; chain = null;
+    lastMove = [from, to];
+    quiet = (m.caps.length || Math.abs(mover) === 1) ? 0 : quiet + 1;
+    if(!isAI(turn)) myMoves++;
+    if(crowned) FX.sound("king");
+    turn = -turn; busy = false;
+    render();
+    checkEnd() || (announceTurn(), isAI(turn) && aiTurn());
+  }
+  function checkEnd(){
+    const moves = legalMoves(board, turn, settings.forced);
+    if(moves.length && quiet < 80) return false;
+    over = true;
+    const draw = moves.length > 0, winner = -turn;
+    let title, text;
+    if(draw){ title = "🤝 Draw"; text = "40 moves each without a capture or a man moving forward."; }
+    else if(settings.mode === "ai"){
+      const won = winner === human();
+      title = won ? "🏆 You win!" : "Computer wins";
+      text = won ? `Beat the ${LEVELS[settings.level].label} computer in ${myMoves} moves.` : "No moves left for you. Try again!";
+    } else { title = `🏆 ${name(winner)} wins!`; text = `${name(turn)} has no moves left.`; }
+    if(settings.mode === "ai"){
+      const s = stats[settings.level];
+      if(draw) s.d++; else if(winner === human()) s.w++; else s.l++;
+      save("checkers_stats", stats);
+      if(!draw && winner === human()){
+        rgReport("checkers", LEVELS[settings.level].label, "Fastest win", myMoves, { unit:"moves", better:"low", detail:settings.forced ? "standard rules" : "optional jumps" });
+        FX.sound("bigwin"); FX.confetti();
+      } else if(!draw) FX.sound("lose");
+    } else if(!draw){ FX.sound("win"); FX.confetti(); }
+    $("bannerTitle").textContent = title; $("bannerText").textContent = text;
+    setMsg(text);
+    $("banner").classList.add("show"); render();
+    return true;
+  }
+  function aiTurn(){
+    const g = gameId;
+    busy = true; render();
+    setTimeout(() => {
+      if(g !== gameId || over) return;
+      const lv = LEVELS[settings.level];
+      const m = chooseMove(board, turn, { depth:lv.depth, ms:lv.ms, wobble:lv.wobble, forced:settings.forced });
+      if(!m){ busy = false; checkEnd(); return; }
+      snapshot();
+      playMove(m);
+    }, FX.reducedMotion ? 60 : 380);
+  }
+  function onSquare(i){
+    if(busy || over || isAI(turn) || !Number.isInteger(i)) return;
+    hintSq = [];
+    const moves = chain ? chain.moves : legalMoves(board, turn, settings.forced);
+    const step = chain ? chain.step : 1;
+    if(sel !== null){
+      const cands = moves.filter(m => m.path[0] === (chain ? chain.origin : sel) && m.path[step] === i);
+      if(cands.length){
+        if(!chain) snapshot();
+        const done = cands.find(m => m.path.length === step + 1);
+        if(done){ playMove(done, step); return; }
+        // part-way through a multi-jump: show this hop and wait for the next square
+        if(!view) view = { b:board.slice(), ids:ids.slice(), moving:ids[sel] };
+        hop(view, cands[0], step); FX.sound("capture");
+        chain = { moves:cands, step:step + 1, origin:cands[0].path[0] };
+        sel = i; setMsg("Keep jumping with the same piece."); render(); return;
+      }
+      if(chain){ setMsg("You must finish the jump with this piece."); FX.sound("error"); return; }
+    }
+    const b = board[i];
+    if(b && (b > 0) === (turn > 0)){
+      if(moves.some(m => m.path[0] === i)){ sel = sel === i ? null : i; FX.sound("click"); }
+      else { sel = null; setMsg(moves.length && moves[0].caps.length && settings.forced ? "You have to jump — pick a highlighted piece." : "That piece has no moves."); FX.sound("error"); }
+    } else sel = null;
+    render();
+  }
+  function undo(){
+    if(busy || over || !hist.length) return;
+    if(chain){ hist.pop(); chain = null; view = null; sel = null; announceTurn(); render(); return; }
+    let h = null;
+    while(hist.length){ h = hist.pop(); if(!isAI(h.turn)) break; }   // also takes back the computer's reply
+    if(!h || isAI(h.turn)){ if(h) hist.push(h); return; }
+    board = h.board; ids = h.ids; turn = h.turn; quiet = h.quiet; myMoves = h.myMoves; lastMove = h.lastMove;
+    sel = null; view = null; hintSq = [];
+    render(); announceTurn();
+  }
+  function hint(){
+    if(busy || over || isAI(turn) || chain) return;
+    const m = chooseMove(board, turn, { depth:6, ms:500, forced:settings.forced, wobble:0 });
+    if(!m) return;
+    hintSq = [m.path[0], m.path[m.path.length - 1]]; sel = m.path[0];
+    setMsg(m.caps.length ? `Hint: jump ${m.caps.length} piece${m.caps.length > 1 ? "s" : ""} with the outlined piece.` : "Hint: move the outlined piece to the outlined square.");
+    render();
+  }
+
+  // ---------- settings wiring ----------
+  function syncForm(){
+    const two = $("setMode").value === "two";
+    $("lblLevel").classList.toggle("off", two); $("lblColor").classList.toggle("off", two);
+  }
+  function fillForm(){
+    $("setMode").value = settings.mode; $("setLevel").value = settings.level; $("setColor").value = settings.color;
+    $("setFirst").value = settings.first; $("setForced").value = settings.forced ? "on" : "off"; $("setShow").value = settings.show ? "on" : "off";
+    syncForm();
+  }
+  const confirmBox = msg => window.RGDialog ? window.RGDialog.confirm(msg) : Promise.resolve(true);
+  const inProgress = () => !over && hist.length > 0;
+  $("setMode").addEventListener("change", syncForm);
+  $("applySettings").addEventListener("click", async () => {
+    if(inProgress() && !(await confirmBox("Apply settings and start a new game? The current game will be lost."))) return;
+    settings = sanitize({ mode:$("setMode").value, level:$("setLevel").value, color:$("setColor").value, first:$("setFirst").value, forced:$("setForced").value, show:$("setShow").value });
+    save("checkers_settings", settings); fillForm(); newGame();
+  });
+  $("clearCache").addEventListener("click", async () => {
+    if(!(await confirmBox("Clear saved Checkers settings and results and restore defaults? This starts a new game."))) return;
+    try{ localStorage.removeItem("checkers_settings"); localStorage.removeItem("checkers_stats"); }catch(e){}
+    settings = { ...DEFAULTS }; stats = { easy:{ w:0, l:0, d:0 }, medium:{ w:0, l:0, d:0 }, hard:{ w:0, l:0, d:0 } }; fillForm(); newGame();
+  });
+  $("newBtn").addEventListener("click", async () => { if(!inProgress() || await confirmBox("Abandon this game and start a new one?")) newGame(); });
+  $("bannerNew").addEventListener("click", newGame);
+  $("undoBtn").addEventListener("click", undo);
+  $("hintBtn").addEventListener("click", hint);
+  document.addEventListener("keydown", e => {
+    if(e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
+    if(e.key === "u" || ((e.ctrlKey || e.metaKey) && e.key === "z")){ e.preventDefault(); undo(); }
+    if(e.key === "Escape" && !chain){ sel = null; hintSq = []; render(); }
+  });
+
+  settings = sanitize({ ...DEFAULTS, ...(load("checkers_settings") || {}) });
+  loadStats(); buildBoard(); fillForm(); newGame();
+})();
+</script>
+</body>
+</html>

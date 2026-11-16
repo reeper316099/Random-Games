@@ -62,4 +62,4 @@ Builds are **unsigned**:
 
 Games call `RGScores.report(...)` (see `../scores.js`). Inside the app the game runs in an iframe and passes
 the result up to the shell, which forwards it to Go. On the web the same call stores results in `localStorage`
-and nothing else happens. Games currently reporting scores: Minesweeper, Solitaire, Blackjack and Poker.
+and nothing else happens. Games currently reporting scores: Minesweeper, Solitaire, Blackjack, Poker, Slots, Dice and Checkers.

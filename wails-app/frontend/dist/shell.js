@@ -7,6 +7,9 @@
 
   const GAMES = {
     blackjack:   { name: "Blackjack",               icon: "🃏" },
+    checkers:    { name: "Checkers",                icon: "🔴" },
+    dice:        { name: "High Roller Dice",        icon: "🎲" },
+    slots:       { name: "Lucky Reels Slots",       icon: "🎰" },
     minesweeper: { name: "Minesweeper",             icon: "💣" },
     poker:       { name: "Texas Hold'em Poker",     icon: "♠️" },
     solitaire:   { name: "Solitaire",               icon: "🂡" }

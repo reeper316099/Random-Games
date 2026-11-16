@@ -10,24 +10,24 @@
       --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a;
       --felt:#0f5a3a; --felt2:#0a3f29; --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
       --pad:24px; --gap:10px; --cols:7;
-      --bw:min(900px, calc(100vw - 2*var(--pad)));
+      --bw:min(900px, calc(100vw - 2*var(--pad) - 24px));
       --cw:calc((var(--bw) - (var(--cols) - 1)*var(--gap)) / var(--cols));
       --ch:calc(var(--cw) * 1.4);
     }
     *{box-sizing:border-box}
     body{
       margin:0; min-height:100vh; display:flex; justify-content:center;
-      background:radial-gradient(1200px 600px at 20% 10%, #12203a 0%, var(--bg) 55%) fixed;
+      background:radial-gradient(1100px 600px at 50% -10%, #173a2c 0%, #0c1d1a 45%, var(--bg) 85%) fixed;
       color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       padding:var(--pad);
     }
-    .wrap{ width:var(--bw); display:grid; gap:14px; align-content:start; margin-top:20px; }
+    .wrap{ width:calc(var(--bw) + 24px); display:grid; gap:14px; align-content:start; margin-top:20px; }
     .topbar{
       display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
       padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
     }
-    .title h1{ margin:0; font-size:18px; letter-spacing:.3px; }
+    .title h1{ margin:0; font-size:20px; letter-spacing:.4px; font-weight:900; background:linear-gradient(180deg,#fff3c4,#ffd36a 45%,#f0a020); -webkit-background-clip:text; background-clip:text; color:transparent; }
     .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
     .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
     .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.04); font-size:13px; }
@@ -44,41 +44,54 @@
     button:focus-visible, select:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 
     .felt{
-      background:radial-gradient(ellipse at center, var(--felt) 0%, var(--felt2) 100%);
-      border:1px solid rgba(255,255,255,.18); border-radius:24px; box-shadow:var(--shadow), inset 0 0 60px rgba(0,0,0,.45);
-      padding:calc(var(--gap) + 4px); display:grid; gap:calc(var(--gap) + 6px); position:relative; justify-content:center;
+      background:radial-gradient(ellipse at 50% 20%, #1e8a5c 0%, #0f5a3a 55%, #083323 100%);
+      border-radius:24px; padding:calc(var(--gap) + 6px); display:grid; gap:calc(var(--gap) + 8px); position:relative; justify-content:center;
+      box-shadow:0 0 0 8px #5b3516, 0 0 0 10px #2b1707, 0 0 0 11px rgba(255,211,106,.35), 0 24px 50px rgba(0,0,0,.55), inset 0 0 70px rgba(0,0,0,.5);
+      margin:10px 0;
     }
     .top, .tabs{ display:grid; grid-template-columns:repeat(var(--cols), var(--cw)); gap:var(--gap); }
     .slot{
-      position:relative; width:var(--cw); height:var(--ch); border-radius:calc(var(--cw)*.1);
-      border:2px dashed rgba(255,255,255,.22); background:rgba(0,0,0,.12);
-      display:grid; place-items:center; color:rgba(255,255,255,.28); font-size:calc(var(--cw)*.4); user-select:none;
+      position:relative; width:var(--cw); height:var(--ch); border-radius:calc(var(--cw)*.09);
+      border:2px solid rgba(255,255,255,.16); background:rgba(0,0,0,.18); box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
+      display:grid; place-items:center; color:rgba(255,255,255,.22); font-size:calc(var(--cw)*.4); font-family:Georgia, serif; user-select:none;
     }
     .pile{ position:relative; width:var(--cw); min-height:var(--ch); }
     .card{
-      position:absolute; left:0; width:var(--cw); height:var(--ch); border-radius:calc(var(--cw)*.1);
-      background:#fff; color:#111; box-shadow:0 2px 6px rgba(0,0,0,.45); font-weight:700; user-select:none; cursor:pointer;
-      font-size:calc(var(--cw)*.28); border:1px solid rgba(0,0,0,.25);
+      position:absolute; left:0; width:var(--cw); height:var(--ch); border-radius:calc(var(--cw)*.09);
+      background:linear-gradient(160deg,#ffffff,#eef1f7); color:#15171c; box-shadow:0 2px 5px rgba(0,0,0,.4); font-weight:700; user-select:none; -webkit-user-select:none; cursor:grab;
+      font-size:calc(var(--cw)*.27); border:1px solid rgba(0,0,0,.28); font-family:Georgia, "Times New Roman", serif;
     }
-    .card.red{ color:#c81e3a; }
-    .card .c1{ position:absolute; top:4%; left:7%; line-height:1; }
-    .card .c2{ position:absolute; right:7%; bottom:4%; line-height:1; transform:rotate(180deg); }
-    .card .big{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw)*.55); padding-top:6%; }
+    .card:not(.down){ touch-action:none; }
+    .card.red{ color:#c8102e; }
+    .card .c1, .card .c2{ position:absolute; line-height:1; display:flex; gap:.1em; align-items:baseline; white-space:nowrap; }
+    .card .c1{ top:4%; left:7%; }
+    .card .c2{ right:7%; bottom:4%; transform:rotate(180deg); }
+    .card .c1 small, .card .c2 small{ font-size:.86em; }
+    .card .big{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw)*.52); padding-top:14%; pointer-events:none; }
+    .card.court .big{ font-size:calc(var(--cw)*.5); padding-top:18%; }
+    .card.court::before{ content:""; position:absolute; inset:34% 20% 16%; border-radius:6%; border:1.5px solid currentColor; opacity:.28; background:linear-gradient(160deg, rgba(255,211,106,.3), rgba(255,211,106,.05)); pointer-events:none; }
     .card.down{
-      background:repeating-linear-gradient(45deg,#2a3f9a,#2a3f9a 6px,#1d2d73 6px,#1d2d73 12px); border:3px solid #fff; cursor:default;
+      background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.22) 0 14%, transparent 15%), repeating-linear-gradient(45deg,#b3243b 0 6px,#8e1a2e 6px 12px);
+      border:calc(var(--cw)*.045) solid #fff; cursor:default; box-shadow:0 2px 5px rgba(0,0,0,.4), inset 0 0 0 1px rgba(0,0,0,.25);
     }
     .card.down > *{ display:none; }
-    .card.sel{ outline:3px solid var(--warn); outline-offset:1px; box-shadow:0 0 14px rgba(255,211,106,.7); z-index:50; }
-    .card.hint, .slot.hint{ outline:3px solid var(--ok); outline-offset:1px; }
+    .card.sel{ outline:3px solid var(--warn); outline-offset:1px; box-shadow:0 0 16px rgba(255,211,106,.8); z-index:50; }
+    .card.hint, .slot.hint{ outline:3px solid var(--ok); outline-offset:1px; animation:hintPulse .8s ease-in-out infinite; }
+    @keyframes hintPulse{ 50%{ box-shadow:0 0 20px rgba(106,255,182,.9); } }
     .card.buried{ filter:brightness(.62); cursor:not-allowed; }
+    .card.lifting{ visibility:hidden; }
     .stock .card{ cursor:pointer; }
+    .stock .card:hover{ filter:brightness(1.12); }
+    .draglayer{ position:fixed; z-index:9000; pointer-events:none; height:0; }
+    .draglayer .card{ box-shadow:0 14px 26px rgba(0,0,0,.55); cursor:grabbing; }
     .stockCount{ position:absolute; bottom:4px; right:6px; font-size:11px; color:#fff; background:rgba(0,0,0,.55); padding:1px 6px; border-radius:999px; z-index:60; pointer-events:none; }
     .msg{ text-align:center; font-weight:600; min-height:22px; font-size:14px; }
     .banner{
       position:absolute; inset:0; display:none; place-items:center; background:rgba(0,0,0,.6); border-radius:24px; z-index:100; text-align:center; padding:16px;
     }
     .banner.show{ display:grid; }
-    .banner h2{ margin:0 0 6px; font-size:26px; }
+    .banner h2{ margin:0 0 6px; font-size:32px; animation:bannerPop .5s cubic-bezier(.2,1.6,.4,1); }
+    @keyframes bannerPop{ from{ transform:scale(.3); opacity:0; } }
     .banner p{ margin:0 0 14px; color:var(--muted); }
     .panel{ display:grid; gap:12px; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
     details.settings{ border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:rgba(0,0,0,.2); }
@@ -89,7 +102,7 @@
     .fields select{ padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); font-size:14px; width:100%; }
     .faint{ color:var(--muted); font-size:12px; text-align:center; }
     @media (max-width:640px){ :root{ --pad:10px; --gap:4px; } .title .sub{ display:none; } button{ padding:8px 12px; } }
-    @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+    @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
   </style>
 </head>
 <body>
@@ -156,18 +169,22 @@
 </div>
 
 <script src="../scores.js"></script>
+<script src="../fx.js"></script>
 <script>
 (() => {
   // report a result to the high-score table (no-op if scores.js is unavailable)
   const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, floatText(){}, fmt:n => String(n), reducedMotion:false };
   const $ = id => document.getElementById(id);
+  // in-page confirm from scores.js, falling back to the browser one if that file did not load
+  const ask = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(window.confirm(m));
   const SUITS = ["♠","♥","♦","♣"];
   const RL = {1:"A",11:"J",12:"Q",13:"K"};
   const rl = r => RL[r] || String(r);
   const isRed = s => s === "♥" || s === "♦";
   const NAMES = { klondike:"Klondike", spider:"Spider", freecell:"FreeCell" };
   const SUBS = {
-    klondike:"Tap a card, then tap where it should go • Double-click a card to send it to the foundations",
+    klondike:"Drag cards, or tap a card then tap where it should go • Double-click a card to send it to the foundations",
     spider:"Build King→Ace runs in one suit to clear them • Any card can go on a card one rank higher • Deal from the stock when no columns are empty",
     freecell:"All cards face up • Four free cells hold one card each • Build foundations A→K by suit • Moves multiple cards if you have room"
   };
@@ -180,6 +197,7 @@
   let stats = { klondike:{...DEF_STAT}, spider:{...DEF_STAT}, freecell:{...DEF_STAT} };
   let V = "klondike"; // active variant for the game in progress
   let S, sel = null, hist = [], seenSigs = [], moves = 0, seconds = 0, timerId = null, started = false, won = false, hintTimer = null;
+  let nextCardId = 1, autoToken = 0, animFromStock = false, dealNext = false, dragOrigins = null, drag = null, suppressClick = false;
 
   // ---------- storage (guarded) ----------
   function loadJSON(key){ try{ const o = JSON.parse(localStorage.getItem(key) || "null"); if(o && typeof o === "object") return o; }catch(e){} return null; }
@@ -204,7 +222,7 @@
 
   // ---------- setup ----------
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
-  function fullDeck(){ const d = []; for(const s of SUITS) for(let r=1;r<=13;r++) d.push({r,s,up:false}); return d; }
+  function fullDeck(){ const d = []; for(const s of SUITS) for(let r=1;r<=13;r++) d.push({r,s,up:false,id:nextCardId++}); return d; }
 
   function newGame(){
     V = settings.variant;
@@ -218,7 +236,7 @@
       const suitsUsed = SUITS.slice(0, settings.suits === 1 ? 1 : settings.suits === 2 ? 2 : 4);
       const deck = [];
       const copies = 8 / suitsUsed.length;
-      for(let n=0;n<copies;n++) for(const s of suitsUsed) for(let r=1;r<=13;r++) deck.push({r,s,up:false});
+      for(let n=0;n<copies;n++) for(const s of suitsUsed) for(let r=1;r<=13;r++) deck.push({r,s,up:false,id:nextCardId++});
       shuffle(deck);
       S = { stock:[], found:[], tab:Array.from({length:10},()=>[]) }; // found = list of completed suits
       for(let c=0;c<10;c++){ const n = c < 4 ? 6 : 5; for(let k=0;k<n;k++){ const card = deck.pop(); card.up = (k === n-1); S.tab[c].push(card); } }
@@ -231,7 +249,8 @@
     }
     sel = null; hist = []; seenSigs = []; moves = 0; seconds = 0; started = false; won = false;
     stopTimer(); clearHint(); $("banner").classList.remove("show");
-    setMsg("");
+    setMsg(""); autoToken++; dealNext = true;
+    FX.sound("flip");
     render();
   }
 
@@ -310,6 +329,7 @@
     if(!canPlace(cards, to)) return false;
     snapshot();
     doMove(from, to);
+    FX.sound(to.type === "found" ? "coin" : "card");
     afterMove();
     return true;
   }
@@ -354,6 +374,7 @@
       snapshot();
       for(let i=0;i<10;i++){ const c = S.stock.pop(); c.up = true; S.tab[i].push(c); }
       spiderCollect();
+      animFromStock = true; FX.sound("flip");
       afterMove();
       return;
     }
@@ -370,6 +391,7 @@
       S.stock = S.waste.reverse().map(c => ({ ...c, up:false }));
       S.waste = [];
     } else { unsnapshot(); return; }
+    animFromStock = true; FX.sound("flip");
     afterMove();
   }
   function win(){
@@ -384,6 +406,7 @@
     rgReport("solitaire", cat, "Fewest moves", moves, { unit:"moves", better:"low", detail:fmt(seconds) });
     $("bannerText").textContent = `${NAMES[V]} cleared in ${moves} moves${settings.timer ? " in " + fmt(seconds) : ""}.`;
     $("banner").classList.add("show");
+    FX.sound("bigwin"); FX.confetti({ count:240 });
     render();
   }
 
@@ -401,13 +424,13 @@
   }
   function onTarget(t){
     if(won) return;
-    clearHint();
+    clearHint(); autoToken++;
     if(t.type === "stock"){ onStock(); return; }
     if(sel){
       if(same(sel, t)){ sel = null; render(); return; }
       if(["tab","found","cell"].includes(t.type) && applyMove(sel, { type:t.type, i:t.i })){ return; }
       if(t.type === "tab" && !selectable(t) && S.tab[t.i].length && sel){
-        setMsg("That move isn't allowed.");
+        setMsg("That move isn't allowed."); FX.sound("error");
       }
       sel = selectable(t) ? t : null; render(); return;
     }
@@ -426,7 +449,7 @@
   }
   function undo(){
     if(!hist.length || won) return;
-    seenSigs.pop(); S = JSON.parse(hist.pop()); sel = null; clearHint(); setMsg(""); render();
+    autoToken++; seenSigs.pop(); S = JSON.parse(hist.pop()); sel = null; clearHint(); setMsg(""); FX.sound("card"); render();
   }
 
   // ---------- hints & auto-finish ----------
@@ -541,21 +564,36 @@
     setMsg(`Hint: move ${n > 1 ? n + " cards starting with " : ""}${rl(c.r)}${c.s} to ${to.type === "found" ? "a foundation" : to.type === "cell" ? "a free cell" : "column " + (to.i + 1)}.`);
     hintTimer = setTimeout(clearHint, 2500);
   }
+  // next card that can go straight to a foundation, or null
+  function foundationMove(){
+    const srcs = [];
+    for(let i=0;i<S.tab.length;i++) if(S.tab[i].length) srcs.push({ type:"tab", i, k:S.tab[i].length-1 });
+    if(V === "freecell") S.cells.forEach((c,i) => { if(c) srcs.push({ type:"cell", i }); });
+    if(V === "klondike" && S.waste.length) srcs.push({ type:"waste" });
+    for(const t of srcs) for(let f=0;f<4;f++) if(canPlace(getCards(t),{type:"found",i:f})) return { from:t, to:{ type:"found", i:f } };
+    return null;
+  }
+  // Klondike: once every tableau card is face up the game can be finished by drawing through the stock
+  const klondikeOpen = () => V === "klondike" && S.tab.every(p => p.every(c => c.up));
   function canAuto(){
     if(won || V === "spider") return false;
-    if(V === "freecell") return true;
-    return S.stock.length === 0 && S.waste.length === 0 && S.tab.every(p => p.every(c => c.up));
+    if(foundationMove()) return true;
+    return klondikeOpen() && (S.stock.length > 0 || S.waste.length > 0) && !(settings.passes > 0 && !S.stock.length && S.passes >= settings.passes - 1);
   }
   function autoFinish(){
     if(!canAuto()) return;
+    const token = ++autoToken;
+    let dry = 0;                                   // stock draws in a row that didn't free a card
     const stepFn = () => {
-      if(won) return;
-      const srcs = [];
-      for(let i=0;i<S.tab.length;i++) if(S.tab[i].length) srcs.push({ type:"tab", i, k:S.tab[i].length-1 });
-      if(V === "freecell") S.cells.forEach((c,i) => { if(c) srcs.push({ type:"cell", i }); });
-      for(const t of srcs){
-        for(let f=0;f<4;f++) if(canPlace(getCards(t),{type:"found",i:f})){ applyMove(t,{type:"found",i:f}); return setTimeout(stepFn, 70); }
+      if(won || token !== autoToken) return;
+      const m = foundationMove();
+      if(m){ dry = 0; applyMove(m.from, m.to); autoToken = token; return setTimeout(stepFn, 90); }
+      if(klondikeOpen() && (S.stock.length || S.waste.length) && dry <= S.stock.length + S.waste.length + 2){
+        const before = moves; onStock(); autoToken = token;
+        if(moves !== before){ dry++; return setTimeout(stepFn, 60); }
       }
+      setMsg(isWon() ? "" : "Auto-finish has moved everything it can — the rest is up to you.");
+      render();
     };
     stepFn();
   }
@@ -564,10 +602,12 @@
   const setMsg = t => $("msg").textContent = t;
   function cardEl(c, topOffset, attrs = {}){
     const d = document.createElement("div");
-    d.className = "card" + (c.up ? "" : " down") + (isRed(c.s) ? " red" : "");
+    const court = c.up && c.r >= 11;
+    d.className = "card" + (c.up ? "" : " down") + (isRed(c.s) ? " red" : "") + (court ? " court" : "");
     d.style.top = topOffset;
+    if(c.id) d.dataset.id = c.id;
     if(c.up){
-      d.innerHTML = `<div class="c1">${rl(c.r)}<br>${c.s}</div><div class="big">${c.s}</div><div class="c2">${rl(c.r)}<br>${c.s}</div>`;
+      d.innerHTML = `<div class="c1">${rl(c.r)}<small>${c.s}</small></div><div class="big">${court ? rl(c.r) : c.s}</div><div class="c2">${rl(c.r)}<small>${c.s}</small></div>`;
       d.setAttribute("aria-label", `${rl(c.r)} of ${c.s}`);
     }
     Object.entries(attrs).forEach(([k,v]) => d.dataset[k] = v);
@@ -592,11 +632,47 @@
       const el = cardEl(top(p), "0");
       if(sel && sel.type === "found" && sel.i === f) el.classList.add("sel");
       el.addEventListener("click", () => onTarget(t));
+      dragHook(el, t);
       pile.appendChild(el);
     }
     return pile;
   }
+  // ----- animation: remember where every card was, then slide it from there to its new place -----
+  function snapRects(){
+    const m = new Map();
+    document.querySelectorAll("#felt .card[data-id]").forEach(el => m.set(el.dataset.id, el.getBoundingClientRect()));
+    const st = document.querySelector('#felt [data-kind="stock"]');
+    return { m, stock: st ? st.getBoundingClientRect() : null };
+  }
+  function playMoves(prev, deal, fromStock){
+    if(FX.reducedMotion) return;
+    const els = document.querySelectorAll("#felt .card[data-id]");
+    const origin = deal ? $("top").getBoundingClientRect() : null;
+    els.forEach((el, n) => {
+      const now = el.getBoundingClientRect();
+      let old = deal ? null : prev.m.get(el.dataset.id);
+      if(deal) old = { left:origin.left, top:origin.top };
+      else if(!old && fromStock && prev.stock) old = prev.stock;
+      if(!old) return;
+      const dx = old.left - now.left, dy = old.top - now.top;
+      if(Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      const z = el.style.zIndex;
+      el.style.zIndex = 500 + (Number(z) || 0);
+      try{
+        const a = el.animate([{ transform:`translate(${dx}px,${dy}px)` }, { transform:"none" }],
+          { duration: deal ? 300 : 210, delay: deal ? Math.min(n * 9, 700) : 0, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
+        a.onfinish = a.oncancel = () => { el.style.zIndex = z; };
+      }catch(e){ el.style.zIndex = z; }
+    });
+  }
   function render(){
+    const prev = snapRects();
+    if(dragOrigins){ dragOrigins.forEach((r, id) => prev.m.set(id, r)); dragOrigins = null; }
+    renderInner();
+    playMoves(prev, dealNext, animFromStock);
+    dealNext = false; animFromStock = false;
+  }
+  function renderInner(){
     renderHud();
     $("h1").textContent = "Solitaire — " + NAMES[V] + (V === "spider" ? ` (${settings.suits} suit${settings.suits>1?"s":""})` : "");
     $("subLine").textContent = SUBS[V];
@@ -605,7 +681,7 @@
     if(V === "klondike"){
       const stock = document.createElement("div"); stock.className = "pile stock"; stock.dataset.kind = "stock";
       if(S.stock.length){
-        const c = cardEl({ up:false }, "0"); c.addEventListener("click", () => onTarget({ type:"stock" })); stock.appendChild(c);
+        const c = cardEl({ up:false, id:top(S.stock).id }, "0"); c.addEventListener("click", () => onTarget({ type:"stock" })); stock.appendChild(c);
         const n = document.createElement("div"); n.className = "stockCount"; n.textContent = S.stock.length; stock.appendChild(n);
       } else {
         const ok = settings.passes === 0 || S.passes < settings.passes - 1;
@@ -626,6 +702,7 @@
           const t = { type:"waste" };
           el.addEventListener("click", () => onTarget(t));
           el.addEventListener("dblclick", () => autoToFoundation(t));
+          dragHook(el, t);
         } else {
           el.classList.add("buried");
           el.addEventListener("click", () => setMsg("Only the top (rightmost) waste card can be played. The ones beneath unlock as you use it."));
@@ -639,7 +716,7 @@
     } else if(V === "spider"){
       const stock = document.createElement("div"); stock.className = "pile stock"; stock.dataset.kind = "stock";
       if(S.stock.length){
-        const c = cardEl({ up:false }, "0"); c.addEventListener("click", () => onTarget({ type:"stock" })); stock.appendChild(c);
+        const c = cardEl({ up:false, id:top(S.stock).id }, "0"); c.addEventListener("click", () => onTarget({ type:"stock" })); stock.appendChild(c);
         const n = document.createElement("div"); n.className = "stockCount"; n.textContent = (S.stock.length / 10) + " deal" + (S.stock.length > 10 ? "s" : ""); stock.appendChild(n);
       } else stock.appendChild(slot("✕"));
       topEl.appendChild(stock);
@@ -661,6 +738,7 @@
           if(sel && sel.type === "cell" && sel.i === i) el.classList.add("sel");
           el.addEventListener("click", () => onTarget(t));
           el.addEventListener("dblclick", () => autoToFoundation(t));
+          dragHook(el, t);
           pile.appendChild(el);
         }
         topEl.appendChild(pile);
@@ -686,6 +764,7 @@
         if(sel && sel.type === "tab" && sel.i === i && k >= sel.k) el.classList.add("sel");
         el.addEventListener("click", e => { e.stopPropagation(); onTarget(t); });
         el.addEventListener("dblclick", () => autoToFoundation({ type:"tab", i, k:p.length-1 }));
+        if(c.up) dragHook(el, t);
         pile.appendChild(el);
         if(k < p.length-1) off += c.up ? offUp : offDown;
       });
@@ -700,6 +779,68 @@
     const s = stats[V];
     $("statsLine").textContent = `${NAMES[V]}: played ${s.games} • won ${s.wins}` + (s.bestTime !== null ? ` • best time ${fmt(s.bestTime)} • fewest moves ${s.bestMoves}` : "");
   }
+
+  // ---------- drag and drop ----------
+  function dragHook(el, t){
+    el.addEventListener("pointerdown", e => {
+      if(won || (e.pointerType === "mouse" && e.button !== 0) || !selectable(t)) return;
+      drag = { t, el, x0:e.clientX, y0:e.clientY, pid:e.pointerId, active:false };
+    });
+  }
+  function liftCards(){
+    const t = drag.t;
+    const els = t.type === "tab" ? [...document.querySelectorAll(`[data-pile="tab${t.i}"] .card`)].filter(x => Number(x.dataset.k) >= t.k) : [drag.el];
+    if(!els.length) return false;
+    const r0 = els[0].getBoundingClientRect();
+    const layer = document.createElement("div"); layer.className = "draglayer";
+    layer.style.left = r0.left + "px"; layer.style.top = r0.top + "px"; layer.style.width = r0.width + "px";
+    els.forEach(x => {
+      const r = x.getBoundingClientRect(), c = x.cloneNode(true);
+      c.classList.remove("sel", "hint"); c.removeAttribute("data-id");
+      c.style.left = "0"; c.style.top = (r.top - r0.top) + "px"; c.style.width = r.width + "px"; c.style.height = r.height + "px";
+      layer.appendChild(c); x.classList.add("lifting");
+    });
+    document.body.appendChild(layer);
+    drag.layer = layer; drag.els = els; drag.active = true;
+    clearHint(); autoToken++;
+    return true;
+  }
+  function dropTarget(){
+    const a = drag.layer.firstChild.getBoundingClientRect();
+    let best = null, bestArea = 0;
+    document.querySelectorAll("#felt [data-pile]").forEach(pile => {
+      const id = pile.dataset.pile, m = /^(tab|cell|f)(\d+)$/.exec(id);
+      if(!m) return;
+      const to = { type: m[1] === "f" ? "found" : m[1], i:Number(m[2]) };
+      if(to.type === drag.t.type && to.i === drag.t.i) return;
+      const b = pile.getBoundingClientRect();
+      const bottom = to.type === "tab" ? b.bottom + a.height * 0.6 : b.bottom;   // be forgiving below a column
+      const w = Math.min(a.right, b.right) - Math.max(a.left, b.left), h = Math.min(a.bottom, bottom) - Math.max(a.top, b.top);
+      if(w > 0 && h > 0 && w * h > bestArea){ bestArea = w * h; best = to; }
+    });
+    return best;
+  }
+  function endDrag(cancelled){
+    const d = drag; drag = null;
+    if(!d || !d.active) return;
+    suppressClick = true; setTimeout(() => { suppressClick = false; }, 60);
+    drag = d; const to = cancelled ? null : dropTarget(); drag = null;
+    dragOrigins = new Map(d.els.map((x, i) => [x.dataset.id, d.layer.children[i].getBoundingClientRect()]));
+    d.layer.remove(); d.els.forEach(x => x.classList.remove("lifting"));
+    sel = null;
+    if(to && applyMove(d.t, to)) return;             // applyMove re-renders and the cards glide in from where they were dropped
+    if(to){ setMsg("That move isn't allowed."); FX.sound("error"); }
+    render();                                        // glide back
+  }
+  document.addEventListener("pointermove", e => {
+    if(!drag || e.pointerId !== drag.pid) return;
+    const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+    if(!drag.active){ if(Math.hypot(dx, dy) < 7) return; if(!liftCards()){ drag = null; return; } }
+    drag.layer.style.transform = `translate(${dx}px,${dy}px)`;
+  });
+  document.addEventListener("pointerup", e => { if(drag && e.pointerId === drag.pid) endDrag(false); });
+  document.addEventListener("pointercancel", e => { if(drag && e.pointerId === drag.pid) endDrag(true); });
+  document.addEventListener("click", e => { if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
 
   // ---------- settings ----------
   function syncFormVisibility(){
@@ -716,17 +857,17 @@
   }
   $("setVariant").addEventListener("change", syncFormVisibility);
   $("applySettings").addEventListener("click", async () => {
-    if(started && !won && !(await RGDialog.confirm("Apply settings and start a new game? The current game will be lost."))) return;
+    if(started && !won && !(await ask("Apply settings and start a new game? The current game will be lost."))) return;
     settings = sanitize({ variant:$("setVariant").value, suits:$("setSuits").value, draw:$("setDraw").value, passes:$("setPasses").value, timer:$("setTimer").value });
     saveJSON("sol_settings", settings); fillForm(); newGame();
   });
   $("clearCache").addEventListener("click", async () => {
-    if(!(await RGDialog.confirm("Clear saved Solitaire settings and stats and restore defaults? This starts a new game."))) return;
+    if(!(await ask("Clear saved Solitaire settings and stats and restore defaults? This starts a new game."))) return;
     try{ localStorage.removeItem("sol_settings"); localStorage.removeItem("sol_stats"); }catch(e){}
     settings = { ...DEFAULTS }; stats = loadStats(); fillForm(); newGame();
   });
 
-  $("newBtn").addEventListener("click", async () => { if(!started || won || await RGDialog.confirm("Abandon this game and deal a new one?")) newGame(); });
+  $("newBtn").addEventListener("click", async () => { if(!started || won || await ask("Abandon this game and deal a new one?")) newGame(); });
   $("bannerNew").addEventListener("click", newGame);
   $("undoBtn").addEventListener("click", undo);
   $("hintBtn").addEventListener("click", hint);

@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>High Roller Dice</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+      --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+      --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35); --d:clamp(58px, 13vw, 86px);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; display:flex; justify-content:center;
+      background:radial-gradient(1000px 600px at 50% -10%, #123a2a 0%, #0c1d1a 45%, var(--bg) 80%) fixed;
+      color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      padding:44px 20px 24px;
+    }
+    .wrap{ width:min(860px,100%); display:grid; gap:14px; align-content:start; }
+    .topbar{
+      display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .title h1{
+      margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+      background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .title h1 .em{ color:#fff; -webkit-text-fill-color:initial; }
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+    .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+    .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+    .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+    button{
+      border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text);
+      padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s;
+    }
+    button:hover:not(:disabled){ filter:brightness(1.2); }
+    button:active:not(:disabled){ transform:scale(.96); }
+    button:disabled{ opacity:.35; cursor:not-allowed; }
+    button.good{ background:linear-gradient(180deg, rgba(106,255,182,.28), rgba(106,255,182,.12)); border-color:rgba(106,255,182,.45); }
+    button.bad{ background:linear-gradient(180deg, rgba(255,106,106,.28), rgba(255,106,106,.12)); border-color:rgba(255,106,106,.45); }
+    button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+    /* ---------- table ---------- */
+    .table{
+      border-radius:30px; padding:18px; display:grid; gap:14px;
+      background:radial-gradient(ellipse at 50% 20%, #1e8a5c 0%, #0f5a3a 55%, #083323 100%);
+      box-shadow:0 0 0 10px #5b3516, 0 0 0 12px #2b1707, 0 0 0 13px rgba(255,211,106,.35), 0 26px 60px rgba(0,0,0,.6), inset 0 0 70px rgba(0,0,0,.5);
+      margin:12px;
+    }
+    .stage{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; min-height:calc(var(--d) + 44px); }
+    .puck{
+      justify-self:start; width:64px; height:64px; border-radius:50%; display:grid; place-items:center; text-align:center; font-weight:900; font-size:12px; line-height:1.1;
+      border:4px solid #fff; box-shadow:0 4px 10px rgba(0,0,0,.5); transition:background .3s, color .3s;
+    }
+    .puck.off{ background:#151515; color:#fff; }
+    .puck.on{ background:#fff; color:#111; }
+    .puck b{ display:block; font-size:22px; }
+    .dicebox{ display:flex; gap:22px; justify-content:center; padding:10px 0; }
+    .scene{ width:var(--d); height:var(--d); perspective:700px; }
+    .die{ width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 1.05s cubic-bezier(.17,.67,.25,1); }
+    .face{
+      position:absolute; inset:0; border-radius:16%; display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); padding:13%;
+      background:linear-gradient(145deg,#ff6475,#d3152f 55%,#a30a20); border:1px solid rgba(255,255,255,.35);
+      box-shadow:inset 0 0 14px rgba(0,0,0,.35), inset 0 2px 3px rgba(255,255,255,.4);
+    }
+    .pip{ width:72%; height:72%; border-radius:50%; align-self:center; justify-self:center; background:radial-gradient(circle at 35% 30%, #fff, #e6e6e6 60%, #bdbdbd); box-shadow:0 1px 2px rgba(0,0,0,.5); }
+    .f1{ transform:translateZ(calc(var(--d) / 2)); }
+    .f6{ transform:rotateY(180deg) translateZ(calc(var(--d) / 2)); }
+    .f3{ transform:rotateY(90deg) translateZ(calc(var(--d) / 2)); }
+    .f4{ transform:rotateY(-90deg) translateZ(calc(var(--d) / 2)); }
+    .f2{ transform:rotateX(90deg) translateZ(calc(var(--d) / 2)); }
+    .f5{ transform:rotateX(-90deg) translateZ(calc(var(--d) / 2)); }
+    .total{ justify-self:end; text-align:center; min-width:74px; padding:8px 12px; border-radius:14px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.2); }
+    .total small{ display:block; font-size:10px; letter-spacing:1px; color:rgba(255,255,255,.7); }
+    .total b{ font-size:30px; font-variant-numeric:tabular-nums; }
+    .msg{ text-align:center; font-weight:700; min-height:24px; }
+
+    .spots{ display:grid; gap:8px; grid-template-columns:repeat(6,1fr); }
+    .spot{
+      position:relative; display:grid; gap:2px; align-content:center; justify-items:center; text-align:center; min-height:74px; padding:8px 6px 10px;
+      border-radius:12px; border:2px solid rgba(255,255,255,.55); background:rgba(0,0,0,.14); color:#fff; font-weight:800; font-size:14px;
+    }
+    .spot small{ font-weight:600; font-size:11px; color:rgba(255,255,255,.75); }
+    .spot .odds{ font-size:11px; color:var(--gold); font-weight:800; }
+    .spot.s2{ grid-column:span 2; } .spot.s3{ grid-column:span 3; } .spot.s6{ grid-column:span 6; }
+    .spot:disabled{ opacity:1; }
+    .spot.locked{ border-style:dashed; border-color:rgba(255,255,255,.3); }
+    .spot.locked:not(.has) > span:first-child, .spot.locked:not(.has) small, .spot.locked:not(.has) .odds{ opacity:.4; }
+    .spot.locked.has::after{ content:"🔒 stays until the point is settled"; font-size:10px; font-weight:600; color:rgba(255,255,255,.8); }
+    .spot.win{ animation:flashWin .5s ease-in-out 3; border-color:var(--ok); }
+    .spot.lose{ animation:flashLose .5s ease-in-out 2; }
+    @keyframes flashWin{ 50%{ background:rgba(106,255,182,.4); box-shadow:0 0 22px rgba(106,255,182,.8); } }
+    @keyframes flashLose{ 50%{ background:rgba(255,106,106,.35); } }
+    .stack{
+      position:absolute; top:-9px; right:-7px; min-width:34px; height:34px; padding:0 6px; border-radius:999px; display:none; place-items:center;
+      font-size:12px; font-weight:900; color:#111; background:radial-gradient(circle at 35% 30%, #fff8dc, var(--gold) 60%, var(--gold2));
+      border:3px dashed rgba(255,255,255,.95); box-shadow:0 3px 8px rgba(0,0,0,.5); font-variant-numeric:tabular-nums;
+    }
+    .spot.has .stack{ display:grid; }
+    .chips{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; }
+    .chip{
+      width:54px; height:54px; border-radius:50%; padding:0; font-size:13px; font-weight:900; color:#fff; border:4px dashed rgba(255,255,255,.8);
+      box-shadow:0 4px 10px rgba(0,0,0,.45), inset 0 0 0 3px rgba(0,0,0,.2); transition:transform .15s, box-shadow .15s, filter .12s;
+    }
+    .chip[data-v="1"]{ background:#7a8699; } .chip[data-v="5"]{ background:#c0392b; } .chip[data-v="25"]{ background:#1e8449; }
+    .chip[data-v="100"]{ background:#1b1b1f; } .chip[data-v="500"]{ background:#7d3c98; }
+    .chip.sel{ transform:translateY(-8px) scale(1.08); box-shadow:0 12px 18px rgba(0,0,0,.5), 0 0 0 3px var(--gold); }
+    .rollbtn{
+      padding:14px 34px; font-size:18px; font-weight:900; letter-spacing:1px; border-radius:16px; color:#2b1b00; border:2px solid #fff3c4;
+      background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); box-shadow:0 5px 0 #8a5a08, 0 12px 20px rgba(0,0,0,.45);
+    }
+    .rollbtn:active:not(:disabled){ transform:translateY(4px); box-shadow:0 1px 0 #8a5a08, 0 6px 12px rgba(0,0,0,.45); }
+    .history{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; min-height:30px; }
+    .history span{ width:30px; height:30px; border-radius:8px; display:grid; place-items:center; font-weight:800; font-size:13px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18); }
+    .history span.seven{ background:rgba(255,106,106,.3); border-color:rgba(255,106,106,.6); }
+    .history span.dbl{ background:rgba(255,211,106,.25); border-color:rgba(255,211,106,.6); }
+    .history span:first-child{ outline:2px solid #fff; }
+
+    .panel{ display:grid; gap:12px; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+    .faint{ color:var(--muted); font-size:12px; text-align:center; }
+    label.check{ display:inline-flex; gap:8px; align-items:center; font-size:13px; cursor:pointer; }
+    details.settings{ border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:rgba(0,0,0,.2); }
+    details.settings summary{ cursor:pointer; font-weight:600; font-size:14px; }
+    details.settings ul{ margin:10px 0; padding-left:18px; font-size:13px; color:var(--muted); line-height:1.6; }
+    details.settings ul b{ color:var(--text); }
+    .fields{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:12px 0; }
+    .fields label{ display:grid; gap:4px; font-size:12px; color:var(--muted); }
+    .fields input{ padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); font-size:14px; width:100%; }
+    @media (max-width:600px){
+      body{ padding:44px 8px 16px; }
+      .table{ padding:12px; margin:10px; }
+      .spots{ grid-template-columns:repeat(2,1fr); }
+      .spot.s2, .spot.s3{ grid-column:span 1; } .spot.s6, .spot.wide{ grid-column:span 2; }
+      .puck{ width:52px; height:52px; font-size:10px; } .puck b{ font-size:18px; }
+      .chip{ width:46px; height:46px; font-size:12px; }
+    }
+    @media (prefers-reduced-motion:reduce){ .die{ transition:none; } .spot.win, .spot.lose{ animation:none; } }
+  </style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1><span class="em">🎲</span> HIGH ROLLER DICE</h1>
+      <div class="sub">Play-money chips only • Craps-style table • Pick a chip, tap the bets you like, then roll</div>
+    </div>
+    <div class="row">
+      <span class="pill">💰 Chips <b id="bank">0</b></span>
+      <span class="pill">On the table <b id="onTable">0</b></span>
+    </div>
+  </div>
+
+  <div class="table">
+    <div class="stage">
+      <div class="puck off" id="puck">OFF</div>
+      <div class="dicebox" id="dicebox">
+        <div class="scene"><div class="die" id="die0"></div></div>
+        <div class="scene"><div class="die" id="die1"></div></div>
+      </div>
+      <div class="total"><small>TOTAL</small><b id="total">–</b></div>
+    </div>
+    <div class="msg" id="msg" aria-live="polite">Place a bet and roll the dice.</div>
+    <div class="spots" id="spots"></div>
+    <div class="history" id="history" aria-label="Recent rolls"></div>
+  </div>
+
+  <div class="panel">
+    <div class="chips" id="chips">
+      <button class="chip" data-v="1">1</button>
+      <button class="chip" data-v="5">5</button>
+      <button class="chip" data-v="25">25</button>
+      <button class="chip" data-v="100">100</button>
+      <button class="chip" data-v="500">500</button>
+    </div>
+    <div class="row">
+      <button id="undoBtn">↶ Undo chip</button>
+      <button id="clearBtn">Clear bets</button>
+      <button id="rebetBtn">Repeat last bets</button>
+      <button class="rollbtn" id="rollBtn">ROLL</button>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="autoRebet"> Put my bets back up after every roll</label>
+    </div>
+    <div class="faint" id="statsLine"></div>
+    <div class="row" id="brokeRow" style="display:none">
+      <span>You're out of chips.</span>
+      <button class="good" id="refillBtn">Refill chips</button>
+    </div>
+    <details class="settings">
+      <summary>📖 How the bets work</summary>
+      <ul>
+        <li><b>Pass Line</b> — placed before a "come-out" roll (puck OFF). 7 or 11 wins straight away; 2, 3 or 12 loses. Any other total becomes the <b>point</b> (puck ON) and the bet stays up: roll the point again to win, roll a 7 first and it loses. Pays 1:1.</li>
+        <li><b>Don't Pass</b> — the opposite: 2 or 3 wins on the come-out, 12 is a tie, 7 or 11 loses. Once a point is set, a 7 wins and the point loses. Pays 1:1.</li>
+        <li><b>Under 7 / Over 7</b> — one roll, pays 1:1. A 7 loses both.</li>
+        <li><b>Lucky 7</b> — one roll, pays 4:1.</li>
+        <li><b>Field</b> — one roll: 3, 4, 9, 10 or 11 pays 1:1, a 2 pays 2:1 and a 12 pays 3:1.</li>
+        <li><b>Any Doubles</b> pays 4:1 • <b>Any Craps</b> (2, 3 or 12) pays 7:1 • <b>Eleven</b> pays 15:1 • <b>Snake Eyes</b> (1+1) and <b>Boxcars</b> (6+6) pay 30:1.</li>
+        <li>Right-click (or use Undo) to take a chip back. Pass and Don't Pass are locked while the point is on.</li>
+      </ul>
+    </details>
+    <details class="settings">
+      <summary>⚙ Settings</summary>
+      <div class="fields">
+        <label>Starting chips
+          <input type="number" id="setStart" min="10" max="10000000" step="10">
+        </label>
+      </div>
+      <div class="row">
+        <button class="good" id="applySettings">Apply &amp; restart</button>
+        <button class="bad" id="clearCache">🗑 Clear cache</button>
+      </div>
+      <div class="faint" style="margin-top:8px">Applying restarts with your starting chips. Clear cache erases saved chips, stats and settings. Space bar rolls.</div>
+    </details>
+  </div>
+</div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ===== DICE ENGINE (pure rules, no DOM) =====
+  // multi: stays on the table across rolls until it wins or loses. Others are settled by a single roll.
+  const BETS = [
+    { id:"pass",     name:"Pass Line",   note:"7 or 11 wins • then hit the point", odds:"1 : 1",  multi:true, cls:"s3 wide" },
+    { id:"dontpass", name:"Don't Pass",  note:"2 or 3 wins • then 7 before the point", odds:"1 : 1", multi:true, cls:"s3 wide" },
+    { id:"under",    name:"Under 7",     note:"2 – 6",  odds:"1 : 1", cls:"s2" },
+    { id:"seven",    name:"Lucky 7",     note:"exactly 7", odds:"4 : 1", cls:"s2" },
+    { id:"over",     name:"Over 7",      note:"8 – 12", odds:"1 : 1", cls:"s2" },
+    { id:"field",    name:"Field",       note:"3 · 4 · 9 · 10 · 11  •  2 pays double  •  12 pays triple", odds:"1 : 1", cls:"s6 wide" },
+    { id:"doubles",  name:"Any Doubles", note:"both dice match", odds:"4 : 1", cls:"s2" },
+    { id:"craps",    name:"Any Craps",   note:"2, 3 or 12", odds:"7 : 1", cls:"s2" },
+    { id:"yo",       name:"Eleven",      note:"5 + 6", odds:"15 : 1", cls:"s2" },
+    { id:"snake",    name:"Snake Eyes",  note:"1 + 1", odds:"30 : 1", cls:"s3" },
+    { id:"box",      name:"Boxcars",     note:"6 + 6", odds:"30 : 1", cls:"s3" }
+  ];
+  const BET = Object.fromEntries(BETS.map(b => [b.id, b]));
+  // Returns the profit multiple for a winning bet, 0 for a push, -1 for a loss, or null if the bet stays up.
+  function settle(id, d1, d2, point){
+    const t = d1 + d2;
+    switch(id){
+      case "pass":
+        if(point === null) return (t === 7 || t === 11) ? 1 : (t === 2 || t === 3 || t === 12) ? -1 : null;
+        return t === point ? 1 : t === 7 ? -1 : null;
+      case "dontpass":
+        if(point === null) return (t === 2 || t === 3) ? 1 : t === 12 ? 0 : (t === 7 || t === 11) ? -1 : null;
+        return t === 7 ? 1 : t === point ? -1 : null;
+      case "under":   return t < 7 ? 1 : -1;
+      case "over":    return t > 7 ? 1 : -1;
+      case "seven":   return t === 7 ? 4 : -1;
+      case "field":   return t === 2 ? 2 : t === 12 ? 3 : [3,4,9,10,11].includes(t) ? 1 : -1;
+      case "doubles": return d1 === d2 ? 4 : -1;
+      case "craps":   return (t === 2 || t === 3 || t === 12) ? 7 : -1;
+      case "yo":      return t === 11 ? 15 : -1;
+      case "snake":   return t === 2 ? 30 : -1;
+      case "box":     return t === 12 ? 30 : -1;
+    }
+    return -1;
+  }
+  function nextPoint(d1, d2, point){
+    const t = d1 + d2;
+    if(point === null) return [4,5,6,8,9,10].includes(t) ? t : null;
+    return (t === point || t === 7) ? null : point;
+  }
+  // ===== END DICE ENGINE =====
+
+  // ---------- state ----------
+  const DEFAULTS = { start:1000 };
+  const DEF_STATS = { rolls:0, wagered:0, won:0, biggest:0 };
+  let settings = { ...DEFAULTS }, stats = { ...DEF_STATS };
+  let bank = 0, runPeak = 0, point = null, bets = {}, lastBets = {}, placed = [], chip = 25, rolling = false, history = [], autoRebet = false;
+  const spins = [0, 0];
+
+  const load = k => { try{ const o = JSON.parse(localStorage.getItem(k) || "null"); return o && typeof o === "object" ? o : null; }catch(e){ return null; } };
+  const save = (k, o) => { try{ localStorage.setItem(k, JSON.stringify(o)); }catch(e){} };
+  function sanitize(o){
+    const v = Math.round(Number(o.start));
+    return { start: Number.isFinite(v) ? Math.max(10, Math.min(10000000, v)) : DEFAULTS.start };
+  }
+  const tableTotal = () => Object.values(bets).reduce((a, b) => a + b, 0);
+  function saveState(){ save("dice_state", { bank, runPeak, point, bets, lastBets, history, autoRebet, chip }); save("dice_stats", stats); }
+  function cleanBets(o){
+    const out = {};
+    if(o && typeof o === "object") for(const b of BETS){ const v = Math.floor(Number(o[b.id])); if(Number.isFinite(v) && v > 0) out[b.id] = v; }
+    return out;
+  }
+  function loadAll(){
+    settings = sanitize({ ...DEFAULTS, ...(load("dice_settings") || {}) });
+    const st = load("dice_stats"); if(st) for(const k of Object.keys(DEF_STATS)) if(Number.isFinite(st[k])) stats[k] = st[k];
+    bank = settings.start; runPeak = bank;
+    const s = load("dice_state");
+    if(s){
+      if(Number.isFinite(s.bank) && s.bank >= 0) bank = Math.floor(s.bank);
+      if([4,5,6,8,9,10].includes(s.point)) point = s.point;
+      bets = cleanBets(s.bets); lastBets = cleanBets(s.lastBets);
+      if(Array.isArray(s.history)) history = s.history.filter(h => Array.isArray(h) && h.length === 2 && h.every(n => Number.isInteger(n) && n >= 1 && n <= 6)).slice(0, 18);
+      autoRebet = !!s.autoRebet;
+      if([1,5,25,100,500].includes(s.chip)) chip = s.chip;
+      runPeak = Math.max(bank + tableTotal(), Number(s.runPeak) || 0);
+    }
+  }
+
+  // ---------- dice ----------
+  const PIPS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+  const SHOW = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] }; // cube rotation [x,y] that brings each face to the front
+  function buildDie(el){
+    for(let f=1; f<=6; f++){
+      const face = document.createElement("div"); face.className = "face f" + f;
+      for(let i=0;i<9;i++){ const cell = document.createElement("span"); if(PIPS[f].includes(i)) cell.className = "pip"; face.appendChild(cell); }
+      el.appendChild(face);
+    }
+  }
+  function showDie(i, n, spin){
+    if(spin) spins[i] += 2 + Math.floor(Math.random() * 2);
+    const [x, y] = SHOW[n], k = spins[i] * 360;
+    $("die" + i).style.transform = `rotateX(${x + k}deg) rotateY(${y + k * (i ? -1 : 1)}deg)`;
+  }
+
+  // ---------- rendering ----------
+  let shownBank = 0;
+  function setBank(animated){ FX.countTo($("bank"), shownBank, bank, animated ? 600 : 0); shownBank = bank; }
+  const setMsg = t => $("msg").textContent = t;
+  const locked = id => !!BET[id].multi && point !== null;
+  function buildSpots(){
+    const box = $("spots");
+    BETS.forEach(b => {
+      const el = document.createElement("button");
+      el.className = "spot " + (b.cls || ""); el.dataset.id = b.id; el.type = "button";
+      el.innerHTML = `<span>${b.name}</span><small>${b.note}</small><span class="odds">pays ${b.odds}</span><span class="stack"></span>`;
+      el.addEventListener("click", () => place(b.id));
+      el.addEventListener("contextmenu", e => { e.preventDefault(); takeBack(b.id); });
+      box.appendChild(el);
+    });
+  }
+  function render(){
+    $("onTable").textContent = FX.fmt(tableTotal());
+    document.querySelectorAll(".spot").forEach(el => {
+      const id = el.dataset.id, v = bets[id] || 0;
+      el.classList.toggle("has", v > 0);
+      el.classList.toggle("locked", locked(id));
+      el.querySelector(".stack").textContent = v ? FX.fmt(v) : "";
+      el.disabled = rolling || (locked(id));
+      el.setAttribute("aria-label", `${BET[id].name}, pays ${BET[id].odds}${v ? `, ${v} chips bet` : ""}${locked(id) ? ", locked until the point is settled" : ""}`);
+    });
+    const p = $("puck");
+    p.className = "puck " + (point === null ? "off" : "on");
+    p.innerHTML = point === null ? "OFF" : `POINT<b>${point}</b>`;
+    document.querySelectorAll(".chip").forEach(c => { c.classList.toggle("sel", Number(c.dataset.v) === chip); c.disabled = rolling; c.setAttribute("aria-pressed", Number(c.dataset.v) === chip ? "true" : "false"); });
+    $("rollBtn").disabled = rolling || tableTotal() === 0;
+    $("undoBtn").disabled = rolling || placed.length === 0;
+    $("clearBtn").disabled = rolling || !Object.keys(bets).some(id => !locked(id));
+    $("rebetBtn").disabled = rolling || Object.keys(lastBets).length === 0;
+    $("autoRebet").checked = autoRebet;
+    const h = $("history"); h.innerHTML = "";
+    history.forEach(([a, b]) => { const s = document.createElement("span"); s.textContent = a + b; s.title = `${a} + ${b}`; if(a + b === 7) s.className = "seven"; else if(a === b) s.className = "dbl"; h.appendChild(s); });
+    $("brokeRow").style.display = (!rolling && bank <= 0 && tableTotal() === 0) ? "flex" : "none";
+    const net = stats.won - stats.wagered;
+    $("statsLine").textContent = `Rolls ${FX.fmt(stats.rolls)} • Bets settled ${FX.fmt(stats.wagered)} • Paid back ${FX.fmt(stats.won)} • Net ${net >= 0 ? "+" : "−"}${FX.fmt(Math.abs(net))} • Biggest roll +${FX.fmt(stats.biggest)}`;
+  }
+
+  // ---------- betting ----------
+  function place(id, amount, quiet){
+    if(rolling) return false;
+    if(locked(id)){ if(!quiet){ setMsg(`${BET[id].name} can only be bet before the come-out roll (puck OFF).`); FX.sound("error"); } return false; }
+    const v = Math.min(amount || chip, bank);
+    if(v <= 0){ if(!quiet){ setMsg("You don't have enough chips for that."); FX.sound("error"); } return false; }
+    bank -= v; bets[id] = (bets[id] || 0) + v; placed.push([id, v]);
+    if(!quiet){ FX.sound("chip"); setBank(false); saveState(); render(); }
+    return true;
+  }
+  function takeBack(id){
+    if(rolling || !bets[id] || locked(id)) return;
+    for(let i=placed.length-1;i>=0;i--) if(placed[i][0] === id){ const [, v] = placed.splice(i, 1)[0]; refund(id, v); return; }
+    refund(id, bets[id]);
+  }
+  function refund(id, v){
+    v = Math.min(v, bets[id] || 0); if(!v) return;
+    bets[id] -= v; if(bets[id] <= 0) delete bets[id];
+    bank += v; FX.sound("click"); setBank(false); saveState(); render();
+  }
+  function undoChip(){
+    if(rolling) return;
+    while(placed.length){ const [id, v] = placed.pop(); if(bets[id] && !locked(id)){ refund(id, v); return; } }
+    render();
+  }
+  function clearBets(){
+    if(rolling) return;
+    Object.keys(bets).forEach(id => { if(!locked(id)){ bank += bets[id]; delete bets[id]; } });
+    placed = placed.filter(([id]) => bets[id]);
+    FX.sound("click"); setBank(false); saveState(); render();
+  }
+  function rebet(quiet){
+    if(rolling) return;
+    let any = false;
+    for(const b of BETS){
+      const want = lastBets[b.id] || 0, have = bets[b.id] || 0;
+      if(want > have && place(b.id, want - have, true)) any = true;
+    }
+    if(any){ if(!quiet) FX.sound("chip"); setBank(false); saveState(); }
+    else if(!quiet) setMsg("Nothing to repeat right now.");
+    render();
+  }
+
+  // ---------- rolling ----------
+  function endRun(){
+    if(runPeak > settings.start) rgReport("dice", "", "Highest balance", runPeak, { unit:"chips", better:"high", detail:`started with ${settings.start}` });
+    runPeak = settings.start;
+  }
+  async function roll(){
+    if(rolling || tableTotal() === 0) return;
+    rolling = true; placed = []; lastBets = { ...bets };
+    document.querySelectorAll(".spot").forEach(el => el.classList.remove("win", "lose"));
+    setMsg("Rolling…"); render();
+    const d1 = 1 + Math.floor(Math.random() * 6), d2 = 1 + Math.floor(Math.random() * 6);
+    FX.sound("roll");
+    showDie(0, d1, true); showDie(1, d2, true);
+    try{ $("dicebox").animate([{ transform:"translateY(0)" }, { transform:"translateY(-26px)" }, { transform:"translateY(0)" }, { transform:"translateY(-9px)" }, { transform:"translateY(0)" }], { duration:900, easing:"ease-out" }); }catch(e){}
+    await sleep(FX.reducedMotion ? 150 : 1100);
+
+    const t = d1 + d2, wasPoint = point;
+    let paid = 0, staked = 0, profit = 0;
+    const lines = [];
+    for(const id of Object.keys(bets)){
+      const stake = bets[id], r = settle(id, d1, d2, point);
+      if(r === null) continue;
+      const el = document.querySelector(`.spot[data-id="${id}"]`);
+      staked += stake; delete bets[id];
+      if(r > 0){ const w = stake * r; paid += stake + w; profit += w; el.classList.add("win"); FX.floatText(el, "+" + FX.fmt(w), "#6affb6"); lines.push(`${BET[id].name} +${FX.fmt(w)}`); }
+      else if(r === 0){ paid += stake; lines.push(`${BET[id].name} push`); }
+      else { profit -= stake; el.classList.add("lose"); }
+    }
+    point = nextPoint(d1, d2, point);
+    bank += paid; stats.rolls++; stats.wagered += staked; stats.won += paid;
+    if(profit > stats.biggest) stats.biggest = profit;
+    history.unshift([d1, d2]); history = history.slice(0, 18);
+    $("total").textContent = t;
+    runPeak = Math.max(runPeak, bank + tableTotal());
+
+    let head = `Rolled ${d1} + ${d2} = ${t}.`;
+    if(wasPoint === null && point !== null) head += ` The point is ${point}.`;
+    else if(wasPoint !== null && point === null) head += t === 7 ? " Seven out!" : ` Point ${wasPoint} made!`;
+    setMsg(staked === 0 ? head + " Your bets stay up." : profit > 0 ? `${head} You won ${FX.fmt(profit)}! (${lines.join(", ")})` : profit < 0 ? `${head} You lost ${FX.fmt(-profit)}.` : `${head} Even — bets returned.`);
+    if(profit > 0){
+      rgReport("dice", "", "Biggest single win", profit, { unit:"chips", better:"high", detail:`rolled ${d1}+${d2}` });
+      FX.sound(profit >= staked * 5 ? "bigwin" : "win");
+      if(profit >= Math.max(200, staked * 10)) FX.confetti();
+    } else if(profit < 0) FX.sound("lose");
+    setBank(profit > 0);
+    rolling = false;
+    if(bank <= 0 && tableTotal() === 0) endRun();
+    if(autoRebet && bank > 0) rebet(true);
+    saveState(); render();
+  }
+
+  // ---------- wiring ----------
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => { chip = Number(c.dataset.v); FX.sound("click"); saveState(); render(); }));
+  $("rollBtn").addEventListener("click", roll);
+  $("undoBtn").addEventListener("click", undoChip);
+  $("clearBtn").addEventListener("click", clearBets);
+  $("rebetBtn").addEventListener("click", () => rebet(false));
+  $("autoRebet").addEventListener("change", e => { autoRebet = e.target.checked; saveState(); });
+  function restart(){
+    endRun();
+    bank = settings.start; runPeak = bank; point = null; bets = {}; lastBets = {}; placed = []; history = [];
+    $("total").textContent = "–"; document.querySelectorAll(".spot").forEach(el => el.classList.remove("win", "lose"));
+    setMsg("Fresh chips — place a bet and roll."); saveState(); setBank(false); render();
+  }
+  $("refillBtn").addEventListener("click", restart);
+  const confirmBox = msg => window.RGDialog ? window.RGDialog.confirm(msg) : Promise.resolve(true);
+  $("applySettings").addEventListener("click", async () => {
+    if(rolling || !(await confirmBox("Restart with these starting chips? Your current chips and bets will be replaced."))) return;
+    settings = sanitize({ start:$("setStart").value }); save("dice_settings", settings); $("setStart").value = settings.start; restart();
+  });
+  $("clearCache").addEventListener("click", async () => {
+    if(rolling || !(await confirmBox("Clear all saved Dice data (chips, stats and settings) and restore defaults?"))) return;
+    try{ ["dice_state","dice_stats","dice_settings"].forEach(k => localStorage.removeItem(k)); }catch(e){}
+    settings = { ...DEFAULTS }; stats = { ...DEF_STATS }; autoRebet = false; chip = 25; $("setStart").value = settings.start; runPeak = settings.start; restart();
+  });
+  document.addEventListener("keydown", e => {
+    const tag = e.target.tagName;
+    if(tag === "INPUT" || tag === "BUTTON" || tag === "SUMMARY" || tag === "A") return;
+    if(e.key === " " || e.key === "Enter"){ e.preventDefault(); roll(); }
+  });
+
+  // ---------- start ----------
+  loadAll();
+  buildDie($("die0")); buildDie($("die1")); buildSpots();
+  const last = history[0] || [3, 4];
+  showDie(0, last[0], false); showDie(1, last[1], false);
+  if(history[0]) $("total").textContent = history[0][0] + history[0][1];
+  $("setStart").value = settings.start;
+  shownBank = bank; setBank(false);
+  if(point !== null) setMsg(`The point is ${point}. Roll again!`);
+  render();
+})();
+</script>
+</body>
+</html>
