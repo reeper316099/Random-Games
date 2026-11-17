@@ -109,6 +109,7 @@
     .err{ color:var(--danger); font-size:12px; min-height:16px; }
     @media (prefers-reduced-motion:reduce){ .cell.opening, .cell.mine.late, .cell.tip, .board.shake{ animation:none; } }
   </style>
+<script src="../themes.js"></script>
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
@@ -127,6 +128,7 @@
 
   <div class="grp" style="justify-content:center">
     <input id="seedInput" placeholder="Seed (optional)" aria-label="Seed" />
+    <span data-season-slot></span>
     <button id="hintBtn">💡 Hint</button>
     <button id="assistBtn">Assist: OFF</button>
     <button id="flagModeBtn">🚩 Flag mode</button>

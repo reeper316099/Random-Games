@@ -141,6 +141,7 @@
     }
     @media (prefers-reduced-motion:reduce){ .z.hit, .chip.win{ animation:none; } }
   </style>
+<script src="../themes.js"></script>
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
@@ -222,6 +223,8 @@
   const WHEEL = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
   const REDS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
   const colorOf = n => n === 0 ? "green" : REDS.has(n) ? "red" : "black";
+  // the colour as a season names it ("pink", "navy"…); falls back to red / black / green
+  const cname = n => { const c = colorOf(n), p = window.RGThemes && window.RGThemes.palette && window.RGThemes.palette(); return p ? (c === "red" ? p.rn : c === "black" ? p.bn : p.zn) : c; };
   const num = (r, j) => 3 * (j + 1) - r;                       // r = 0 (top row: 3,6,9…) … 2 (bottom row: 1,4,7…); j = column 0…11
   // Every place a chip can go. Table geometry is in "cell units": 14 columns x 5 rows (zero column, 12 number columns, column bets).
   function buildZones(){
@@ -396,8 +399,8 @@
   }
   function showResult(n, hadBets, net){
     const b = $("badge"); b.className = "badge pop " + colorOf(n); b.textContent = n;
-    const props = n === 0 ? "Zero — the house wins even-money bets" : `${colorOf(n)[0].toUpperCase() + colorOf(n).slice(1)} • ${n % 2 ? "Odd" : "Even"} • ${n <= 18 ? "Low (1-18)" : "High (19-36)"}`;
-    $("rTitle").textContent = n === 0 ? "Zero!" : `${n} ${colorOf(n)}`;
+    const props = n === 0 ? "Zero — the house wins even-money bets" : `${cname(n)[0].toUpperCase() + cname(n).slice(1)} • ${n % 2 ? "Odd" : "Even"} • ${n <= 18 ? "Low (1-18)" : "High (19-36)"}`;
+    $("rTitle").textContent = n === 0 ? "Zero!" : `${n} ${cname(n)}`;
     $("rSub").textContent = props;
   }
 
@@ -409,11 +412,16 @@
   const mod = (a, m) => ((a % m) + m) % m;
   let wheelAngle = 0, ballAngle = 0, ballR = R_POCKET, ballPocket = null, off = null;
   const pocketAngle = i => -Math.PI / 2 + (i + .5) * STEP;     // centre of pocket i in the wheel's own frame
+  function wheelTheme(){
+    const p = window.RGThemes && window.RGThemes.palette && window.RGThemes.palette();
+    return p ? { w1:p.w1, w2:p.w2, w3:p.railD, wr:p.wr, wb:p.wb, wg:p.wg } : { w1:"#7a4a22", w2:"#4a2a10", w3:"#2a1507", wr:"#c8203a", wb:"#14161d", wg:"#0f8a47" };
+  }
   function drawStatic(){
+    const T = wheelTheme();
     off = document.createElement("canvas"); off.width = off.height = SIZE * DPR;
     const o = off.getContext("2d"); o.scale(DPR, DPR); o.translate(R, R);
     let gr = o.createRadialGradient(0, 0, R * .7, 0, 0, R);
-    gr.addColorStop(0, "#7a4a22"); gr.addColorStop(.6, "#4a2a10"); gr.addColorStop(1, "#2a1507");
+    gr.addColorStop(0, T.w1); gr.addColorStop(.6, T.w2); gr.addColorStop(1, T.w3);
     o.fillStyle = gr; o.beginPath(); o.arc(0, 0, R, 0, TAU); o.fill();
     o.strokeStyle = "#ffd36a"; o.lineWidth = 2; o.beginPath(); o.arc(0, 0, R * .985, 0, TAU); o.stroke();
     gr = o.createRadialGradient(0, 0, R * .72, 0, 0, R * .93);
@@ -422,7 +430,7 @@
     for(let i=0;i<37;i++){
       const a0 = -Math.PI / 2 + i * STEP, a1 = a0 + STEP, n = WHEEL[i];
       o.beginPath(); o.moveTo(Math.cos(a0) * R * .5, Math.sin(a0) * R * .5); o.arc(0, 0, R * .74, a0, a1); o.arc(0, 0, R * .5, a1, a0, true); o.closePath();
-      o.fillStyle = n === 0 ? "#0f8a47" : REDS.has(n) ? "#c8203a" : "#14161d"; o.fill();
+      o.fillStyle = n === 0 ? T.wg : REDS.has(n) ? T.wr : T.wb; o.fill();
       o.strokeStyle = "#e9dcae"; o.lineWidth = 1.2; o.stroke();
       o.save(); o.rotate(a0 + STEP / 2 + Math.PI / 2); o.fillStyle = "#fff"; o.font = "700 " + (R * .085) + "px system-ui,sans-serif"; o.textAlign = "center"; o.textBaseline = "middle";
       o.fillText(String(n), 0, -R * .685); o.restore();
@@ -504,11 +512,11 @@
       if(net > 0){
         stats.biggest = Math.max(stats.biggest, net);
         rgReport("roulette", "", "Biggest single win", net, { unit:"chips", better:"high", detail:`${n} came up on a ${FX.fmt(total)} bet` });
-        setMsg(`🎉 ${n} ${colorOf(n)}! You won ${FX.fmt(net)} chips.`);
+        setMsg(`🎉 ${n} ${cname(n)}! You won ${FX.fmt(net)} chips.`);
         FX.floatText($("bank"), "+" + FX.fmt(net), "#6affb6");
         if(res.returned >= total * 12){ FX.sound("bigwin"); FX.confetti({ count: 200 }); pause += 800; } else FX.sound("win");
-      } else setMsg(`${n} ${colorOf(n)} — you got ${FX.fmt(res.returned)} back, net ${FX.fmt(net)}.`);
-    } else { setMsg(`${n} ${colorOf(n)} — no winning bets. You lost ${FX.fmt(total)}.`); FX.sound("lose"); }
+      } else setMsg(`${n} ${cname(n)} — you got ${FX.fmt(res.returned)} back, net ${FX.fmt(net)}.`);
+    } else { setMsg(`${n} ${cname(n)} — no winning bets. You lost ${FX.fmt(total)}.`); FX.sound("lose"); }
     setBank(true);
     await sleep(pause);
     bets.clear(); order = []; chipEls.forEach(e => e.remove()); chipEls.clear();
@@ -562,6 +570,7 @@
   loadAll();
   buildTable(); buildTray(); drawStatic();
   ballPocket = null; draw();
+  window.addEventListener("rg-season", () => { drawStatic(); draw(); });
   renderHistory();
   $("setStart").value = settings.start;
   shownBank = bank; setBank(false); update();

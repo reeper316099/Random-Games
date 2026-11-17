@@ -148,6 +148,7 @@
     .status.err{ color:var(--danger); }
     @media (prefers-reduced-motion:reduce){ .sq.hintA::before, .sq.hintB::before{ animation:none; } }
   </style>
+<script src="../themes.js"></script>
 </head>
 
 <body>
@@ -171,6 +172,8 @@
         <select id="themeSel" aria-label="Board theme">
           <option value="classic">Classic green</option><option value="walnut">Walnut</option><option value="ocean">Ocean</option>
           <option value="midnight">Midnight</option><option value="rose">Rose</option>
+          <option value="season:spring">🌸 Spring</option><option value="season:summer">☀️ Summer</option>
+          <option value="season:fall">🍂 Fall</option><option value="season:winter">❄️ Winter</option><option value="season:auto">🗓️ Auto (by date)</option>
         </select>
         <button id="flipBtn" title="Flip the board">⇅ Flip</button>
         <button id="hintBtn">💡 Hint</button>
@@ -1092,7 +1095,7 @@
     document.querySelectorAll("#sideSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.side));
     const cpu = settings.mode === "cpu";
     $id("diffSeg").style.display = $id("sideSeg").style.display = cpu ? "" : "none";
-    $id("themeSel").value = settings.theme; boardEl.dataset.theme = settings.theme;
+    syncSeason(); boardEl.dataset.theme = settings.theme;
 
     const lm = inReplay ? replay.lasts[replay.idx] : lastMove;
     const king = findKing(board, turn), kingInCheck = king ? isInCheck(board, turn) : false;
@@ -1141,7 +1144,18 @@
   $id("modeSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("mode", b.dataset.v); });
   $id("diffSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("diff", b.dataset.v); });
   $id("sideSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("side", b.dataset.v); });
-  $id("themeSel").addEventListener("change", e => setSetting("theme", e.target.value));
+  // Board colours: the plain themes, plus the shared seasonal themes (themes.js), which also recolour the pieces and page.
+  $id("themeSel").addEventListener("change", e => {
+    const v = e.target.value, T = window.RGThemes;
+    if(v.startsWith("season:")){ if(T) T.set(v.slice(7)); FX.sound("click"); syncSeason(); return; }
+    if(T) T.set("classic");
+    setSetting("theme", v); syncSeason();
+  });
+  function syncSeason(){
+    const T = window.RGThemes, sel = $id("themeSel");
+    sel.value = T && T.get() !== "classic" ? "season:" + T.get() : settings.theme;
+  }
+  window.addEventListener("rg-season", syncSeason);
   $id("flipBtn").addEventListener("click", () => { flipped = !flipped; FX.sound("click"); render(); });
   $id("hintBtn").addEventListener("click", hint);
   $id("undoBtn").addEventListener("click", undo);

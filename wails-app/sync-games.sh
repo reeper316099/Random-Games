@@ -9,7 +9,7 @@ DEST=frontend/dist/games
 
 rm -rf "$DEST"
 mkdir -p "$DEST"
-cp "$SRC/index.html" "$SRC/scores.js" "$SRC/fx.js" "$DEST/"
+cp "$SRC/index.html" "$SRC/scores.js" "$SRC/fx.js" "$SRC/themes.js" "$DEST/"
 cp -R "$SRC/One File Games" "$SRC/Multi-File Games" "$DEST/"
 
 # find-based cleanup of macOS metadata that may have been copied along

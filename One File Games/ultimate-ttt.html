@@ -113,6 +113,7 @@
     @media (max-width:560px){ body{ padding:44px 8px 16px; } .shell{ padding:8px; } }
     @media (prefers-reduced-motion:reduce){ .mini.active, .cell.hint{ animation:none; } .mark.fresh path, .mark.fresh circle{ animation-duration:.01s; } }
   </style>
+<script src="../themes.js"></script>
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
@@ -136,6 +137,7 @@
       <div class="seg" id="sideSeg" role="group" aria-label="You play"><button data-v="1">Play X</button><button data-v="2">Play O</button></div>
     </div>
     <div class="grp">
+      <span data-season-slot></span>
       <button id="hintBtn">💡 Hint</button>
       <button id="undoBtn">↶ Undo</button>
       <button class="primary" id="newBtn">New game</button>
