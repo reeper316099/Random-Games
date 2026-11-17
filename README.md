@@ -31,7 +31,8 @@ A small collection of browser games, including both single-file games and multi-
 The chip and credit games use pretend money only. Three small shared files sit next to the launcher: `scores.js`
 (high-score reporting), `fx.js` (sound effects, confetti and a mute button in the top-right corner) and `themes.js`
 (a "Seasonal theme" menu in each game's settings — in Chess it is part of the board colour list: Spring, Summer, Fall, Winter,
-Auto by date, or Classic; it re-skins every game and adds drifting petals, leaves or snow). The choice is remembered and shared by all games.
+Halloween, Thanksgiving, Christmas, Easter, Auto by date (follows the four seasons), or Classic; it re-skins every game and adds drifting
+petals, leaves, snow, embers or Easter eggs). The choice is remembered and shared by all games.
 
 > Tip: Some browsers apply stricter local file security rules. If a game doesn't load correctly via `file://`, run a local static server (for example `python3 -m http.server`) and open `http://localhost:8000`.
 

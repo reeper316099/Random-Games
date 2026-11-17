@@ -2,9 +2,9 @@
  *
  * Adds a "Seasonal theme" menu to the game's Settings panel (or to a [data-season-slot] element) and re-skins whichever game loaded it:
  * page background, card faces and backs, felt tables, chess and checkers boards and pieces, dice,
- * the roulette wheel, minesweeper tiles. Falling petals / leaves / snow float over the page.
+ * the roulette wheel, minesweeper tiles. Falling petals / leaves / snow / embers / eggs float over the page. "auto" follows the four seasons (holiday themes are picked by hand).
  *
- *   RGThemes.get()      -> "classic" | "spring" | "summer" | "fall" | "winter" | "auto"
+ *   RGThemes.get()      -> "classic" | "auto" | "spring" | "summer" | "fall" | "winter" | "halloween" | "thanksgiving" | "christmas" | "easter"
  *   RGThemes.set("fall")
  *   RGThemes.palette()  -> colours of the active season (null for classic)
  *
@@ -14,8 +14,9 @@
 (function () {
   "use strict";
   var KEY = "rg_season";
-  var NAMES = ["classic", "auto", "spring", "summer", "fall", "winter"];
-  var LABELS = { classic: "🎨 Classic", auto: "🗓️ Auto", spring: "🌸 Spring", summer: "☀️ Summer", fall: "🍂 Fall", winter: "❄️ Winter" };
+  var NAMES = ["classic", "auto", "spring", "summer", "fall", "winter", "halloween", "thanksgiving", "christmas", "easter"];
+  var LABELS = { classic: "🎨 Classic", auto: "🗓️ Auto", spring: "🌸 Spring", summer: "☀️ Summer", fall: "🍂 Fall", winter: "❄️ Winter",
+    halloween: "🎃 Halloween", thanksgiving: "🦃 Thanksgiving", christmas: "🎄 Christmas", easter: "🐰 Easter" };
   var root = document.documentElement;
 
   // ---------- palettes ----------
@@ -75,6 +76,62 @@
       wr: "#4f9fe0", wb: "#14233a", wg: "#2f9d8a", w1: "#8aa0b8", w2: "#3a4a60", rn: "ice", bn: "navy", zn: "teal",
       pw1: "#ffffff", pw2: "#c4e4ff", pwo: "#4f7fb3", pb1: "#34568a", pb2: "#10213f", pbo: "#050b18", glow: "rgba(150,215,255,.7)", sr: "#c2255c", sk: "#1c3a66",
       m1: "#a4c8e8", m2: "#6f9ec8", mr: "#15243a"
+    },
+    halloween: {
+      icon: "🎃", bgA: "#3b1550", bgB: "#1d0b2e", bgC: "#0a0510",
+      f1: "#5a2a7a", f2: "#3a1654", f3: "#1f0b32", rail: "#7a3a0a", railD: "#2a1204", trim: "rgba(255,140,30,.75)",
+      g1: "#ffc27a", g2: "#ff7a00",
+      b1: "#ff7a00", b2: "#a84a00", back: "radial-gradient(circle at 50% 50%, rgba(0,0,0,.4) 0 18%, transparent 19%), repeating-conic-gradient(from 0deg at 50% 50%, #ff7a00 0 15deg, #2a1040 15deg 30deg)", emblem: "🎃",
+      fa: "#fffaf0", fb: "#efe2fb",
+      sqL: "#e9d8f5", sqD: "#7a4aa6", sqL2: "#efe0fa", sqD2: "#6a3a96", pw: "#fff1de", pb: "#1a0a28", frame: "#3a1a5a",
+      x: "#ff8a1a", o: "#9be04a",
+      cr: "#ff7a00", crd: "#a84a00", crs: "#6a2e00", cb: "#3a1a5a", cbd: "#1a0a2c", cbs: "#0a0414",
+      d1: "#ff9a30", d2: "#d85a00", d3: "#8a3000",
+      wr: "#ff7a00", wb: "#1a0a28", wg: "#6fc02a", w1: "#5a2a7a", w2: "#24103a", rn: "orange", bn: "black", zn: "green",
+      pw1: "#fff4e0", pw2: "#ffc27a", pwo: "#a85a00", pb1: "#4a2a66", pb2: "#12061f", pbo: "#ff8a1a", glow: "rgba(255,140,30,.6)", sr: "#e8590c", sk: "#2a1040",
+      m1: "#8a4ab8", m2: "#5a2a85", mr: "#150a20"
+    },
+    thanksgiving: {
+      icon: "🦃", bgA: "#7a4a1c", bgB: "#3f2410", bgC: "#1c100a",
+      f1: "#a8501e", f2: "#7a3412", f3: "#4a1e08", rail: "#5a3416", railD: "#24120a", trim: "rgba(240,180,70,.65)",
+      g1: "#ffe0a0", g2: "#d9892a",
+      b1: "#9a3d1a", b2: "#5e2410", back: "repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 9px), repeating-linear-gradient(90deg, #b8641f 0 8px, #8c3d12 8px 16px)", emblem: "🦃",
+      fa: "#fffaf0", fb: "#f8e6c8",
+      sqL: "#f2dbb0", sqD: "#8b5a2b", sqL2: "#f6e0b8", sqD2: "#74481f", pw: "#fff3d8", pb: "#3a2010", frame: "#4a2a12",
+      x: "#ff8a3d", o: "#f2c14e",
+      cr: "#b8361e", crd: "#7a1f10", crs: "#4a1208", cb: "#6b4a28", cbd: "#34200f", cbs: "#1a1006",
+      d1: "#e8963a", d2: "#a8501a", d3: "#6a2e0c",
+      wr: "#a8301a", wb: "#3a2412", wg: "#c58a1e", w1: "#7a4a22", w2: "#2a1409", rn: "cranberry", bn: "brown", zn: "gold",
+      pw1: "#fff2d0", pw2: "#e8b86a", pwo: "#7a4a10", pb1: "#8a3a1a", pb2: "#3f1708", pbo: "#1a0a03", glow: "rgba(240,170,60,.5)", sr: "#a8301a", sk: "#3f2410",
+      m1: "#c88a4a", m2: "#8e5a2a", mr: "#24160d"
+    },
+    christmas: {
+      icon: "🎄", bgA: "#1f5a3a", bgB: "#12301f", bgC: "#0b1a12",
+      f1: "#c0283a", f2: "#8f1a2b", f3: "#5a0f1b", rail: "#2f6b45", railD: "#123222", trim: "rgba(255,215,120,.7)",
+      g1: "#fff0b8", g2: "#e8b923",
+      b1: "#c0283a", b2: "#7d1220", back: "repeating-linear-gradient(45deg, #c0283a 0 7px, #f6f0e6 7px 10px, #1f7a4a 10px 17px, #f6f0e6 17px 20px)", emblem: "🎄",
+      fa: "#fffefa", fb: "#f7ece4",
+      sqL: "#f3ead8", sqD: "#2f7a4f", sqL2: "#f7eedd", sqD2: "#256b42", pw: "#fffaf0", pb: "#7a1424", frame: "#8f1a2b",
+      x: "#ff5c6c", o: "#5de08f",
+      cr: "#d8344a", crd: "#8f1a2b", crs: "#5a0f1b", cb: "#2f7a4f", cbd: "#154029", cbs: "#0a2014",
+      d1: "#e0404f", d2: "#b01c2e", d3: "#7a0f1e",
+      wr: "#c8102e", wb: "#0f5a35", wg: "#d4af37", w1: "#2f6b45", w2: "#123222", rn: "red", bn: "green", zn: "gold",
+      pw1: "#ffffff", pw2: "#ffd9d9", pwo: "#9a2a3a", pb1: "#2f8a58", pb2: "#0f3a22", pbo: "#041a0e", glow: "rgba(255,215,120,.6)", sr: "#c0283a", sk: "#1f5a3a",
+      m1: "#6fbf8a", m2: "#2f8a58", mr: "#2a1216"
+    },
+    easter: {
+      icon: "🐰", bgA: "#6a5a9e", bgB: "#3a3a6e", bgC: "#1c1c3a",
+      f1: "#4fb893", f2: "#2f8a70", f3: "#1a5a49", rail: "#c8a0d8", railD: "#6a4a80", trim: "rgba(255,230,140,.7)",
+      g1: "#fff3b0", g2: "#ffb3d1",
+      b1: "#b79af0", b2: "#8a6ad0", back: "repeating-linear-gradient(45deg, #b79af0 0 7px, #ffd1e6 7px 14px, #aee9d1 14px 21px)", emblem: "🥚",
+      fa: "#fffefb", fb: "#fff0fa",
+      sqL: "#fdf1d6", sqD: "#b79af0", sqL2: "#fff5de", sqD2: "#a487e6", pw: "#fffdf5", pb: "#3a2a6a", frame: "#7a5aa8",
+      x: "#ff7aae", o: "#6fd8b4",
+      cr: "#ff8fb8", crd: "#d1467f", crs: "#8a1f4a", cb: "#8a6ad0", cbd: "#4a3290", cbs: "#281a58",
+      d1: "#ffc2dd", d2: "#e86aa0", d3: "#b13c78",
+      wr: "#ff8fb8", wb: "#5a4a9a", wg: "#f5d34a", w1: "#a58ad0", w2: "#4a3a78", rn: "pink", bn: "purple", zn: "yellow",
+      pw1: "#ffffff", pw2: "#ffd6ec", pwo: "#b0508a", pb1: "#8a6ad0", pb2: "#2e1f66", pbo: "#140b38", glow: "rgba(255,200,230,.6)", sr: "#d6458a", sk: "#4a3a8a",
+      m1: "#c9b4f5", m2: "#9a80d8", mr: "#1c1636"
     }
   };
 
@@ -197,7 +254,11 @@
     spring: { kind: "petal", colors: ["#ffc2d9", "#ffa6c6", "#fff0f6", "#ffd6e6"] },
     summer: { kind: "mote", colors: ["255,236,150", "255,255,255", "255,214,102"] },
     fall: { kind: "leaf", colors: ["#e8821a", "#c2571a", "#f2c14e", "#b3261e", "#d99a2b"] },
-    winter: { kind: "snow", colors: ["#ffffff", "#e6f4ff"] }
+    winter: { kind: "snow", colors: ["#ffffff", "#e6f4ff"] },
+    halloween: { kind: "mote", colors: ["255,140,30", "190,110,255", "255,200,120"] },
+    thanksgiving: { kind: "leaf", colors: ["#b5361a", "#d9892a", "#8a4a1a", "#e8b33a", "#6b3a14"] },
+    christmas: { kind: "snow", colors: ["#ffffff", "#ffe9a8", "#ffd0d0", "#c9f2d6"] },
+    easter: { kind: "egg", colors: ["#ffc2dd", "#c9b4f5", "#aee9d1", "#fff3b0", "#b8dcff"] }
   };
   function mk(init) {
     var w = cv.width, h = cv.height, k = cfg, r = Math.random;
@@ -222,6 +283,9 @@
         ctx.globalAlpha = 0.85; ctx.fillStyle = q.c; var L = 9 * q.s;
         ctx.beginPath(); ctx.moveTo(0, -L); ctx.quadraticCurveTo(L * 0.9, -L * 0.2, 0, L); ctx.quadraticCurveTo(-L * 0.9, -L * 0.2, 0, -L); ctx.fill();
         ctx.strokeStyle = "rgba(60,25,5,.45)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -L); ctx.lineTo(0, L + 2); ctx.stroke();
+      } else if (kind === "egg") {
+        var E = q.s; ctx.globalAlpha = 0.85; ctx.fillStyle = q.c; ctx.beginPath(); ctx.ellipse(0, 0, 4.5 * E + 1, 6 * E + 1.5, 0, 0, 6.28); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-3.6 * E, -0.5 * E); ctx.quadraticCurveTo(0, 1.6 * E, 3.6 * E, -0.5 * E); ctx.stroke();
       } else if (kind === "snow") {
         ctx.globalAlpha = 0.5 + 0.4 * q.s / 1.5; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(0, 0, 1.8 * q.s + 0.6, 0, 6.28); ctx.fill();
       } else {
