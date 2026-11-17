@@ -7,14 +7,15 @@ A small collection of browser games, including both single-file games and multi-
 ### One File Games
 - `One File Games/blackjack.html` — Blackjack (play-money chips, animated dealing, strategy hints)
 - `One File Games/checkers.html` — Checkers vs the computer (three skill levels) or a friend
-- `One File Games/chess.html` — Chess
+- `One File Games/chess.html` — Chess vs the computer (three skill levels) or a friend; drag-and-drop, promotion choice, hints, undo, save and replay
 - `One File Games/dice.html` — High Roller Dice, a craps-style table (play-money chips)
 - `One File Games/disguised-king-chess.html` — Disguised King Chess
-- `One File Games/minesweeper.html` — Minesweeper Ultra Deluxe
+- `One File Games/minesweeper.html` — Minesweeper Ultra Deluxe (ripple reveals, hints, custom boards, best times)
+- `One File Games/roulette.html` — Royal Roulette, a European wheel with the full betting table (play-money chips)
 - `One File Games/poker.html` — Texas Hold'em Poker vs up to 3 bots (play-money chips)
 - `One File Games/slots.html` — Lucky Reels, a 5-reel slot machine with wilds and free spins (play-money credits)
 - `One File Games/solitaire.html` — Solitaire (Klondike, Spider and FreeCell; pick the game in Settings; drag-and-drop or tap)
-- `One File Games/ultimate-ttt.html` — Ultimate Tic-Tac-Toe
+- `One File Games/ultimate-ttt.html` — Ultimate Tic-Tac-Toe vs the computer (three skill levels) or a friend
 
 ### Multi-File Games
 - `Multi-File Games/hotzone-na/index.html` — Pandemic: Hot Zone NA

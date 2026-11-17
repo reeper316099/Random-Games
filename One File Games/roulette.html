@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Royal Roulette</title>
+  <style>
+    :root{
+      --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+      --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --gold:#ffd36a; --gold2:#f0a020;
+      --red:#d3203a; --black:#15171f; --felt:#0d6b3c; --felt2:#09502d;
+      --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; display:flex; justify-content:center;
+      background:radial-gradient(1000px 600px at 50% -10%, #17402f 0%, #0b1a17 48%, var(--bg) 85%) fixed;
+      color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      padding:44px 20px 24px;
+    }
+    .wrap{ width:min(980px,100%); display:grid; gap:14px; align-content:start; }
+    .topbar{
+      display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .title h1{
+      margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+      background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .title h1 .em{ color:#fff; -webkit-text-fill-color:initial; }
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+    .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+    .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+    .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+    button{
+      border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text);
+      padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s;
+    }
+    button:hover:not(:disabled){ filter:brightness(1.2); }
+    button:active:not(:disabled){ transform:scale(.96); }
+    button:disabled{ opacity:.35; cursor:not-allowed; }
+    button.good{ background:linear-gradient(180deg, rgba(106,255,182,.28), rgba(106,255,182,.12)); border-color:rgba(106,255,182,.45); }
+    button.bad{ background:linear-gradient(180deg, rgba(255,106,106,.28), rgba(255,106,106,.12)); border-color:rgba(255,106,106,.45); }
+    button.on{ background:linear-gradient(180deg, rgba(255,211,106,.4), rgba(255,211,106,.15)); border-color:rgba(255,211,106,.7); }
+    button:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+    /* ---------- stage: wheel + info ---------- */
+    .stage{
+      display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center; padding:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .wheelBox{ position:relative; width:min(340px, 78vw); aspect-ratio:1; margin:0 auto; }
+    #wheel{ width:100%; height:100%; display:block; border-radius:50%; box-shadow:0 14px 40px rgba(0,0,0,.6); }
+    .info{ display:grid; gap:12px; min-width:0; }
+    .result{
+      display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:14px; background:rgba(0,0,0,.28); border:1px solid var(--line); min-height:84px;
+    }
+    .badge{
+      flex:none; width:64px; height:64px; border-radius:50%; display:grid; place-items:center; font-size:28px; font-weight:900; color:#fff;
+      background:#2a2f3d; border:3px solid rgba(255,255,255,.7); box-shadow:0 4px 14px rgba(0,0,0,.5), inset 0 2px 6px rgba(255,255,255,.25);
+    }
+    .badge.red{ background:radial-gradient(circle at 35% 30%, #ff6b82, var(--red) 60%, #7c0d20); }
+    .badge.black{ background:radial-gradient(circle at 35% 30%, #4a4f60, var(--black) 65%, #000); }
+    .badge.green{ background:radial-gradient(circle at 35% 30%, #4ee08f, #0f8a47 60%, #064a26); }
+    .badge.pop{ animation:pop .55s cubic-bezier(.2,1.6,.4,1); }
+    @keyframes pop{ from{ transform:scale(.3); opacity:0; } }
+    .rtext b{ display:block; font-size:18px; }
+    .rtext span{ color:var(--muted); font-size:13px; }
+    .msg{ font-weight:700; min-height:22px; }
+    .hist{ display:flex; flex-wrap:wrap; gap:6px; min-height:30px; }
+    .hist i{
+      font-style:normal; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:800; color:#fff; border:2px solid rgba(255,255,255,.35);
+    }
+    .hist i.red{ background:var(--red); } .hist i.black{ background:var(--black); } .hist i.green{ background:#0f8a47; }
+    .faint{ color:var(--muted); font-size:12px; }
+
+    /* ---------- table ---------- */
+    .tableWrap{
+      padding:14px; border-radius:var(--radius); overflow-x:auto;
+      background:linear-gradient(180deg,#5a3a1d,#3b2411); box-shadow:var(--shadow), inset 0 2px 0 rgba(255,255,255,.18);
+    }
+    .tbl{
+      --cw:60px;
+      position:relative; min-width:640px; width:100%; aspect-ratio:14 / 5; border-radius:8px;
+      background:radial-gradient(900px 400px at 50% 0%, var(--felt), var(--felt2));
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.55), inset 0 0 40px rgba(0,0,0,.45);
+      user-select:none;
+    }
+    .z{ position:absolute; display:grid; place-items:center; cursor:pointer; box-sizing:border-box; }
+    .z.cellz{
+      border:1px solid rgba(255,255,255,.6); color:#fff; font-weight:800; font-size:calc(var(--cw) * .34);
+      transition:background .15s, box-shadow .15s;
+    }
+    .z.red{ background:rgba(211,32,58,.88); } .z.black{ background:rgba(16,18,24,.9); } .z.green{ background:rgba(14,138,70,.85); }
+    .z.out{ background:rgba(0,0,0,.08); font-size:calc(var(--cw) * .22); letter-spacing:.5px; text-align:center; line-height:1.1; padding:0 4px; }
+    .z.out .dia{ width:calc(var(--cw) * .5); height:calc(var(--cw) * .3); transform:skewX(-14deg); border-radius:3px; border:1px solid rgba(255,255,255,.6); }
+    .z.out .dia.r{ background:var(--red); } .z.out .dia.b{ background:var(--black); }
+    .z.cellz:hover, .z.out:hover{ background-image:linear-gradient(rgba(255,255,255,.14), rgba(255,255,255,.14)); }
+    .z.cover{ box-shadow:inset 0 0 0 3px rgba(255,211,106,.95), 0 0 14px rgba(255,211,106,.7); z-index:3; }
+    .z.hit{ animation:hit .8s ease-in-out infinite; z-index:4; box-shadow:inset 0 0 0 4px var(--gold), 0 0 22px rgba(255,211,106,.95); }
+    @keyframes hit{ 50%{ transform:scale(1.12); } }
+    .z.hot{ z-index:5; }
+    .z.hot:hover{ background:rgba(255,211,106,.55); border-radius:6px; }
+    .chips{ position:absolute; inset:0; pointer-events:none; z-index:8; }
+    .chip{
+      position:absolute; transform:translate(-50%,-50%); width:calc(var(--cw) * .62); height:calc(var(--cw) * .62); border-radius:50%;
+      display:grid; place-items:center; font-weight:900; font-size:calc(var(--cw) * .2); color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.8);
+      border:3px dashed rgba(255,255,255,.85); box-shadow:0 3px 6px rgba(0,0,0,.6), 0 0 0 2px rgba(0,0,0,.35);
+      animation:drop .22s ease-out;
+    }
+    @keyframes drop{ from{ transform:translate(-50%,-160%) scale(1.3); opacity:0; } }
+    .chip.win{ animation:winchip .6s ease-in-out infinite; }
+    @keyframes winchip{ 50%{ transform:translate(-50%,-50%) scale(1.22); } }
+    .chip.lose{ transition:opacity .7s, transform .7s; opacity:0; transform:translate(-50%,-50%) scale(.4); }
+    .c5{ background:#c62839; } .c25{ background:#1d9a57; } .c100{ background:#2a2d38; } .c500{ background:#7b3fb8; } .c1000{ background:linear-gradient(180deg,#f7d56a,#c88a12); color:#2b1b00; text-shadow:none; } .c5000{ background:#1f6fd1; }
+
+    /* ---------- controls ---------- */
+    .panel{ display:grid; gap:12px; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+    .tray{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    .tray button.chipbtn{
+      width:58px; height:58px; padding:0; border-radius:50%; font-size:14px; font-weight:900; color:#fff; border:4px dashed rgba(255,255,255,.85); text-shadow:0 1px 2px rgba(0,0,0,.8);
+      box-shadow:0 4px 0 rgba(0,0,0,.45), 0 8px 14px rgba(0,0,0,.4);
+    }
+    .tray button.chipbtn.c1000{ color:#2b1b00; }
+    .tray button.chipbtn.sel{ transform:translateY(-8px); box-shadow:0 0 0 3px var(--gold), 0 10px 18px rgba(0,0,0,.5); }
+    .spinBtn{
+      min-width:150px; font-size:18px; font-weight:900; letter-spacing:2px; color:#2b1b00; border:3px solid #fff3c4;
+      background:linear-gradient(180deg,#fff3c4,var(--gold) 50%,var(--gold2)); box-shadow:0 5px 0 #8a5a08, 0 10px 20px rgba(0,0,0,.5);
+    }
+    .spinBtn:active:not(:disabled){ transform:translateY(3px); box-shadow:0 2px 0 #8a5a08; }
+    details.settings{ border:1px solid var(--line); border-radius:12px; padding:10px 14px; background:rgba(0,0,0,.2); }
+    details.settings summary{ cursor:pointer; font-weight:600; font-size:14px; }
+    .fields{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:12px 0; }
+    .fields label{ display:grid; gap:4px; font-size:12px; color:var(--muted); }
+    .fields input{ padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); font-size:14px; width:100%; }
+
+    @media (max-width:720px){
+      body{ padding:44px 10px 16px; }
+      .stage{ grid-template-columns:1fr; }
+    }
+    @media (prefers-reduced-motion:reduce){ .z.hit, .chip.win{ animation:none; } }
+  </style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1><span class="em">🎡</span> ROYAL ROULETTE</h1>
+      <div class="sub">Play-money chips only • European wheel (one zero) • Click the table to bet, right-click removes</div>
+    </div>
+    <div class="row">
+      <span class="pill">💰 Chips <b id="bank">0</b></span>
+      <span class="pill">On table <b id="onTable">0</b></span>
+      <span class="pill">Last win <b id="lastWin">0</b></span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="wheelBox"><canvas id="wheel" aria-label="Roulette wheel"></canvas></div>
+    <div class="info">
+      <div class="result">
+        <div class="badge" id="badge">–</div>
+        <div class="rtext"><b id="rTitle">Place your bets</b><span id="rSub">Pick a chip, click the table, then press SPIN.</span></div>
+      </div>
+      <div class="msg" id="msg" aria-live="polite"></div>
+      <div>
+        <div class="faint" style="margin-bottom:6px">Recent numbers</div>
+        <div class="hist" id="hist"></div>
+      </div>
+      <div class="faint" id="statsLine"></div>
+    </div>
+  </div>
+
+  <div class="tableWrap"><div class="tbl" id="tbl"><div class="chips" id="chips"></div></div></div>
+
+  <div class="panel">
+    <div class="tray" id="tray"></div>
+    <div class="row">
+      <button id="undoBtn">↶ Undo</button>
+      <button id="clearBtn">✕ Clear</button>
+      <button id="rebetBtn">↻ Rebet</button>
+      <button id="doubleBtn">×2 Double</button>
+      <button class="spinBtn" id="spinBtn">SPIN</button>
+      <button id="turboBtn">⚡ Turbo</button>
+    </div>
+    <div class="row" id="brokeRow" style="display:none">
+      <span>You're out of chips.</span>
+      <button class="good" id="refillBtn">Refill chips</button>
+    </div>
+    <details class="settings">
+      <summary>⚙ Settings &amp; payouts</summary>
+      <div class="fields">
+        <label>Starting chips
+          <input type="number" id="setStart" min="100" max="10000000" step="100">
+        </label>
+      </div>
+      <div class="row">
+        <button class="good" id="applySettings">Apply &amp; restart</button>
+        <button class="bad" id="clearCache">🗑 Clear cache</button>
+      </div>
+      <div class="faint" style="margin-top:8px;line-height:1.6">
+        Payouts: straight number 35:1 • split 17:1 • street / trio 11:1 • corner / first four 8:1 • six line 5:1 • dozens &amp; columns 2:1 • red/black, odd/even, 1-18/19-36 1:1.<br>
+        Click inside a number for a straight bet; click the edges and corners between numbers for splits, streets, corners and lines. Right-click, Ctrl-click or Shift-click removes a chip.
+        The house edge is 2.7% (the single zero). Space bar spins. This is pretend money — nothing here is worth anything real.
+      </div>
+    </details>
+  </div>
+</div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ===== ROULETTE ENGINE (pure maths, no DOM) =====
+  const WHEEL = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const REDS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+  const colorOf = n => n === 0 ? "green" : REDS.has(n) ? "red" : "black";
+  const num = (r, j) => 3 * (j + 1) - r;                       // r = 0 (top row: 3,6,9…) … 2 (bottom row: 1,4,7…); j = column 0…11
+  // Every place a chip can go. Table geometry is in "cell units": 14 columns x 5 rows (zero column, 12 number columns, column bets).
+  function buildZones(){
+    const Z = [];
+    const add = (kind, nums, pay, cx, cy, w, h, label, cls) => Z.push({ key: kind + ":" + nums.slice().sort((a,b) => a-b).join("-"), kind, nums, pay, cx, cy, w, h, label, cls });
+    const range = (a, b) => { const o = []; for(let i=a;i<=b;i++) o.push(i); return o; };
+    add("straight", [0], 35, .5, 1.5, 1, 3, "0", "green");
+    for(let r=0;r<3;r++) for(let j=0;j<12;j++){ const n = num(r, j); add("straight", [n], 35, j + 1.5, r + .5, 1, 1, String(n), colorOf(n)); }
+    [["1st 12", 1], ["2nd 12", 13], ["3rd 12", 25]].forEach(([t, a], k) => add("dozen", range(a, a + 11), 2, 3 + 4 * k, 3.5, 4, 1, t, "out"));
+    for(let r=0;r<3;r++) add("column", range(1, 36).filter(n => n % 3 === (r === 0 ? 0 : r === 1 ? 2 : 1)), 2, 13.5, r + .5, 1, 1, "2 to 1", "out");
+    const all = range(1, 36);
+    [["1-18", range(1, 18)], ["EVEN", all.filter(n => n % 2 === 0)], ["RED", all.filter(n => REDS.has(n))], ["BLACK", all.filter(n => !REDS.has(n))],
+     ["ODD", all.filter(n => n % 2 === 1)], ["19-36", range(19, 36)]].forEach(([t, nums], k) => add("even", nums, 1, 2 + 2 * k, 4.5, 2, 1, t, "out"));
+    // hot spots (drawn over the number cells)
+    for(let r=0;r<3;r++) for(let j=0;j<11;j++) add("split", [num(r, j), num(r, j + 1)], 17, j + 2, r + .5, .36, .5, "Split", "hot");
+    for(let r=0;r<2;r++) for(let j=0;j<12;j++) add("split", [num(r, j), num(r + 1, j)], 17, j + 1.5, r + 1, .5, .36, "Split", "hot");
+    for(let r=0;r<2;r++) for(let j=0;j<11;j++) add("corner", [num(r, j), num(r + 1, j), num(r, j + 1), num(r + 1, j + 1)], 8, j + 2, r + 1, .36, .36, "Corner", "hot");
+    for(let j=0;j<12;j++) add("street", [3*j + 1, 3*j + 2, 3*j + 3], 11, j + 1.5, 3, .5, .3, "Street", "hot");
+    for(let j=0;j<11;j++) add("line", range(3*j + 1, 3*j + 6), 5, j + 2, 3, .36, .3, "Six line", "hot");
+    for(let r=0;r<3;r++) add("split", [0, num(r, 0)], 17, 1, r + .5, .3, .5, "Split", "hot");
+    add("trio", [0, 2, 3], 11, 1, 1, .3, .3, "Trio", "hot");
+    add("trio", [0, 1, 2], 11, 1, 2, .3, .3, "Trio", "hot");
+    add("first4", [0, 1, 2, 3], 8, 1, 3, .3, .3, "First four", "hot");
+    return Z;
+  }
+  const ZONES = buildZones();
+  const ZMAP = new Map(ZONES.map(z => [z.key, z]));
+  // bets: Map key -> amount. Returns { returned, hits:[key..] } where `returned` includes the stake of winning bets.
+  function settle(bets, n){
+    let returned = 0; const hits = [];
+    bets.forEach((amt, key) => { const z = ZMAP.get(key); if(z && z.nums.includes(n)){ returned += amt * (z.pay + 1); hits.push(key); } });
+    return { returned, hits };
+  }
+  // ===== END ROULETTE ENGINE =====
+
+  // ---------- state ----------
+  const CHIPS = [5, 25, 100, 500, 1000, 5000];
+  const DEFAULTS = { start:1000 };
+  const DEF_STATS = { spins:0, wagered:0, won:0, biggest:0, hits:0 };
+  let settings = { ...DEFAULTS }, stats = { ...DEF_STATS };
+  let bank = 0, chip = 25, bets = new Map(), order = [], lastBets = [], history = [], runPeak = 0, turbo = false, busy = false;
+
+  const load = k => { try{ const o = JSON.parse(localStorage.getItem(k) || "null"); return o && typeof o === "object" ? o : null; }catch(e){ return null; } };
+  const save = (k, o) => { try{ localStorage.setItem(k, JSON.stringify(o)); }catch(e){} };
+  function sanitize(o){
+    const v = Math.round(Number(o.start));
+    return { start: Number.isFinite(v) ? Math.max(100, Math.min(10000000, v)) : DEFAULTS.start };
+  }
+  const totalBet = () => { let t = 0; bets.forEach(a => t += a); return t; };
+  function saveState(){ save("roulette_state", { bank: bank + totalBet(), chip, lastBets, history, runPeak, turbo }); save("roulette_stats", stats); }
+  function loadAll(){
+    settings = sanitize({ ...DEFAULTS, ...(load("roulette_settings") || {}) });
+    const st = load("roulette_stats"); if(st) for(const k of Object.keys(DEF_STATS)) if(Number.isFinite(st[k])) stats[k] = st[k];
+    const s = load("roulette_state");
+    bank = settings.start; runPeak = bank;
+    if(s){
+      if(Number.isFinite(s.bank) && s.bank >= 0) bank = Math.floor(s.bank);
+      if(CHIPS.includes(s.chip)) chip = s.chip;
+      if(Array.isArray(s.lastBets)) lastBets = s.lastBets.filter(p => Array.isArray(p) && ZMAP.has(p[0]) && Number.isFinite(p[1]) && p[1] > 0).slice(0, 80).map(p => [p[0], Math.floor(p[1])]);
+      if(Array.isArray(s.history)) history = s.history.filter(n => Number.isInteger(n) && n >= 0 && n <= 36).slice(-18);
+      runPeak = Math.max(bank, Number(s.runPeak) || 0);
+      turbo = !!s.turbo;
+    }
+  }
+
+  // ---------- table ----------
+  const tbl = $("tbl"), zoneEls = new Map(), numEls = new Map();
+  function buildTable(){
+    ZONES.forEach(z => {
+      const e = document.createElement("div");
+      e.className = "z " + (z.cls === "hot" ? "hot" : z.cls === "out" ? "out" : "cellz " + z.cls);
+      e.style.left = ((z.cx - z.w / 2) / 14 * 100) + "%"; e.style.top = ((z.cy - z.h / 2) / 5 * 100) + "%";
+      e.style.width = (z.w / 14 * 100) + "%"; e.style.height = (z.h / 5 * 100) + "%";
+      const nice = z.kind === "straight" ? "Number " + z.nums[0] : z.kind === "even" || z.kind === "dozen" || z.kind === "column" ? z.label : z.label + " " + z.nums.join("/");
+      e.title = `${nice} — pays ${z.pay}:1`;
+      if(z.cls !== "hot"){
+        if(z.kind === "even" && (z.label === "RED" || z.label === "BLACK")){ const d = document.createElement("div"); d.className = "dia " + (z.label === "RED" ? "r" : "b"); e.appendChild(d); }
+        else e.textContent = z.label;
+      }
+      if(z.kind === "straight") numEls.set(z.nums[0], e);
+      e.addEventListener("click", ev => { if(ev.ctrlKey || ev.shiftKey || ev.metaKey) removeChip(z); else placeChip(z); });
+      e.addEventListener("contextmenu", ev => { ev.preventDefault(); removeChip(z); });
+      e.addEventListener("mouseenter", () => cover(z, true));
+      e.addEventListener("mouseleave", () => cover(z, false));
+      tbl.insertBefore(e, $("chips")); zoneEls.set(z.key, e);
+    });
+    const fit = () => tbl.style.setProperty("--cw", (tbl.clientWidth / 14) + "px");
+    fit(); window.addEventListener("resize", fit);
+    if(window.ResizeObserver) new ResizeObserver(fit).observe(tbl);
+  }
+  function cover(z, on){ if(z.kind !== "straight" || z.cls === "hot") z.nums.forEach(n => { const e = numEls.get(n); if(e) e.classList.toggle("cover", on); }); }
+  const chipClass = a => "c" + ([...CHIPS].reverse().find(c => c <= a) || 5);
+  const short = a => a >= 10000 ? (a / 1000).toFixed(a % 1000 ? 1 : 0) + "k" : a >= 1000 ? (a / 1000).toFixed(a % 1000 ? 1 : 0) + "k" : String(a);
+  const chipEls = new Map();
+  function renderChips(){
+    const box = $("chips");
+    chipEls.forEach((e, k) => { if(!bets.has(k)){ e.remove(); chipEls.delete(k); } });
+    bets.forEach((amt, key) => {
+      const z = ZMAP.get(key); let e = chipEls.get(key);
+      if(!e){ e = document.createElement("div"); chipEls.set(key, e); box.appendChild(e); e.style.left = (z.cx / 14 * 100) + "%"; e.style.top = (z.cy / 5 * 100) + "%"; }
+      e.className = "chip " + chipClass(amt); e.textContent = short(amt);
+    });
+  }
+  function clearHits(){ numEls.forEach(e => e.classList.remove("hit")); chipEls.forEach(e => e.classList.remove("win")); }
+
+  function placeChip(z){
+    if(busy) return;
+    clearHits();
+    if(bank < chip){
+      if(bank > 0 && bank < CHIPS[0]){ FX.sound("error"); return; }
+      const fit = [...CHIPS].reverse().find(c => c <= bank);
+      if(!fit){ FX.sound("error"); setMsg("Not enough chips for that."); return; }
+      bank -= fit; add(z.key, fit);
+    } else { bank -= chip; add(z.key, chip); }
+    FX.sound("chip"); update();
+  }
+  function add(key, amt){ if(!bets.has(key)) order.push(key); bets.set(key, (bets.get(key) || 0) + amt); }
+  function removeChip(z){
+    if(busy || !bets.has(z.key)) return;
+    const have = bets.get(z.key), take = Math.min(chip, have);
+    bank += take; if(have - take <= 0){ bets.delete(z.key); order = order.filter(k => k !== z.key); } else bets.set(z.key, have - take);
+    FX.sound("click"); update();
+  }
+  function undo(){
+    if(busy || !order.length) return;
+    const key = order[order.length - 1], have = bets.get(key), take = Math.min(chip, have);
+    bank += take; if(have - take <= 0){ bets.delete(key); order.pop(); } else bets.set(key, have - take);
+    FX.sound("click"); update();
+  }
+  function clearAll(){ if(busy) return; bets.forEach(a => bank += a); bets.clear(); order = []; FX.sound("click"); update(); }
+  function rebet(){
+    if(busy || !lastBets.length) return;
+    
+    bets.forEach(a => bank += a); bets.clear(); order = [];
+    const total = lastBets.reduce((t, p) => t + p[1], 0);
+    if(total > bank){ FX.sound("error"); setMsg("Not enough chips to repeat the last bets."); update(); return; }
+    clearHits();
+    lastBets.forEach(([k, a]) => { bank -= a; add(k, a); });
+    FX.sound("chip"); update();
+  }
+  function doubleUp(){
+    if(busy || !bets.size) return;
+    const t = totalBet(); if(t > bank){ FX.sound("error"); setMsg("Not enough chips to double."); return; }
+    bets.forEach((a, k) => { bets.set(k, a * 2); }); bank -= t;
+    FX.sound("chip"); update();
+  }
+
+  // ---------- rendering ----------
+  let shownBank = 0;
+  const setMsg = t => $("msg").textContent = t;
+  function setBank(animated){ FX.countTo($("bank"), shownBank, bank, animated ? 700 : 0); shownBank = bank; }
+  function update(){
+    renderChips(); setBank(false);
+    $("onTable").textContent = FX.fmt(totalBet());
+    const idle = !busy;
+    $("spinBtn").disabled = !idle || bets.size === 0;
+    $("undoBtn").disabled = !idle || !order.length;
+    $("clearBtn").disabled = !idle || !bets.size;
+    $("rebetBtn").disabled = !idle || !lastBets.length;
+    $("doubleBtn").disabled = !idle || !bets.size || totalBet() > bank;
+    $("turboBtn").classList.toggle("on", turbo); $("turboBtn").setAttribute("aria-pressed", turbo ? "true" : "false");
+    document.querySelectorAll("#tray .chipbtn").forEach(b => b.classList.toggle("sel", Number(b.dataset.v) === chip));
+    $("brokeRow").style.display = idle && bank < CHIPS[0] && !bets.size ? "flex" : "none";
+    const rtp = stats.wagered ? Math.round(stats.won / stats.wagered * 100) + "%" : "–";
+    $("statsLine").textContent = `Spins ${FX.fmt(stats.spins)} • Wagered ${FX.fmt(stats.wagered)} • Returned ${FX.fmt(stats.won)} • Your return ${rtp} • Biggest win ${FX.fmt(stats.biggest)}`;
+    saveState();
+  }
+  function renderHistory(){
+    const h = $("hist"); h.innerHTML = "";
+    history.slice().reverse().forEach(n => { const i = document.createElement("i"); i.className = colorOf(n); i.textContent = n; h.appendChild(i); });
+    if(!history.length) h.innerHTML = '<span class="faint">No spins yet.</span>';
+  }
+  function showResult(n, hadBets, net){
+    const b = $("badge"); b.className = "badge pop " + colorOf(n); b.textContent = n;
+    const props = n === 0 ? "Zero — the house wins even-money bets" : `${colorOf(n)[0].toUpperCase() + colorOf(n).slice(1)} • ${n % 2 ? "Odd" : "Even"} • ${n <= 18 ? "Low (1-18)" : "High (19-36)"}`;
+    $("rTitle").textContent = n === 0 ? "Zero!" : `${n} ${colorOf(n)}`;
+    $("rSub").textContent = props;
+  }
+
+  // ---------- wheel ----------
+  const TAU = Math.PI * 2, STEP = TAU / 37, SIZE = 340;
+  const cv = $("wheel"), g = cv.getContext("2d"), DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = cv.height = SIZE * DPR; g.scale(DPR, DPR);
+  const R = SIZE / 2, R_OUT = R * .85, R_POCKET = R * .62;
+  const mod = (a, m) => ((a % m) + m) % m;
+  let wheelAngle = 0, ballAngle = 0, ballR = R_POCKET, ballPocket = null, off = null;
+  const pocketAngle = i => -Math.PI / 2 + (i + .5) * STEP;     // centre of pocket i in the wheel's own frame
+  function drawStatic(){
+    off = document.createElement("canvas"); off.width = off.height = SIZE * DPR;
+    const o = off.getContext("2d"); o.scale(DPR, DPR); o.translate(R, R);
+    let gr = o.createRadialGradient(0, 0, R * .7, 0, 0, R);
+    gr.addColorStop(0, "#7a4a22"); gr.addColorStop(.6, "#4a2a10"); gr.addColorStop(1, "#2a1507");
+    o.fillStyle = gr; o.beginPath(); o.arc(0, 0, R, 0, TAU); o.fill();
+    o.strokeStyle = "#ffd36a"; o.lineWidth = 2; o.beginPath(); o.arc(0, 0, R * .985, 0, TAU); o.stroke();
+    gr = o.createRadialGradient(0, 0, R * .72, 0, 0, R * .93);
+    gr.addColorStop(0, "#2a2e3a"); gr.addColorStop(.5, "#6b7183"); gr.addColorStop(1, "#1d2029");
+    o.fillStyle = gr; o.beginPath(); o.arc(0, 0, R * .93, 0, TAU); o.fill();
+    for(let i=0;i<37;i++){
+      const a0 = -Math.PI / 2 + i * STEP, a1 = a0 + STEP, n = WHEEL[i];
+      o.beginPath(); o.moveTo(Math.cos(a0) * R * .5, Math.sin(a0) * R * .5); o.arc(0, 0, R * .74, a0, a1); o.arc(0, 0, R * .5, a1, a0, true); o.closePath();
+      o.fillStyle = n === 0 ? "#0f8a47" : REDS.has(n) ? "#c8203a" : "#14161d"; o.fill();
+      o.strokeStyle = "#e9dcae"; o.lineWidth = 1.2; o.stroke();
+      o.save(); o.rotate(a0 + STEP / 2 + Math.PI / 2); o.fillStyle = "#fff"; o.font = "700 " + (R * .085) + "px system-ui,sans-serif"; o.textAlign = "center"; o.textBaseline = "middle";
+      o.fillText(String(n), 0, -R * .685); o.restore();
+    }
+    gr = o.createRadialGradient(-R * .1, -R * .1, 0, 0, 0, R * .5);
+    gr.addColorStop(0, "#f4e4a8"); gr.addColorStop(.35, "#c9972b"); gr.addColorStop(1, "#5a3a08");
+    o.fillStyle = gr; o.beginPath(); o.arc(0, 0, R * .5, 0, TAU); o.fill();
+    o.strokeStyle = "rgba(60,35,5,.7)"; o.lineWidth = 3;
+    for(let k=0;k<4;k++){ o.save(); o.rotate(k * Math.PI / 2 + Math.PI / 4); o.beginPath(); o.moveTo(R * .1, 0); o.lineTo(R * .46, 0); o.stroke(); o.restore(); }
+    gr = o.createRadialGradient(-R * .03, -R * .03, 0, 0, 0, R * .13);
+    gr.addColorStop(0, "#fff7d0"); gr.addColorStop(1, "#b8841c");
+    o.fillStyle = gr; o.beginPath(); o.arc(0, 0, R * .12, 0, TAU); o.fill();
+    o.fillStyle = "#e9c25a"; for(let k=0;k<4;k++){ o.save(); o.rotate(k * Math.PI / 2 + Math.PI / 4); o.beginPath(); o.arc(R * .3, 0, R * .026, 0, TAU); o.fill(); o.restore(); }
+  }
+  function draw(){
+    g.clearRect(0, 0, SIZE, SIZE);
+    g.save(); g.translate(R, R); g.rotate(wheelAngle); g.drawImage(off, -R, -R, SIZE, SIZE); g.restore();
+    let a = ballAngle, r = ballR;
+    if(ballPocket !== null && !busy){ a = wheelAngle + pocketAngle(ballPocket); r = R_POCKET; }
+    if(ballPocket === null && !busy) return;
+    const x = R + Math.cos(a) * r, y = R + Math.sin(a) * r, br = R * .036;
+    g.save(); g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 6; g.shadowOffsetY = 2;
+    const gr = g.createRadialGradient(x - br * .35, y - br * .35, br * .1, x, y, br);
+    gr.addColorStop(0, "#fff"); gr.addColorStop(1, "#b9bfcc");
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, br, 0, TAU); g.fill(); g.restore();
+  }
+  function spinAnim(n){
+    return new Promise(done => {
+      const T = FX.reducedMotion ? 900 : turbo ? 2800 : 6200;
+      const target = pocketAngle(WHEEL.indexOf(n));
+      const w0 = wheelAngle, W = (2 + Math.random()) * TAU, wEnd = w0 + W;
+      const b0 = Math.random() * TAU, want = mod(wEnd + target, TAU);
+      const B = mod(b0 - want, TAU) + TAU * (turbo ? 4 : 7);
+      const t0 = performance.now(); let lastIdx = -1, lastTick = 0;
+      ballPocket = null;
+      (function frame(now){
+        const k = Math.min(1, (now - t0) / T);
+        wheelAngle = w0 + W * (1 - (1 - k) * (1 - k));
+        ballAngle = b0 - B * (1 - Math.pow(1 - k, 3));
+        if(k < .6) ballR = R_OUT;
+        else { const u = (k - .6) / .4, e = u * u * (3 - 2 * u); ballR = R_POCKET + (R_OUT - R_POCKET) * (1 - e) + Math.sin(u * Math.PI * 5) * R * .035 * (1 - u) * (1 - u); }
+        if(k > .5){
+          const idx = Math.floor(mod(ballAngle - wheelAngle + Math.PI / 2, TAU) / STEP);
+          if(idx !== lastIdx){ lastIdx = idx; if(now - lastTick > 70){ lastTick = now; FX.sound("tick"); } }
+        }
+        draw();
+        if(k < 1) requestAnimationFrame(frame);
+        else { wheelAngle = mod(wEnd, TAU); ballPocket = WHEEL.indexOf(n); busy = false; draw(); busy = true; ballR = R_POCKET; done(); }
+      })(t0);
+    });
+  }
+
+  // ---------- game flow ----------
+  const rnd37 = () => { try{ const a = new Uint32Array(1); crypto.getRandomValues(a); return Math.floor(a[0] / 4294967296 * 37); }catch(e){ return Math.floor(Math.random() * 37); } };
+  function endRun(){
+    if(runPeak > settings.start) rgReport("roulette", "", "Highest balance", runPeak, { unit:"chips", better:"high", detail:`started with ${settings.start}` });
+    runPeak = settings.start;
+  }
+  async function spin(){
+    if(busy || !bets.size) return;
+    const total = totalBet(), snapshot = [...bets.entries()];
+    busy = true; clearHits(); lastBets = snapshot;
+    stats.spins++; stats.wagered += total; update();
+    setMsg("No more bets!"); $("rTitle").textContent = "Spinning…"; $("rSub").textContent = ""; $("badge").className = "badge"; $("badge").textContent = "…";
+    FX.sound("roll");
+    const n = rnd37();
+    await spinAnim(n);
+    FX.sound("stop");
+    const res = settle(bets, n), net = res.returned - total;
+    history.push(n); history = history.slice(-18); renderHistory(); showResult(n);
+    const hitEl = numEls.get(n); if(hitEl) hitEl.classList.add("hit");
+    res.hits.forEach(k => { const e = chipEls.get(k); if(e) e.classList.add("win"); });
+    bets.forEach((a, k) => { if(!res.hits.includes(k)){ const e = chipEls.get(k); if(e) e.classList.add("lose"); } });
+    bank += res.returned; stats.won += res.returned; runPeak = Math.max(runPeak, bank);
+    $("lastWin").textContent = FX.fmt(Math.max(0, net));
+    let pause = turbo ? 900 : 2000;
+    if(res.returned > 0){
+      stats.hits++;
+      if(net > 0){
+        stats.biggest = Math.max(stats.biggest, net);
+        rgReport("roulette", "", "Biggest single win", net, { unit:"chips", better:"high", detail:`${n} came up on a ${FX.fmt(total)} bet` });
+        setMsg(`🎉 ${n} ${colorOf(n)}! You won ${FX.fmt(net)} chips.`);
+        FX.floatText($("bank"), "+" + FX.fmt(net), "#6affb6");
+        if(res.returned >= total * 12){ FX.sound("bigwin"); FX.confetti({ count: 200 }); pause += 800; } else FX.sound("win");
+      } else setMsg(`${n} ${colorOf(n)} — you got ${FX.fmt(res.returned)} back, net ${FX.fmt(net)}.`);
+    } else { setMsg(`${n} ${colorOf(n)} — no winning bets. You lost ${FX.fmt(total)}.`); FX.sound("lose"); }
+    setBank(true);
+    await sleep(pause);
+    bets.clear(); order = []; chipEls.forEach(e => e.remove()); chipEls.clear();
+    busy = false;
+    if(bank < CHIPS[0]){ endRun(); }
+    update();
+    if(bank >= CHIPS[0]) setMsg("Place your bets.");
+  }
+
+  // ---------- wiring ----------
+  function buildTray(){
+    const t = $("tray");
+    CHIPS.forEach(v => {
+      const b = document.createElement("button"); b.className = "chipbtn c" + v; b.dataset.v = v; b.type = "button"; b.textContent = short(v); b.setAttribute("aria-label", "Chip " + v);
+      b.addEventListener("click", () => { chip = v; FX.sound("click"); update(); });
+      t.appendChild(b);
+    });
+  }
+  $("spinBtn").addEventListener("click", spin);
+  $("undoBtn").addEventListener("click", undo);
+  $("clearBtn").addEventListener("click", clearAll);
+  $("rebetBtn").addEventListener("click", rebet);
+  $("doubleBtn").addEventListener("click", doubleUp);
+  $("turboBtn").addEventListener("click", () => { turbo = !turbo; FX.sound("click"); update(); });
+  function restart(){
+    bets.clear(); order = []; chipEls.forEach(e => e.remove()); chipEls.clear(); clearHits();
+    endRun(); bank = settings.start; runPeak = bank; lastBets = [];
+    $("lastWin").textContent = "0"; setMsg("Fresh chips — place your bets."); setBank(false); update();
+  }
+  $("refillBtn").addEventListener("click", restart);
+  $("applySettings").addEventListener("click", async () => {
+    if(busy) return;
+    const ask = window.RGDialog ? window.RGDialog.confirm("Restart with these starting chips? Your current chips will be replaced.") : Promise.resolve(true);
+    if(!(await ask)) return;
+    settings = sanitize({ start:$("setStart").value }); save("roulette_settings", settings); $("setStart").value = settings.start; restart();
+  });
+  $("clearCache").addEventListener("click", async () => {
+    if(busy) return;
+    const ask = window.RGDialog ? window.RGDialog.confirm("Clear all saved Roulette data (chips, stats and settings) and restore defaults?") : Promise.resolve(true);
+    if(!(await ask)) return;
+    try{ ["roulette_state","roulette_stats","roulette_settings"].forEach(k => localStorage.removeItem(k)); }catch(e){}
+    settings = { ...DEFAULTS }; stats = { ...DEF_STATS }; history = []; renderHistory(); $("setStart").value = settings.start; runPeak = settings.start; restart();
+  });
+  document.addEventListener("keydown", e => {
+    const tag = e.target.tagName;
+    if(tag === "INPUT" || tag === "BUTTON" || tag === "SUMMARY" || tag === "A") return;
+    if(e.key === " " || e.key === "Enter"){ e.preventDefault(); spin(); }
+  });
+
+  // ---------- start ----------
+  loadAll();
+  buildTable(); buildTray(); drawStatic();
+  ballPocket = null; draw();
+  renderHistory();
+  $("setStart").value = settings.start;
+  shownBank = bank; setBank(false); update();
+  setMsg("Place your bets.");
+})();
+</script>
+</body>
+</html>

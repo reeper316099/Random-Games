@@ -8,11 +8,14 @@
   const GAMES = {
     blackjack:   { name: "Blackjack",               icon: "🃏" },
     checkers:    { name: "Checkers",                icon: "🔴" },
+    chess:       { name: "Chess",                   icon: "♟️" },
     dice:        { name: "High Roller Dice",        icon: "🎲" },
     slots:       { name: "Lucky Reels Slots",       icon: "🎰" },
     minesweeper: { name: "Minesweeper",             icon: "💣" },
     poker:       { name: "Texas Hold'em Poker",     icon: "♠️" },
-    solitaire:   { name: "Solitaire",               icon: "🂡" }
+    roulette:    { name: "Royal Roulette",          icon: "🎡" },
+    solitaire:   { name: "Solitaire",               icon: "🂡" },
+    "ultimate-ttt": { name: "Ultimate Tic-Tac-Toe",  icon: "⭕" }
   };
   const gameName = id => (GAMES[id] ? GAMES[id].icon + " " + GAMES[id].name : id);
 

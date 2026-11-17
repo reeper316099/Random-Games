@@ -6,497 +6,481 @@
   <title>Ultimate Tic-Tac-Toe</title>
   <style>
     :root{
-      --bg:#0b0f17;
-      --panel:#121a28;
-      --panel2:#0f1623;
-      --text:#e7eefc;
-      --muted:#a9b6d3;
-      --accent:#6aa6ff;
-      --x:#ff6a6a;
-      --o:#6affb6;
-      --line:rgba(255,255,255,.12);
-      --line2:rgba(255,255,255,.22);
-      --win: rgba(255,255,255,.08);
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius:18px;
+      --bg:#0b0f17; --panel:#121a28; --text:#e7eefc; --muted:#a9b6d3; --accent:#6aa6ff;
+      --x:#ff6a8a; --o:#5ef0c0; --gold:#ffd36a;
+      --line:rgba(255,255,255,.13); --line2:rgba(255,255,255,.24);
+      --shadow:0 10px 30px rgba(0,0,0,.35); --radius:18px;
+      --turn:var(--x);
     }
-
     *{ box-sizing:border-box; }
     body{
-      margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: radial-gradient(1200px 600px at 20% 10%, #12203a 0%, var(--bg) 55%) fixed;
-      color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      padding:24px;
+      margin:0; min-height:100vh; display:flex; justify-content:center;
+      background:radial-gradient(1000px 600px at 20% 0%, #1b2a52 0%, #0e1426 45%, var(--bg) 80%) fixed;
+      color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      padding:44px 18px 24px;
     }
-
-    .wrap{
-      width:min(920px, 100%);
-      display:grid;
-      gap:16px;
-      grid-template-columns: 1fr;
-    }
-
+    .wrap{ width:min(860px,100%); display:grid; gap:14px; align-content:start; }
     .topbar{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 16px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
     }
+    .title h1{ margin:0; font-size:22px; font-weight:900; letter-spacing:.4px; }
+    .title h1 .x{ color:var(--x); text-shadow:0 0 18px rgba(255,106,138,.5); }
+    .title h1 .o{ color:var(--o); text-shadow:0 0 18px rgba(94,240,192,.5); }
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:3px; max-width:520px; line-height:1.4; }
+    .score{ display:flex; gap:8px; align-items:stretch; }
+    .sc{ min-width:62px; text-align:center; padding:6px 10px; border-radius:12px; background:rgba(0,0,0,.28); border:1px solid var(--line); }
+    .sc small{ display:block; color:var(--muted); font-size:10px; letter-spacing:1px; }
+    .sc b{ font-size:20px; font-variant-numeric:tabular-nums; }
+    .sc.x b{ color:var(--x); } .sc.o b{ color:var(--o); }
 
-    .title{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-    .title h1{
-      margin:0;
-      font-size:18px;
-      letter-spacing:.3px;
-    }
-    .title .sub{
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    .controls{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-
+    .bar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+    .grp{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+    .seg button{ border:0; border-radius:0; background:transparent; padding:9px 12px; font-size:13px; }
+    .seg button + button{ border-left:1px solid var(--line); }
+    .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.16)); color:#fff; }
     button{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      padding:10px 12px;
-      border-radius: 12px;
-      cursor:pointer;
-      font-weight:600;
-      letter-spacing:.2px;
-      transition: transform .05s ease, background .2s ease, border-color .2s ease;
+      border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text);
+      padding:9px 14px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s;
     }
-    button:hover{ background: rgba(255,255,255,.09); border-color: var(--line2); }
-    button:active{ transform: translateY(1px); }
-    button.primary{
-      border-color: rgba(106,166,255,.35);
-      background: rgba(106,166,255,.12);
-    }
+    button:hover:not(:disabled){ filter:brightness(1.25); }
+    button:active:not(:disabled){ transform:scale(.96); }
+    button:disabled{ opacity:.35; cursor:not-allowed; }
+    button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.16)); border-color:rgba(106,166,255,.55); }
+    button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.28); font-size:13px; font-weight:700; }
+    .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); }
+    .dot.x{ background:var(--x); box-shadow:0 0 10px var(--x); } .dot.o{ background:var(--o); box-shadow:0 0 10px var(--o); }
 
-    .status{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.25;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius: 999px;
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.18);
-      color:var(--text);
-      font-weight:700;
-      font-size:12px;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:50%;
-      background: var(--accent);
-      box-shadow: 0 0 0 3px rgba(106,166,255,.15);
-    }
-    .dot.x{ background: var(--x); box-shadow: 0 0 0 3px rgba(255,106,106,.15); }
-    .dot.o{ background: var(--o); box-shadow: 0 0 0 3px rgba(106,255,182,.15); }
-
-    /* Board layout */
-    .boardShell{
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      padding:16px;
-      box-shadow: var(--shadow);
-    }
-
-    .big{
-      width: min(720px, 100%);
-      margin: 0 auto;
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:10px;
-    }
-
+    /* ---------- board ---------- */
+    .shell{ padding:14px; background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+    .big{ position:relative; width:min(680px, 100%); margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(6px,1.6vw,12px); }
     .mini{
-      position:relative;
-      aspect-ratio: 1 / 1;
-      border-radius: 14px;
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.18);
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:6px;
-      padding:10px;
-      overflow:hidden;
-      transition: outline .2s ease, transform .08s ease, background .2s ease;
+      position:relative; aspect-ratio:1; border-radius:14px; border:1px solid var(--line); background:rgba(0,0,0,.22);
+      display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:clamp(2px,.7vw,5px); padding:clamp(4px,1.2vw,9px);
+      transition:background .25s, box-shadow .25s, border-color .25s;
     }
-
-    .mini.active{
-      outline: 2px solid rgba(106,166,255,.55);
-      background: rgba(106,166,255,.08);
-    }
-
-    .mini.free{
-      outline: 2px dashed rgba(255,255,255,.16);
-    }
-
+    .mini.active{ border-color:var(--turn); background:color-mix(in srgb, var(--turn) 11%, rgba(0,0,0,.22)); box-shadow:0 0 0 1px var(--turn), 0 0 22px color-mix(in srgb, var(--turn) 45%, transparent); animation:glow 1.6s ease-in-out infinite; }
+    .mini.free{ border-color:rgba(255,255,255,.3); border-style:dashed; }
+    @keyframes glow{ 50%{ box-shadow:0 0 0 1px var(--turn), 0 0 34px color-mix(in srgb, var(--turn) 70%, transparent); } }
     .cell{
-      border-radius: 10px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.05);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:900;
-      font-size: clamp(18px, 3.2vw, 34px);
-      cursor:pointer;
-      user-select:none;
-      transition: transform .05s ease, background .15s ease, border-color .2s ease;
+      position:relative; border-radius:8px; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.07); padding:0; cursor:default;
+      display:grid; place-items:center; transition:background .15s;
     }
-    .cell:hover{
-      background: rgba(255,255,255,.08);
-      border-color: var(--line2);
-    }
-    .cell:active{ transform: scale(.98); }
-    .cell.disabled{
-      cursor:not-allowed;
-      opacity:.55;
-    }
-    .markX{ color: var(--x); text-shadow: 0 10px 25px rgba(255,106,106,.18); }
-    .markO{ color: var(--o); text-shadow: 0 10px 25px rgba(106,255,182,.18); }
+    .cell.can{ cursor:pointer; }
+    .cell.can:hover{ background:rgba(255,255,255,.14); }
+    .big[data-turn="1"] .cell.can:hover::after, .big[data-turn="2"] .cell.can:hover::after{ position:absolute; font-weight:900; font-size:clamp(14px,3.2vw,26px); opacity:.45; }
+    .big[data-turn="1"] .cell.can:hover::after{ content:"✕"; color:var(--x); }
+    .big[data-turn="2"] .cell.can:hover::after{ content:"○"; color:var(--o); }
+    .cell.last::before{ content:""; position:absolute; inset:-2px; border-radius:9px; border:2px solid var(--gold); box-shadow:0 0 10px rgba(255,211,106,.6); pointer-events:none; }
+    .cell.hint{ animation:hint .7s ease-in-out infinite; background:rgba(255,211,106,.35); }
+    @keyframes hint{ 50%{ transform:scale(1.14); } }
+    .cell.shake{ animation:shake .3s; }
+    @keyframes shake{ 25%{ transform:translateX(-3px); } 75%{ transform:translateX(3px); } }
+    .cell svg{ width:78%; height:78%; overflow:visible; }
+    .mark path, .mark circle{ fill:none; stroke-width:3.4; stroke-linecap:round; }
+    .mark.x{ filter:drop-shadow(0 0 4px rgba(255,106,138,.6)); } .mark.x path{ stroke:var(--x); }
+    .mark.o{ filter:drop-shadow(0 0 4px rgba(94,240,192,.6)); } .mark.o circle{ stroke:var(--o); }
+    .mark.fresh path{ stroke-dasharray:24; stroke-dashoffset:24; animation:draw .28s ease-out forwards; }
+    .mark.fresh path + path{ animation-delay:.12s; }
+    .mark.fresh circle{ stroke-dasharray:48; stroke-dashoffset:48; transform-origin:center; animation:draw .38s ease-out forwards; }
+    @keyframes draw{ to{ stroke-dashoffset:0; } }
 
-    .overlay{
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: rgba(0,0,0,.42);
-      backdrop-filter: blur(2px);
-      border-radius: 14px;
-      font-weight:900;
-      font-size: clamp(22px, 3.6vw, 44px);
-      letter-spacing: .6px;
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .2s ease;
+    .claim{
+      position:absolute; inset:0; border-radius:14px; display:grid; place-items:center; pointer-events:none; opacity:0; transition:opacity .25s;
+      background:rgba(7,10,18,.78); backdrop-filter:blur(2px);
     }
-    .mini.won .overlay,
-    .mini.tied .overlay{
-      opacity:1;
-    }
-    .mini.won .overlay.x{ color: var(--x); }
-    .mini.won .overlay.o{ color: var(--o); }
-    .mini.tied .overlay{ color: rgba(231,238,252,.6); font-size: clamp(16px, 2.8vw, 28px); }
+    .mini.won-1 .claim, .mini.won-2 .claim, .mini.tied .claim{ opacity:1; }
+    .claim svg{ width:62%; height:62%; overflow:visible; }
+    .claim .mark path, .claim .mark circle{ stroke-width:3; }
+    .claim.pop svg{ animation:pop .5s cubic-bezier(.2,1.6,.4,1); }
+    @keyframes pop{ from{ transform:scale(.2); opacity:0; } }
+    .mini.won-1{ border-color:rgba(255,106,138,.6); } .mini.won-2{ border-color:rgba(94,240,192,.6); }
+    .claim .tie{ font-weight:900; letter-spacing:2px; color:rgba(231,238,252,.5); font-size:clamp(12px,2.6vw,20px); }
+    .mini.winline{ box-shadow:0 0 0 2px var(--gold), 0 0 26px rgba(255,211,106,.7); animation:none; }
+    svg.winsvg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; overflow:visible; }
+    svg.winsvg line{ stroke:var(--gold); stroke-width:1.6; stroke-linecap:round; filter:drop-shadow(0 0 3px rgba(255,211,106,.95)); stroke-dasharray:140; stroke-dashoffset:140; animation:draw .7s .1s ease-out forwards; }
 
-    .footerHint{
-      text-align:center;
-      color:var(--muted);
-      font-size:12px;
-      margin-top:10px;
+    .banner{
+      display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 16px;
+      border:1px solid rgba(255,211,106,.5); border-radius:14px; background:linear-gradient(180deg, rgba(255,211,106,.16), rgba(255,211,106,.06));
     }
-
-    .winnerBanner{
-      margin: 0 auto;
-      width:min(720px, 100%);
-      padding:12px 14px;
-      border-radius: 14px;
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.18);
-      display:none;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .winnerBanner.show{ display:flex; }
-    .winnerText{
-      font-weight:900;
-      letter-spacing:.3px;
-    }
-    .winnerText .x{ color: var(--x); }
-    .winnerText .o{ color: var(--o); }
-    .winnerText .t{ color: rgba(231,238,252,.75); }
+    .banner.show{ display:flex; animation:pop .45s cubic-bezier(.2,1.6,.4,1); }
+    .banner b{ font-size:18px; } .banner b .x{ color:var(--x); } .banner b .o{ color:var(--o); }
+    .hintline{ text-align:center; color:var(--muted); font-size:12px; margin-top:10px; }
+    @media (max-width:560px){ body{ padding:44px 8px 16px; } .shell{ padding:8px; } }
+    @media (prefers-reduced-motion:reduce){ .mini.active, .cell.hint{ animation:none; } .mark.fresh path, .mark.fresh circle{ animation-duration:.01s; } }
   </style>
 </head>
-
 <body>
 <a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="title">
-        <h1>Ultimate Tic-Tac-Toe</h1>
-        <div class="sub">Play a cell → sends opponent to that mini-board. If that board is unavailable, play anywhere valid.</div>
-      </div>
-
-      <div class="controls">
-        <div class="status">
-          <span class="pill" id="turnPill"><span class="dot" id="turnDot"></span><span id="turnText">Turn: X</span></span>
-          <span class="pill" id="targetPill"><span class="dot"></span><span id="targetText">Target: any board</span></span>
-        </div>
-        <button class="primary" id="resetBtn">Reset</button>
-      </div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1><span class="x">ULTIMATE</span> <span class="o">TIC-TAC-TOE</span></h1>
+      <div class="sub">Where you play decides where your opponent must play next. Win three mini-boards in a row to win the game. A full or finished board sends the next player anywhere.</div>
     </div>
-
-    <div class="winnerBanner" id="winnerBanner">
-      <div class="winnerText" id="winnerText"></div>
-      <button id="playAgainBtn">Play again</button>
-    </div>
-
-    <div class="boardShell">
-      <div class="big" id="big"></div>
-      <div class="footerHint">Mini-board cells are indexed like a keypad: top-left is 0 … bottom-right is 8.</div>
+    <div class="score" aria-label="Scoreboard">
+      <div class="sc x"><small>X WINS</small><b id="scX">0</b></div>
+      <div class="sc"><small>DRAWS</small><b id="scT">0</b></div>
+      <div class="sc o"><small>O WINS</small><b id="scO">0</b></div>
     </div>
   </div>
 
+  <div class="bar">
+    <div class="grp">
+      <div class="seg" id="modeSeg" role="group" aria-label="Opponent"><button data-v="cpu">vs Computer</button><button data-v="2p">2 Players</button></div>
+      <div class="seg" id="diffSeg" role="group" aria-label="Difficulty"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></div>
+      <div class="seg" id="sideSeg" role="group" aria-label="You play"><button data-v="1">Play X</button><button data-v="2">Play O</button></div>
+    </div>
+    <div class="grp">
+      <button id="hintBtn">💡 Hint</button>
+      <button id="undoBtn">↶ Undo</button>
+      <button class="primary" id="newBtn">New game</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="grp">
+      <span class="pill"><span class="dot x" id="turnDot"></span><span id="turnText">Turn: X</span></span>
+      <span class="pill"><span class="dot"></span><span id="targetText">Play in any board</span></span>
+    </div>
+    <button id="resetScore" style="font-size:12px;padding:6px 10px">Reset score</button>
+  </div>
+
+  <div class="banner" id="banner"><b id="bannerText"></b><button class="primary" id="againBtn">Play again</button></div>
+
+  <div class="shell">
+    <div class="big" id="big" data-turn="1"></div>
+    <div class="hintline">Highlighted board = where you must play. Cells are numbered like a keypad inside each board.</div>
+  </div>
+</div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
 <script>
 (() => {
-  // ====== Game State ======
-  // boards[b][i] is "X", "O", or null
-  const boards = Array.from({ length: 9 }, () => Array(9).fill(null));
-  // miniStatus[b] is null (in progress), "X", "O", or "T" (tied)
-  const miniStatus = Array(9).fill(null);
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, reducedMotion:false };
+  const $ = id => document.getElementById(id);
 
-  let currentPlayer = "X";
-  let forcedBoard = null; // 0..8 or null (free move)
-  let gameOver = false;
+  // ===== UTTT ENGINE (pure logic + AI, no DOM) =====
+  // cells: 81 entries indexed board*9+cell holding 0 / 1 (X) / 2 (O); m[b]: 0 open, 1 X won, 2 O won, 3 tied.
+  const LN = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const newState = () => ({ c:new Int8Array(81), m:new Int8Array(9), f:-1, p:1, n:0 });
+  function miniOutcome(c, b){
+    const o = b * 9;
+    for(const L of LN){ const v = c[o + L[0]]; if(v && v === c[o + L[1]] && v === c[o + L[2]]) return v; }
+    for(let i=0;i<9;i++) if(!c[o + i]) return 0;
+    return 3;
+  }
+  function bigOutcome(m){
+    for(const L of LN){ const v = m[L[0]]; if(v && v < 3 && v === m[L[1]] && v === m[L[2]]) return v; }
+    for(let i=0;i<9;i++) if(m[i] === 0) return 0;
+    return 3;
+  }
+  function bigLine(m){ for(const L of LN){ const v = m[L[0]]; if(v && v < 3 && v === m[L[1]] && v === m[L[2]]) return L; } return null; }
+  function legalMoves(s){
+    const out = [];
+    if(s.f >= 0 && s.m[s.f] === 0){ for(let i=0;i<9;i++) if(!s.c[s.f * 9 + i]) out.push(s.f * 9 + i); }
+    else for(let b=0;b<9;b++) if(s.m[b] === 0) for(let i=0;i<9;i++) if(!s.c[b * 9 + i]) out.push(b * 9 + i);
+    return out;
+  }
+  function play(s, mv){
+    const b = (mv / 9) | 0, i = mv % 9, u = { mv, pm:s.m[b], pf:s.f };
+    s.c[mv] = s.p;
+    const r = miniOutcome(s.c, b); if(r) s.m[b] = r;
+    s.f = s.m[i] === 0 ? i : -1;
+    s.p = 3 - s.p; s.n++;
+    return u;
+  }
+  function unplay(s, u){ s.p = 3 - s.p; s.n--; s.c[u.mv] = 0; s.m[(u.mv / 9) | 0] = u.pm; s.f = u.pf; }
 
-  // ====== DOM ======
-  const bigEl = document.getElementById("big");
-  const resetBtn = document.getElementById("resetBtn");
-  const playAgainBtn = document.getElementById("playAgainBtn");
-
-  const turnText = document.getElementById("turnText");
-  const turnDot = document.getElementById("turnDot");
-  const targetText = document.getElementById("targetText");
-
-  const winnerBanner = document.getElementById("winnerBanner");
-  const winnerText = document.getElementById("winnerText");
-
-  // Build UI: 9 mini boards, each with 9 cells
-  const cellEls = []; // cellEls[b][i]
-  const miniEls = [];
-
-  function buildBoard() {
-    bigEl.innerHTML = "";
-    cellEls.length = 0;
-    miniEls.length = 0;
-
-    for (let b = 0; b < 9; b++) {
-      const mini = document.createElement("div");
-      mini.className = "mini";
-      mini.dataset.board = b;
-
-      const overlay = document.createElement("div");
-      overlay.className = "overlay";
-      overlay.textContent = "";
-      mini.appendChild(overlay);
-
-      const cells = [];
-      for (let i = 0; i < 9; i++) {
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        cell.dataset.board = b;
-        cell.dataset.cell = i;
-        cell.addEventListener("click", onCellClick);
-        mini.appendChild(cell);
-        cells.push(cell);
+  const BIG_W = [0, 22, 95], LOC_W = [0, 1, 5];
+  function evalX(s){          // positive = good for X
+    const m = s.m, c = s.c; let v = 0;
+    for(const L of LN){
+      let x = 0, o = 0, t = 0;
+      for(const k of L){ const r = m[k]; if(r === 1) x++; else if(r === 2) o++; else if(r === 3) t++; }
+      if(t) continue;
+      if(!o) v += BIG_W[x] || 0;
+      if(!x) v -= BIG_W[o] || 0;
+    }
+    for(let b=0;b<9;b++){
+      const wt = b === 4 ? 1.5 : (b % 2 === 0 ? 1.15 : 1), r = m[b];
+      if(r === 1) v += 30 * wt; else if(r === 2) v -= 30 * wt;
+      else if(r === 0){
+        const o = b * 9;
+        for(const L of LN){
+          let x = 0, y = 0;
+          for(const k of L){ const q = c[o + k]; if(q === 1) x++; else if(q === 2) y++; }
+          if(!y) v += (LOC_W[x] || 0) * wt;
+          if(!x) v -= (LOC_W[y] || 0) * wt;
+        }
+        if(c[o + 4] === 1) v += wt; else if(c[o + 4] === 2) v -= wt;
       }
-
-      bigEl.appendChild(mini);
-      cellEls.push(cells);
-      miniEls.push(mini);
     }
+    return v;
   }
-
-  // ====== Rules Helpers ======
-  const LINES = [
-    [0,1,2],[3,4,5],[6,7,8],
-    [0,3,6],[1,4,7],[2,5,8],
-    [0,4,8],[2,4,6]
-  ];
-
-  function checkWinner(cells) {
-    // cells: array length 9 containing "X"/"O"/null
-    for (const [a,b,c] of LINES) {
-      if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) return cells[a];
+  const WIN = 100000;
+  let nodes = 0, deadline = 0, aborted = false;
+  function order(s, mvs){
+    const p = s.p, keyed = mvs.map(mv => {
+      const b = (mv / 9) | 0, i = mv % 9; let k = 0;
+      s.c[mv] = p; if(miniOutcome(s.c, b) === p) k += 10; s.c[mv] = 0;
+      if(s.m[i] !== 0) k -= 3;                // sending the opponent anywhere is usually bad
+      if(i === 4) k += 1;
+      return [k + Math.random() * .1, mv];
+    });
+    keyed.sort((a, b) => b[0] - a[0]);
+    return keyed.map(a => a[1]);
+  }
+  function negamax(s, depth, alpha, beta, ply){
+    const res = bigOutcome(s.m);
+    if(res === 3) return 0;
+    if(res) return -(WIN - ply);             // the player who just moved has won
+    if(depth <= 0){ const e = evalX(s); return s.p === 1 ? e : -e; }
+    if((++nodes & 1023) === 0 && performance.now() > deadline) aborted = true;
+    if(aborted) return 0;
+    let best = -Infinity;
+    for(const mv of order(s, legalMoves(s))){
+      const u = play(s, mv), v = -negamax(s, depth - 1, -beta, -alpha, ply + 1);
+      unplay(s, u);
+      if(aborted) return 0;
+      if(v > best) best = v;
+      if(best > alpha) alpha = best;
+      if(alpha >= beta) break;
     }
-    if (cells.every(v => v !== null)) return "T"; // tie
-    return null;
+    return best;
   }
-
-  function bigWinner() {
-    // Build a "big board" out of miniStatus: only X/O count, T and null are empty
-    const big = miniStatus.map(s => (s === "X" || s === "O") ? s : null);
-    return checkWinner(big);
-  }
-
-  function isBoardPlayable(b) {
-    // playable if not finished and has at least one empty cell
-    return miniStatus[b] === null && boards[b].some(v => v === null);
-  }
-
-  function validMove(b, i) {
-    if (gameOver) return false;
-    if (miniStatus[b] !== null) return false;
-    if (boards[b][i] !== null) return false;
-
-    // If forcedBoard is playable, must play there
-    if (forcedBoard !== null && isBoardPlayable(forcedBoard)) {
-      return b === forcedBoard;
+  function searchRoot(s, depth, noise){
+    let best = null, bestV = -Infinity, alpha = -Infinity;
+    for(const mv of order(s, legalMoves(s))){
+      const u = play(s, mv), v = -negamax(s, depth - 1, -Infinity, -alpha, 1) + Math.random() * noise;
+      unplay(s, u);
+      if(aborted) return null;
+      if(v > bestV){ bestV = v; best = mv; }
+      if(v > alpha) alpha = v;
     }
-    // Otherwise free move, but must choose a playable board
-    return isBoardPlayable(b);
+    return best;
+  }
+  const LEVELS = { easy:{ depth:1, noise:14, blunder:.35 }, medium:{ depth:3, noise:3, blunder:0 }, hard:{ ms:1100, maxDepth:12, noise:.2, blunder:0 } };
+  function chooseMove(state, level){
+    const s = { c:Int8Array.from(state.c), m:Int8Array.from(state.m), f:state.f, p:state.p, n:state.n };
+    const L = LEVELS[level] || LEVELS.medium, mvs = legalMoves(s);
+    if(mvs.length === 1) return mvs[0];
+    if(Math.random() < L.blunder) return mvs[Math.floor(Math.random() * mvs.length)];
+    aborted = false; nodes = 0;
+    if(L.ms){
+      deadline = performance.now() + L.ms; let best = null;
+      for(let d=2; d<=L.maxDepth; d++){
+        const mv = searchRoot(s, d, d === 2 ? L.noise : 0);
+        if(aborted || mv === null) break;
+        best = mv;
+      }
+      return best !== null ? best : mvs[0];
+    }
+    deadline = Infinity;
+    const mv = searchRoot(s, L.depth, L.noise);
+    return mv !== null ? mv : mvs[0];
+  }
+  // ===== END UTTT ENGINE =====
+
+  // ---------- state ----------
+  const DEF_SET = { mode:"cpu", diff:"medium", side:1 };
+  let settings = { ...DEF_SET }, score = { x:0, o:0, t:0 };
+  let S = newState(), hist = [], lastMove = -1, over = false, thinking = false, token = 0, hintTimer = null;
+
+  const load = k => { try{ const o = JSON.parse(localStorage.getItem(k) || "null"); return o && typeof o === "object" ? o : null; }catch(e){ return null; } };
+  const save = (k, o) => { try{ localStorage.setItem(k, JSON.stringify(o)); }catch(e){} };
+  function loadAll(){
+    const s = load("uttt_settings") || {};
+    settings = { mode: s.mode === "2p" ? "2p" : "cpu", diff: LEVELS[s.diff] ? s.diff : "medium", side: s.side === 2 ? 2 : 1 };
+    const sc = load("uttt_score") || {};
+    for(const k of ["x","o","t"]) score[k] = Number.isInteger(sc[k]) && sc[k] >= 0 ? sc[k] : 0;
+  }
+  const humanTurn = () => settings.mode === "2p" || S.p === settings.side;
+  const legalSet = () => new Set(over ? [] : legalMoves(S));
+
+  // ---------- DOM ----------
+  const big = $("big"), cellEls = [], miniEls = [], claimEls = [];
+  const xSvg = cls => `<svg class="mark x ${cls || ""}" viewBox="0 0 24 24"><path d="M5 5 L19 19"/><path d="M19 5 L5 19"/></svg>`;
+  const oSvg = cls => `<svg class="mark o ${cls || ""}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>`;
+  function build(){
+    big.innerHTML = "";
+    for(let b=0;b<9;b++){
+      const mini = document.createElement("div"); mini.className = "mini";
+      for(let i=0;i<9;i++){
+        const cell = document.createElement("button");
+        cell.type = "button"; cell.className = "cell"; cell.dataset.v = "0";
+        cell.setAttribute("aria-label", `Board ${b + 1}, cell ${i + 1}`);
+        cell.addEventListener("click", () => onCell(b * 9 + i));
+        mini.appendChild(cell); cellEls[b * 9 + i] = cell;
+      }
+      const claim = document.createElement("div"); claim.className = "claim"; claim.dataset.v = "0"; mini.appendChild(claim);
+      claimEls[b] = claim; miniEls[b] = mini; big.appendChild(mini);
+    }
+    const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "winsvg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.id = "winSvg"; big.appendChild(svg);
   }
 
-  // ====== Gameplay ======
-  function onCellClick(e) {
-    const b = Number(e.currentTarget.dataset.board);
-    const i = Number(e.currentTarget.dataset.cell);
-
-    if (!validMove(b, i)) return;
-
-    // Place mark
-    boards[b][i] = currentPlayer;
-
-    // Update mini board status if needed
-    const w = checkWinner(boards[b]);
-    if (w) miniStatus[b] = w;
-
-    // Set next forced board based on cell index played
-    forcedBoard = i;
-    // If that target board is not playable, free move
-    if (forcedBoard !== null && !isBoardPlayable(forcedBoard)) forcedBoard = null;
-
-    // Check big winner
-    let bw = bigWinner();
-    // No winner and no playable boards left: the big board is a draw
-    if (!bw && !boards.some((_, n) => isBoardPlayable(n))) bw = "T";
-    if (bw) {
-      gameOver = true;
-      showWinner(bw);
-    } else {
-      // Swap player
-      currentPlayer = (currentPlayer === "X") ? "O" : "X";
+  function render(){
+    const legal = legalSet(), canPlay = humanTurn() && !thinking && !over, wl = over ? bigLine(S.m) : null;
+    big.dataset.turn = String(S.p);
+    big.style.setProperty("--turn", S.p === 1 ? "var(--x)" : "var(--o)");
+    for(let b=0;b<9;b++){
+      const mini = miniEls[b], st = S.m[b];
+      mini.className = "mini" + (st === 1 || st === 2 ? " won-" + st : st === 3 ? " tied" : "") + (wl && wl.includes(b) ? " winline" : "");
+      if(!over && st === 0){
+        if(S.f === b) mini.classList.add("active");
+        else if(S.f < 0) mini.classList.add("free");
+      }
+      const claim = claimEls[b];
+      if(claim.dataset.v !== String(st)){
+        claim.dataset.v = String(st);
+        claim.innerHTML = st === 1 ? xSvg("") : st === 2 ? oSvg("") : st === 3 ? '<span class="tie">TIE</span>' : "";
+        claim.classList.toggle("pop", st !== 0);
+      }
+      for(let i=0;i<9;i++){
+        const mv = b * 9 + i, cell = cellEls[mv], v = S.c[mv];
+        if(cell.dataset.v !== String(v)){
+          cell.dataset.v = String(v);
+          cell.innerHTML = v === 1 ? xSvg(mv === lastMove ? "fresh" : "") : v === 2 ? oSvg(mv === lastMove ? "fresh" : "") : "";
+        }
+        cell.classList.toggle("can", canPlay && legal.has(mv));
+        cell.classList.toggle("last", mv === lastMove);
+        cell.disabled = v !== 0 || over;
+      }
     }
+    const names = settings.mode === "cpu" ? (p => p === settings.side ? " (you)" : " (computer)") : () => "";
+    $("turnDot").className = "dot " + (S.p === 1 ? "x" : "o");
+    $("turnText").textContent = over ? "Game over" : thinking ? "Computer is thinking…" : `Turn: ${S.p === 1 ? "X" : "O"}${names(S.p)}`;
+    $("targetText").textContent = over ? "—" : S.f >= 0 && S.m[S.f] === 0 ? `Must play in board ${S.f + 1}` : "Play in any open board";
+    $("scX").textContent = score.x; $("scO").textContent = score.o; $("scT").textContent = score.t;
+    document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.mode));
+    document.querySelectorAll("#diffSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.diff));
+    document.querySelectorAll("#sideSeg button").forEach(b => b.classList.toggle("on", Number(b.dataset.v) === settings.side));
+    const cpu = settings.mode === "cpu";
+    $("diffSeg").style.display = $("sideSeg").style.display = cpu ? "" : "none";
+    $("undoBtn").disabled = !hist.length || thinking;
+    $("hintBtn").disabled = over || thinking || !humanTurn();
+  }
 
+  // ---------- flow ----------
+  function newGame(){
+    token++; clearTimeout(hintTimer);
+    S = newState(); hist = []; lastMove = -1; over = false; thinking = false;
+    $("banner").classList.remove("show"); $("winSvg").innerHTML = "";
+    cellEls.forEach(c => { c.dataset.v = "x"; }); claimEls.forEach(c => { c.dataset.v = "x"; });
+    render(); maybeAI();
+  }
+  function onCell(mv){
+    if(over || thinking || !humanTurn()) return;
+    if(!legalSet().has(mv)){
+      FX.sound("error"); const c = cellEls[mv]; c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); return;
+    }
+    doMove(mv);
+  }
+  function doMove(mv){
+    clearTimeout(hintTimer); cellEls.forEach(c => c.classList.remove("hint"));
+    const b = (mv / 9) | 0, before = S.m[b], mover = S.p;
+    play(S, mv); hist.push(mv); lastMove = mv;
+    const claimed = S.m[b] !== before && S.m[b] !== 0;
+    FX.sound(claimed ? "capture" : "move");
+    const res = bigOutcome(S.m);
+    if(res){ over = true; finish(res); }
     render();
+    if(!over) maybeAI();
   }
-
-  function showWinner(w) {
-    winnerBanner.classList.add("show");
-    if (w === "T") {
-      winnerText.innerHTML = `Big board result: <span class="t">Tie</span>`;
-    } else {
-      winnerText.innerHTML = `Winner: <span class="${w.toLowerCase()}">${w}</span> on the big board`;
+  function maybeAI(){
+    if(settings.mode !== "cpu" || over || humanTurn()) return;
+    thinking = true; render();
+    const my = ++token;
+    setTimeout(() => {
+      if(my !== token || over) return;
+      const mv = chooseMove(S, settings.diff);
+      thinking = false;
+      doMove(mv);
+    }, 420);
+  }
+  function finish(res){
+    const line = bigLine(S.m);
+    if(line){
+      const pt = b => { const e = miniEls[b]; return [(e.offsetLeft + e.offsetWidth / 2) / big.clientWidth * 100, (e.offsetTop + e.offsetHeight / 2) / big.clientHeight * 100]; };
+      const [x1, y1] = pt(line[0]), [x2, y2] = pt(line[2]);
+      $("winSvg").innerHTML = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
     }
-  }
-
-  function hideWinner() {
-    winnerBanner.classList.remove("show");
-    winnerText.textContent = "";
-  }
-
-  // ====== Rendering ======
-  function render() {
-    // Turn pill
-    turnText.textContent = `Turn: ${currentPlayer}`;
-    turnDot.className = "dot " + (currentPlayer === "X" ? "x" : "o");
-
-    // Target pill
-    if (forcedBoard === null) {
-      targetText.textContent = "Target: any board";
-    } else {
-      targetText.textContent = `Target: board ${forcedBoard}`;
-    }
-
-    // Highlight playable boards
-    const forcedIsPlayable = (forcedBoard !== null && isBoardPlayable(forcedBoard));
-
-    for (let b = 0; b < 9; b++) {
-      const mini = miniEls[b];
-      mini.classList.remove("active", "free", "won", "tied");
-
-      // Cells
-      for (let i = 0; i < 9; i++) {
-        const cell = cellEls[b][i];
-        const v = boards[b][i];
-        cell.textContent = v ? v : "";
-        cell.classList.toggle("markX", v === "X");
-        cell.classList.toggle("markO", v === "O");
-
-        const canClick = validMove(b, i);
-        cell.classList.toggle("disabled", !canClick);
-      }
-
-      // Overlay for won/tied mini boards
-      const overlay = mini.querySelector(".overlay");
-      const st = miniStatus[b];
-      if (st === "X" || st === "O") {
-        mini.classList.add("won");
-        overlay.className = "overlay " + st.toLowerCase();
-        overlay.textContent = st;
-      } else if (st === "T") {
-        mini.classList.add("tied");
-        overlay.className = "overlay";
-        overlay.textContent = "TIE";
-      } else {
-        overlay.textContent = "";
-        overlay.className = "overlay";
-      }
-
-      // Board highlight
-      if (gameOver) continue;
-
-      if (forcedIsPlayable) {
-        if (b === forcedBoard) mini.classList.add("active");
-      } else {
-        // free move: show all playable boards as "free"
-        if (isBoardPlayable(b)) mini.classList.add("free");
+    if(res === 3){ score.t++; $("bannerText").innerHTML = "Draw — the big board is full."; FX.sound("push"); }
+    else {
+      if(res === 1) score.x++; else score.o++;
+      const sym = res === 1 ? '<span class="x">X</span>' : '<span class="o">O</span>';
+      const cpu = settings.mode === "cpu", youWon = cpu && res === settings.side;
+      $("bannerText").innerHTML = cpu ? (youWon ? `🎉 You win as ${sym}!` : `The computer wins as ${sym}.`) : `${sym} wins the game!`;
+      if(!cpu || youWon){ FX.sound("bigwin"); FX.confetti({ count: 170, colors: res === 1 ? ["#ff6a8a","#ffd36a","#fff"] : ["#5ef0c0","#ffd36a","#fff"] }); }
+      else FX.sound("lose");
+      if(youWon){
+        const mine = Math.ceil(hist.length / 2);
+        rgReport("ultimate-ttt", settings.diff[0].toUpperCase() + settings.diff.slice(1), "Fewest moves to win", mine, { unit:"moves", better:"low", detail:"vs the computer" });
       }
     }
+    save("uttt_score", score);
+    $("banner").classList.add("show");
   }
-
-  // ====== Reset ======
-  function reset() {
-    for (let b = 0; b < 9; b++) {
-      boards[b].fill(null);
-      miniStatus[b] = null;
+  function undo(){
+    if(!hist.length || thinking) return;
+    token++;
+    const n = hist.length; let L = n - 1;
+    if(settings.mode === "cpu"){
+      // step back to the latest position where it is the human's turn
+      const want = settings.side === 1 ? 0 : 1;
+      if(L % 2 !== want) L--;
+      if(L < 0) L = 0;
     }
-    currentPlayer = "X";
-    forcedBoard = null;
-    gameOver = false;
-    hideWinner();
-    render();
+    const keep = hist.slice(0, L);
+    S = newState(); hist = []; lastMove = -1; over = false;
+    keep.forEach(mv => { play(S, mv); hist.push(mv); lastMove = mv; });
+    $("banner").classList.remove("show"); $("winSvg").innerHTML = "";
+    cellEls.forEach(c => { c.dataset.v = "x"; }); claimEls.forEach(c => { c.dataset.v = "x"; });
+    FX.sound("click"); render();
+    if(settings.mode === "cpu" && !humanTurn()) maybeAI();
+  }
+  function hint(){
+    if(over || thinking || !humanTurn()) return;
+    const mv = chooseMove(S, "medium");
+    cellEls.forEach(c => c.classList.remove("hint"));
+    cellEls[mv].classList.add("hint"); FX.sound("tick");
+    clearTimeout(hintTimer); hintTimer = setTimeout(() => cellEls[mv].classList.remove("hint"), 2600);
   }
 
-  resetBtn.addEventListener("click", reset);
-  playAgainBtn.addEventListener("click", reset);
+  // ---------- wiring ----------
+  function setSetting(k, v){
+    if(settings[k] === v) return;
+    settings[k] = v; save("uttt_settings", settings); FX.sound("click");
+    if(k === "diff"){ render(); return; }       // difficulty can change mid-game
+    newGame();
+  }
+  $("modeSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("mode", b.dataset.v); });
+  $("diffSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("diff", b.dataset.v); });
+  $("sideSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("side", Number(b.dataset.v)); });
+  $("newBtn").addEventListener("click", async () => {
+    if(hist.length && !over){
+      const ask = window.RGDialog ? window.RGDialog.confirm("Abandon this game and start a new one?") : Promise.resolve(true);
+      if(!(await ask)) return;
+    }
+    newGame();
+  });
+  $("againBtn").addEventListener("click", newGame);
+  $("undoBtn").addEventListener("click", undo);
+  $("hintBtn").addEventListener("click", hint);
+  $("resetScore").addEventListener("click", async () => {
+    const ask = window.RGDialog ? window.RGDialog.confirm("Reset the X / O / draw scoreboard to zero?") : Promise.resolve(true);
+    if(!(await ask)) return;
+    score = { x:0, o:0, t:0 }; save("uttt_score", score); render();
+  });
 
-  // Init
-  buildBoard();
-  render();
+  loadAll(); build(); newGame();
 })();
 </script>
 </body>
