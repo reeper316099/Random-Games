@@ -31,6 +31,8 @@
     .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
     .seg button{ border:0; border-radius:0; background:transparent; padding:9px 12px; font-size:13px; }
     .seg button + button{ border-left:1px solid var(--line); }
+    .elo{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--line); border-radius:12px; background:rgba(0,0,0,.25); font-size:13px; }
+    .elo input{ width:150px; accent-color:#6aa6ff; }
     .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
     button, select{ font:inherit; }
     button{
@@ -166,6 +168,8 @@
       <div class="grp">
         <div class="seg" id="modeSeg" role="group" aria-label="Opponent"><button data-v="cpu">vs Computer</button><button data-v="2p">2 Players</button></div>
         <div class="seg" id="diffSeg" role="group" aria-label="Difficulty"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></div>
+        <div class="seg" id="engSeg" role="group" aria-label="Computer engine" title="Built-in engine, or the Stockfish engine (bundled, works offline)"><button data-v="builtin">Built-in</button><button data-v="stockfish">Stockfish</button></div>
+        <label class="elo" id="eloWrap" title="Stockfish strength (Elo rating)">Strength <input type="range" id="eloRange" min="1320" max="3200" step="10" aria-label="Stockfish strength"><b id="eloText"></b></label>
         <div class="seg" id="sideSeg" role="group" aria-label="You play"><button data-v="w">Play White</button><button data-v="b">Play Black</button></div>
       </div>
       <div class="grp">
@@ -265,7 +269,7 @@
   let replay = null, liveStash = null; // replay mode: {sans,states,lasts,caps,idx,name,timer}
   let hist = [], halfmove = 0, posKeys = [], endReason = "";   // undo history, fifty-move clock, repetition tracking
   let thinking = false, flipped = false, hintMove = null, aiToken = 0, drag = null, promoPending = false;
-  let settings = { mode:"cpu", diff:"medium", side:"w", theme:"classic" };
+  let settings = { mode:"cpu", diff:"medium", side:"w", theme:"classic", engine:"builtin", elo:1800 };
 
   function setMsg(t){ msgEl.textContent = t; }
 
@@ -863,6 +867,7 @@
   const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
   const VALS = { P:1, N:3, B:3, R:5, Q:9 };
   const PIECE_NAMES = { Q:"Queen", R:"Rook", B:"Bishop", N:"Knight" };
+  const levelName = () => settings.engine === "stockfish" ? "Stockfish " + (settings.elo >= 3200 ? "Max" : settings.elo) : cap1(settings.diff);
   const humanTurn = () => !replay && !gameOver && !thinking && (settings.mode === "2p" || turn === settings.side);
 
   function loadSettings(){
@@ -872,6 +877,8 @@
       mode: o.mode === "2p" ? "2p" : "cpu",
       diff: AI_LEVELS[o.diff] ? o.diff : "medium",
       side: o.side === "b" ? "b" : "w",
+      engine: o.engine === "stockfish" ? "stockfish" : "builtin",
+      elo: Math.min(3200, Math.max(1320, Number(o.elo) || 1800)),
       theme: ["classic","walnut","ocean","midnight","rose"].includes(o.theme) ? o.theme : "classic"
     };
   }
@@ -903,12 +910,73 @@
     render(); maybeAI();
   }
 
+  // ----- Stockfish (bundled WebAssembly, runs in a Web Worker, fully offline) -----
+  const SF = { worker:null, ready:null, failed:false, resolve:null };
+    function sfStart(){
+    if(SF.failed) return Promise.reject(new Error("unavailable"));
+    if(SF.ready) return SF.ready;
+    SF.ready = new Promise((ok, bad) => {
+      let w;
+      try{ w = new Worker("../vendor/stockfish/stockfish-19-lite-single.js"); }catch(e){ SF.failed = true; bad(e); return; }
+      SF.worker = w;
+      const timer = setTimeout(() => { SF.failed = true; bad(new Error("timeout")); }, 15000);
+      w.onerror = e => { clearTimeout(timer); SF.failed = true; if(SF.resolve){ SF.resolve(null); SF.resolve = null; } bad(e); };
+      w.onmessage = e => {
+        const line = String(e.data);
+        if(line === "uciok"){ w.postMessage("isready"); }
+        else if(line === "readyok"){ clearTimeout(timer); ok(w); }
+        else if(line.startsWith("bestmove") && SF.resolve){ const r = SF.resolve; SF.resolve = null; r(line.split(" ")[1]); }
+      };
+      w.postMessage("uci");
+    });
+    SF.ready.catch(() => {});
+    return SF.ready;
+  }
+  function toFen(){
+    const rows = board.map(row => { let s = "", n = 0; for(const p of row){ if(!p){ n++; continue; } if(n){ s += n; n = 0; } s += p[0] === "w" ? p[1] : p[1].toLowerCase(); } return s + (n || ""); }).join("/");
+    const cs = (castling.wK ? "K" : "") + (castling.wQ ? "Q" : "") + (castling.bK ? "k" : "") + (castling.bQ ? "q" : "") || "-";
+    const ep = epTarget ? coordToAlg(epTarget.r, epTarget.c) : "-";
+    return `${rows} ${turn} ${cs} ${ep} ${halfmove} ${Math.floor(moveList.length / 2) + 1}`;
+  }
+  // Asks Stockfish for a move and returns it in the game's own { sr, sc, mv } shape (or null if it fails).
+  async function sfPick(levelKey, full){
+    const w = await sfStart();
+    const elo = full ? 3200 : settings.elo;
+    const L = { ms: full ? 800 : Math.round(300 + (elo - 1320) / 1880 * 1400) };
+    const fen = toFen(), legal = genLegal(board, turn, castling, epTarget);
+    if(!legal.length) return null;
+    if(legal.length === 1) return legal[0];
+    const best = await new Promise(res => {
+      SF.resolve = res;
+      w.postMessage("ucinewgame");
+      w.postMessage("setoption name UCI_LimitStrength value " + (elo < 3200 ? "true" : "false"));
+      if(elo < 3200) w.postMessage("setoption name UCI_Elo value " + elo);
+      w.postMessage("position fen " + fen);
+      w.postMessage("go movetime " + L.ms);
+      setTimeout(() => { if(SF.resolve === res){ SF.resolve = null; w.postMessage("stop"); res(null); } }, L.ms + 8000);
+    });
+    if(!best || best === "(none)") return null;
+    const sc = best.charCodeAt(0) - 97, sr = 8 - +best[1], c = best.charCodeAt(2) - 97, r = 8 - +best[3], pr = best[4] ? best[4].toUpperCase() : null;
+    const m = legal.find(x => x.sr === sr && x.sc === sc && x.mv.r === r && x.mv.c === c);
+    if(!m) return null;
+    return pr ? { sr:m.sr, sc:m.sc, mv:{ ...m.mv, promo:pr } } : m;
+  }
+  // Picks the computer's move with the chosen engine; Stockfish falls back to the built-in engine if it can't load.
+  async function pickMove(levelKey, forHint){
+    if(settings.engine === "stockfish" && !SF.failed){
+      try{ const m = await sfPick(levelKey, forHint); if(m) return m; }catch(e){}
+      if(SF.failed) setMsg("Stockfish couldn't start here — using the built-in engine instead.");
+    }
+    return aiSearch(board, turn, castling, epTarget, forHint ? "medium" : levelKey);
+  }
+
   function maybeAI(){
     if(settings.mode !== "cpu" || gameOver || replay || thinking || turn === settings.side) return;
     thinking = true; const my = ++aiToken; render();
-    setTimeout(() => {
+    setTimeout(async () => {
       if(my !== aiToken) return;
-      const pick = aiSearch(board, turn, castling, epTarget, settings.diff);
+      const pick = await pickMove(settings.diff, false);
+      if(my !== aiToken) return;
       thinking = false;
       if(!pick){ render(); return; }
       playMove(pick.sr, pick.sc, pick.mv, true);
@@ -948,7 +1016,7 @@
     const winner = result === "1-0" ? "w" : "b";
     if(!human || winner === human){
       setTimeout(() => { FX.sound("bigwin"); FX.confetti({ count:180 }); }, 150);
-      if(human) rgReport("chess", cap1(settings.diff), "Fewest moves to win", Math.ceil(moveList.length / 2), { unit:"moves", better:"low", detail:`vs the computer, as ${human === "w" ? "White" : "Black"}` });
+      if(human) rgReport("chess", levelName(), "Fewest moves to win", Math.ceil(moveList.length / 2), { unit:"moves", better:"low", detail:`vs the computer, as ${human === "w" ? "White" : "Black"}` });
     } else setTimeout(() => FX.sound("lose"), 150);
   }
 
@@ -965,9 +1033,10 @@
   function hint(){
     if(!humanTurn()) return;
     setMsg("Thinking…");
-    setTimeout(() => {
-      const p = aiSearch(board, turn, castling, epTarget, "medium");
-      if(!p) return;
+    const tok = aiToken;
+    setTimeout(async () => {
+      const p = await pickMove("medium", true);
+      if(!p || tok !== aiToken || !humanTurn()) return;
       hintMove = { sr:p.sr, sc:p.sc, r:p.mv.r, c:p.mv.c }; selected = null; legalMoves = [];
       setMsg("Hint: " + sanBase(p.sr, p.sc, p.mv) + "  (the green squares)"); FX.sound("tick"); render();
     }, 30);
@@ -1061,7 +1130,7 @@
     [["Top", topC], ["Bot", botC]].forEach(([k, col]) => {
       const cpu = settings.mode === "cpu" && !replay;
       const who = cpu ? (col === settings.side ? "You" : "Computer") : (col === "w" ? "White" : "Black");
-      const sub = cpu && col !== settings.side ? " · " + cap1(settings.diff) : (cpu ? " · " + (col === "w" ? "White" : "Black") : "");
+      const sub = cpu && col !== settings.side ? " · " + levelName() : (cpu ? " · " + (col === "w" ? "White" : "Black") : "");
       $id("who" + k).innerHTML = `<span class="dot ${col}"></span> ${who}<i>${sub}</i>`;
       $id("cap" + k).innerHTML = gotBy[col].slice().sort((a, b) => order[a[1]] - order[b[1]]).map(p => `<span class="cp ${p[0]}">${U[p]}</span>`).join("");
       $id("adv" + k).textContent = adv[col] > 0 ? "+" + adv[col] : "";
@@ -1094,7 +1163,12 @@
     document.querySelectorAll("#diffSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.diff));
     document.querySelectorAll("#sideSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.side));
     const cpu = settings.mode === "cpu";
-    $id("diffSeg").style.display = $id("sideSeg").style.display = cpu ? "" : "none";
+    const sf = settings.engine === "stockfish";
+    $id("diffSeg").style.display = cpu && !sf ? "" : "none";
+    $id("eloWrap").style.display = cpu && sf ? "" : "none";
+    $id("sideSeg").style.display = $id("engSeg").style.display = cpu ? "" : "none";
+    $id("eloRange").value = settings.elo; $id("eloText").textContent = settings.elo >= 3200 ? "Max" : settings.elo;
+    document.querySelectorAll("#engSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.engine));
     syncSeason(); boardEl.dataset.theme = settings.theme;
 
     const lm = inReplay ? replay.lasts[replay.idx] : lastMove;
@@ -1143,6 +1217,9 @@
   }
   $id("modeSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("mode", b.dataset.v); });
   $id("diffSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("diff", b.dataset.v); });
+  $id("engSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b){ if(b.dataset.v === "stockfish") sfStart().catch(() => {}); setSetting("engine", b.dataset.v); } });
+  $id("eloRange").addEventListener("input", e => { settings.elo = Number(e.target.value); $id("eloText").textContent = settings.elo >= 3200 ? "Max" : settings.elo; });
+  $id("eloRange").addEventListener("change", () => { saveSettings(); render(); });
   $id("sideSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("side", b.dataset.v); });
   // Board colours: the plain themes, plus the shared seasonal themes (themes.js), which also recolour the pieces and page.
   $id("themeSel").addEventListener("change", e => {

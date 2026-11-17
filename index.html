@@ -10,12 +10,12 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎮%3C/text%3E%3C/svg%3E"
     />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
 
     <style>
+      /* Inter is bundled in vendor/fonts so the launcher works fully offline. */
+      @font-face { font-family:"Inter"; font-style:normal; font-weight:400; font-display:swap; src:url("vendor/fonts/inter-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family:"Inter"; font-style:normal; font-weight:600; font-display:swap; src:url("vendor/fonts/inter-latin-600-normal.woff2") format("woff2"); }
+      @font-face { font-family:"Inter"; font-style:normal; font-weight:700; font-display:swap; src:url("vendor/fonts/inter-latin-700-normal.woff2") format("woff2"); }
       :root {
         --bg1: #0f172a;
         --bg2: #1e293b;

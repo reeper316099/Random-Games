@@ -7,7 +7,7 @@ A small collection of browser games, including both single-file games and multi-
 ### One File Games
 - `One File Games/blackjack.html` — Blackjack (play-money chips, animated dealing, strategy hints)
 - `One File Games/checkers.html` — Checkers vs the computer (three skill levels) or a friend
-- `One File Games/chess.html` — Chess vs the computer (three skill levels) or a friend; drag-and-drop, promotion choice, hints, undo, save and replay
+- `One File Games/chess.html` — Chess vs the computer (three skill levels, with a choice of the built-in engine or bundled Stockfish) or a friend; drag-and-drop, promotion choice, hints, undo, save and replay
 - `One File Games/dice.html` — High Roller Dice, a craps-style table (play-money chips)
 - `One File Games/disguised-king-chess.html` — Disguised King Chess
 - `One File Games/minesweeper.html` — Minesweeper Ultra Deluxe (ripple reveals, hints, custom boards, best times)
@@ -46,3 +46,10 @@ Pushing a `v*` tag builds it for Windows, macOS and Linux and publishes a GitHub
 [`wails-app/README.md`](wails-app/README.md).
 
 The chess page also saves and replays games on its own (in the browser's storage) when run from the website.
+
+## Bundled third-party files (`vendor/`)
+
+Everything works offline; nothing is loaded from the internet.
+
+- `vendor/fonts/` — the Inter font (SIL Open Font License, see `OFL-Inter.txt`)
+- `vendor/stockfish/` — [Stockfish.js](https://github.com/nmrugg/stockfish.js) 19, lite single-threaded WebAssembly build (GPL-3.0, see `Copying.txt`), used by Chess when you pick the Stockfish engine. Web Workers don't run from `file://`, so open the games through the website or the desktop app; otherwise Chess falls back to the built-in engine automatically.
