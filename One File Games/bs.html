@@ -210,14 +210,16 @@
     hard:   { noise:.05, sure:1,   dumb:0,  bluff:.3 }
   };
 
-  // Probability (0..1) that `claimer` was lying when it put down k cards claimed as `rank`, from the viewpoint of `me`.
+  // Probability (0..1) that the claimer was lying, from bot `me`'s viewpoint. Simple generative model: a player holding the rank
+  // usually plays it honestly (HON); a player without it has to lie, and lies mostly with 1 or 2 cards.
+  const HON = .85, LS = [0, .6, .28, .1, .02], FLOOR = .06;     // FLOOR: honest sets are likelier than the deal alone suggests (piles get picked up)
   function lieChance(me, claimerHandBefore, k, rank){
     const h = me.hand.filter(c => c.r === rank).length, u = 4 - h;
     if(k > u) return 1;                          // more copies than can exist: certain lie
     const N = 52 - me.hand.length, m = Math.min(claimerHandBefore, N);
-    const pEq = hyp(N, u, m, k); let pGt = 0; for(let j=k+1;j<=u;j++) pGt += hyp(N, u, m, j);
-    const pHon = pEq * .9 + pGt * .25, pLie = Math.max(0, 1 - pEq - pGt) * (LIE_W[k] || .03);
-    return pHon + pLie > 0 ? pLie / (pHon + pLie) : 1;
+    const p0 = hyp(N, u, m, 0), pEq = hyp(N, u, m, k); let pGt = 0; for(let j=k+1;j<=u;j++) pGt += hyp(N, u, m, j);
+    const pHon = pEq * HON + pGt * .08 + FLOOR, pLie = (p0 + (1 - p0) * (1 - HON)) * (LS[k] || .01);
+    return pLie / (pLie + pHon);
   }
   // Should bot `me` call BS on that play?
   function botCalls(me, level, claimerHandBefore, k, rank, pileBefore){
@@ -225,7 +227,7 @@
     const h = me.hand.filter(c => c.r === rank).length;
     if(k > 4 - h) return Math.random() < D.sure;
     const after = claimerHandBefore - k;
-    let thr = Math.min(.85, .42 + .015 * (pileBefore + k));
+    let thr = Math.min(.9, .68 + .01 * (pileBefore + k));   // higher = bots call BS less often, only when quite sure
     if(after <= 0) thr = .15; else if(after <= 2) thr -= .1;
     let p = lieChance(me, claimerHandBefore, k, rank) + me.susp;
     p = p * (1 - D.dumb) + Math.random() * D.dumb;
@@ -336,16 +338,17 @@
       FX.sound("card"); render();
       if(!p.human) await wait(700, tok);
 
-      // everyone after the player may shout BS (in turn order — the first to call wins the argument)
+      // You always get the first shout; otherwise one of the bots that suspect a lie (picked at random, so it isn't always the same bot) calls.
       let caller = -1;
-      for(let k=1;k<players.length;k++){
-        const q = (idx + k) % players.length, qp = players[q];
-        if(qp.human){
-          ui.callInfo = { held:qp.hand.filter(c => c.r === rank).length };
-          const call = await ask("call"); if(tok !== session) throw new Abort();
-          ui.mode = "idle";
-          if(call){ caller = q; break; }
-        } else if(botCalls(qp, settings.diff, handBefore, cards.length, rank, pileBefore)){ caller = q; break; }
+      if(idx !== 0){
+        ui.callInfo = { held:you().hand.filter(c => c.r === rank).length };
+        const call = await ask("call"); if(tok !== session) throw new Abort();
+        if(call) caller = 0;
+      }
+      if(caller < 0){
+        const wants = [];
+        for(let q=1;q<players.length;q++) if(q !== idx && botCalls(players[q], settings.diff, handBefore, cards.length, rank, pileBefore)) wants.push(q);
+        if(wants.length) caller = wants[Math.floor(Math.random() * wants.length)];
       }
       ui.mode = "idle";
 
