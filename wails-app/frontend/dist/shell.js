@@ -7,6 +7,7 @@
 
   const GAMES = {
     blackjack:   { name: "Blackjack",               icon: "🃏" },
+    bs:          { name: "BS (Cheat)",              icon: "🤥" },
     checkers:    { name: "Checkers",                icon: "🔴" },
     chess:       { name: "Chess",                   icon: "♟️" },
     dice:        { name: "High Roller Dice",        icon: "🎲" },

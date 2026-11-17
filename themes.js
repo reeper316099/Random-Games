@@ -112,6 +112,13 @@
         "@ .card.down{background:" + p.back + " !important;}" +
         "@ .card.down::after{content:'" + p.emblem + "';position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw) * .4);filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));}";
     },
+    bs: function (p) {
+      return "@ .table{background:" + feltBg(p, "50% 30%") + " !important;box-shadow:" + rail(p, 10, 12, 13, 26, 80) + " !important;}" +
+        faceCss(p, ".card:not(.down)", ".card.red:not(.down)") +
+        "@ .card.down,@ .fan i{background:" + p.back + " !important;}" +
+        "@ .card.down::after{content:'" + p.emblem + "';position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw) * .4);filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));}" +
+        "@ .seat.active{box-shadow:0 0 0 2px " + p.g1 + ",0 0 18px rgba(255,255,255,.2) !important;}";
+    },
     slots: function (p) {
       return "@ .cabinet{background:linear-gradient(180deg," + p.f1 + "," + p.f2 + " 55%," + p.f3 + ") !important;box-shadow:0 0 0 2px " + p.rail + ",0 0 0 5px " + p.railD + ",0 24px 60px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.2) !important;}" +
         "@ .sheet{background:" + p.bgB + " !important;border-color:" + p.trim + " !important;}";

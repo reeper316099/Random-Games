@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BS (Cheat)</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --cw:clamp(46px, 9vw, 70px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 50% -10%, #3a1d3f 0%, #1c1230 45%, var(--bg) 85%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    padding:44px 16px 24px;
+  }
+  .wrap{ width:min(980px,100%); display:grid; gap:14px; align-content:start; }
+  .topbar{
+    display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+    padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+    border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .title h1{
+    margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+    background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+  .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+  button{
+    border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text);
+    padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer;
+    transition:filter .12s, transform .12s, box-shadow .2s;
+  }
+  button:hover:not(:disabled){ filter:brightness(1.2); }
+  button:active:not(:disabled){ transform:scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.55); }
+  button.bad{ background:linear-gradient(180deg, rgba(255,106,106,.4), rgba(255,106,106,.16)); border-color:rgba(255,106,106,.6); }
+  button.big{ padding:13px 26px; font-size:16px; }
+  button:focus-visible, select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  kbd{ font:600 10px ui-monospace, monospace; padding:1px 5px; border-radius:5px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.25); margin-left:6px; opacity:.8; }
+  .bar{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:center; padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .bar .lab{ font-size:12px; color:var(--muted); margin-right:6px; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+  .seg button{ border:0; border-radius:0; background:transparent; padding:8px 12px; font-size:13px; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
+
+  /* ---------- table ---------- */
+  .table{
+    position:relative; margin:10px; border-radius:36px; padding:18px 16px 20px;
+    background:radial-gradient(ellipse at 50% 30%, #7a2f6b 0%, #4a1d49 55%, #2a1030 100%);
+    box-shadow:0 0 0 10px #5b3516, 0 0 0 12px #2b1707, 0 0 0 13px rgba(255,211,106,.35), 0 26px 60px rgba(0,0,0,.6), inset 0 0 80px rgba(0,0,0,.5);
+    display:grid; gap:12px; min-height:380px; overflow:hidden;
+  }
+  .opps{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .seat{ min-width:128px; padding:8px 12px 10px; border-radius:14px; background:rgba(0,0,0,.3); border:1px solid var(--line); text-align:center; transition:box-shadow .2s, transform .2s; }
+  .seat.active{ box-shadow:0 0 0 2px var(--gold), 0 0 18px rgba(255,211,106,.5); transform:translateY(-2px); }
+  .seat.out{ opacity:.55; }
+  .seat .nm{ font-weight:800; font-size:14px; }
+  .seat .ct{ font-size:12px; color:var(--muted); }
+  .seat .ct b{ color:var(--gold); font-size:15px; }
+  .seat .say{ min-height:16px; font-size:12px; color:var(--warn); font-weight:700; }
+  .fan{ display:flex; justify-content:center; height:30px; margin:4px 0 2px; }
+  .fan i{ width:20px; height:28px; border-radius:4px; margin-left:-12px; border:1px solid rgba(255,255,255,.55); background:repeating-linear-gradient(45deg,#3b4a9a 0 4px,#2a3578 4px 8px); box-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .fan i:first-child{ margin-left:0; }
+  .center{ display:grid; justify-items:center; gap:8px; text-align:center; padding:4px 0; cursor:default; }
+  .need{ font-size:13px; color:#f1dcf0; letter-spacing:.3px; }
+  .need b{ display:block; font-size:24px; color:#fff; letter-spacing:.5px; text-shadow:0 2px 6px rgba(0,0,0,.5); }
+  .pileRow{ display:flex; align-items:center; gap:18px; justify-content:center; flex-wrap:wrap; min-height:calc(var(--cw) * 1.4 + 14px); }
+  .pile{ position:relative; width:calc(var(--cw) + 30px); height:calc(var(--cw) * 1.4 + 8px); }
+  .pile .card{ position:absolute; top:0; }
+  .pile .cnt{ position:absolute; right:-4px; bottom:-8px; background:rgba(0,0,0,.75); color:var(--gold); font-weight:900; font-size:13px; padding:3px 9px; border-radius:999px; border:1px solid var(--line); }
+  .pile.empty{ border:2px dashed rgba(255,255,255,.25); border-radius:10px; width:var(--cw); height:calc(var(--cw) * 1.4); }
+  .claim{ padding:10px 16px; border-radius:14px; background:rgba(0,0,0,.35); border:1px solid var(--line); font-size:15px; min-width:210px; }
+  .claim b{ color:var(--gold); }
+  .msg{ min-height:22px; font-size:15px; font-weight:700; }
+  .reveal{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .verdict{ font-size:22px; font-weight:900; }
+  .verdict.liar{ color:var(--danger); } .verdict.honest{ color:var(--ok); }
+  .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; min-height:50px; }
+  .ranks{ display:flex; gap:4px; justify-content:center; flex-wrap:wrap; }
+  .ranks button{ padding:6px 9px; min-width:34px; font-size:13px; }
+  .ranks button.on{ background:linear-gradient(180deg, rgba(255,211,106,.5), rgba(255,211,106,.2)); border-color:var(--gold); color:#fff; }
+  .info{ font-size:12px; color:#f1dcf0; min-height:16px; }
+
+  /* ---------- cards ---------- */
+  .card{
+    position:relative; width:var(--cw); height:calc(var(--cw) * 1.4); border-radius:8%/6%; flex:none; user-select:none;
+    background:linear-gradient(160deg,#fff,#eef0f7); color:#1b1c23; border:1px solid rgba(0,0,0,.35);
+    box-shadow:0 3px 8px rgba(0,0,0,.45); font-weight:800; display:block;
+  }
+  .card.red{ color:#c92a3e; }
+  .card .tl{ position:absolute; left:8%; top:5%; font-style:normal; font-size:calc(var(--cw) * .27); line-height:1.05; text-align:center; }
+  .card .mid{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw) * .52); font-weight:400; }
+  .card.down{
+    background:repeating-linear-gradient(45deg,#3b4a9a 0 6px,#2a3578 6px 12px); border:2px solid #fff;
+  }
+  .card.down .tl, .card.down .mid{ display:none; }
+  .hand{ display:flex; flex-wrap:wrap; justify-content:center; padding:20px 6px 6px; min-height:calc(var(--cw) * 1.4 + 30px); }
+  .hand .card{ margin:0 calc(var(--cw) * -.14) 6px; cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .hand .card:hover{ transform:translateY(-6px); }
+  .hand .card.sel{ transform:translateY(-18px); box-shadow:0 0 0 3px var(--gold), 0 0 18px rgba(255,211,106,.8), 0 8px 12px rgba(0,0,0,.5); z-index:2; }
+  .hand.locked .card{ cursor:default; } .hand.locked .card:hover{ transform:none; }
+  .hand .card.fresh{ animation:pop .35s ease; }
+  @keyframes pop{ from{ transform:translateY(-24px) scale(1.1); opacity:0; } to{ transform:none; opacity:1; } }
+  .handBox{ padding:6px 8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .handHead{ display:flex; justify-content:space-between; gap:10px; padding:6px 10px 0; font-size:13px; color:var(--muted); flex-wrap:wrap; }
+  .handHead b{ color:var(--gold); }
+  .log{ font-size:12px; color:var(--muted); display:grid; gap:2px; padding:6px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); min-height:40px; }
+  .log div:last-child{ color:var(--text); }
+  .stats{ text-align:center; font-size:12px; color:var(--muted); }
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(440px,100%); padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+  @media (max-width:560px){ .table{ margin:6px 0; padding:14px 10px 16px; } .seat{ min-width:96px; padding:6px 8px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+<script src="../themes.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>🤥 BS (Cheat)</h1>
+      <div class="sub">Get rid of all your cards — lie about what you play, and catch the others lying</div>
+    </div>
+    <div class="row">
+      <span class="pill">Wins <b id="wins">0</b></span>
+      <button id="rulesBtn">How to play</button>
+      <button id="newBtn" class="primary">New game</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span><span class="lab">Opponents</span><span class="seg" id="oppSeg"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button></span></span>
+    <span><span class="lab">Bots</span><span class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></span></span>
+    <span><span class="lab">Rank rule</span><span class="seg" id="ruleSeg"><button data-v="seq" title="Ranks go A, 2, 3 … K, then round again">Sequential</button><button data-v="free" title="Whoever starts a round names the rank">Starter's choice</button></span></span>
+    <span data-season-slot></span>
+  </div>
+
+  <div class="table">
+    <div class="opps" id="opps"></div>
+    <div class="center" id="center">
+      <div class="need" id="need"></div>
+      <div class="pileRow" id="pileRow"></div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="actions" id="actions"></div>
+    <div class="info" id="info" style="text-align:center"></div>
+  </div>
+
+  <div class="handBox">
+    <div class="handHead"><span>Your hand — <b id="handCount">0</b> cards</span><span id="selInfo"></span></div>
+    <div class="hand" id="hand" aria-label="Your hand"></div>
+  </div>
+
+  <div class="log" id="log" aria-live="polite"></div>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="How to play">
+  <h2>How to play BS</h2>
+  <p>The whole deck is dealt out. The goal is to be the <b>first player with no cards</b>.</p>
+  <p>On your turn you play 1–4 cards <b>face down</b> and say what they are — e.g. “two Queens”. Each turn has a required rank (A, 2, 3 … K in order, or the round starter's pick), but you can <b>lie</b> about what you actually play.</p>
+  <p>After a play, anyone may shout <b>BS!</b> The cards are turned over: if the player <b>was lying</b> they take the whole pile; if they were <b>telling the truth</b> the caller takes the pile.</p>
+  <p>Going out only counts if nobody catches you on your last play.</p>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+
+  // ===== BS ENGINE (pure logic, no DOM) =====
+  const RN = ["","A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const RP = ["","Aces","Twos","Threes","Fours","Fives","Sixes","Sevens","Eights","Nines","Tens","Jacks","Queens","Kings"];
+  const RS = ["","Ace","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Jack","Queen","King"];
+  const SU = ["♠","♥","♦","♣"];
+  const isRed = c => c.s === 1 || c.s === 2;
+  const rankWord = (r, n) => n === 1 ? RS[r] : RP[r];
+  const claimText = (n, r) => `${n} ${rankWord(r, n)}`;
+
+  function newDeck(){ const d = []; let id = 0; for(let s=0;s<4;s++) for(let r=1;r<=13;r++) d.push({ id:id++, r, s }); return d; }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+  const sortHand = h => h.sort((a, b) => a.r - b.r || a.s - b.s);
+  const nextRank = r => r % 13 + 1;
+
+  // log-factorials for the hypergeometric distribution (bots use it to judge claims)
+  const LF = [0]; for(let i=1;i<=60;i++) LF[i] = LF[i-1] + Math.log(i);
+  const lC = (n, k) => (k < 0 || k > n) ? -Infinity : LF[n] - LF[k] - LF[n-k];
+  const hyp = (N, u, m, k) => (k < 0 || k > u || k > m || m - k > N - u) ? 0 : Math.exp(lC(u, k) + lC(N - u, m - k) - lC(N, m));
+
+  const LIE_W = [0, .6, .3, .1, .05];          // how likely a bluffer is to lie with this many cards
+  const DIFF = {
+    easy:   { noise:.32, sure:.72, dumb:.5, bluff:.55 },
+    medium: { noise:.14, sure:.97, dumb:.15, bluff:.4 },
+    hard:   { noise:.05, sure:1,   dumb:0,  bluff:.3 }
+  };
+
+  // Probability (0..1) that `claimer` was lying when it put down k cards claimed as `rank`, from the viewpoint of `me`.
+  function lieChance(me, claimerHandBefore, k, rank){
+    const h = me.hand.filter(c => c.r === rank).length, u = 4 - h;
+    if(k > u) return 1;                          // more copies than can exist: certain lie
+    const N = 52 - me.hand.length, m = Math.min(claimerHandBefore, N);
+    const pEq = hyp(N, u, m, k); let pGt = 0; for(let j=k+1;j<=u;j++) pGt += hyp(N, u, m, j);
+    const pHon = pEq * .9 + pGt * .25, pLie = Math.max(0, 1 - pEq - pGt) * (LIE_W[k] || .03);
+    return pHon + pLie > 0 ? pLie / (pHon + pLie) : 1;
+  }
+  // Should bot `me` call BS on that play?
+  function botCalls(me, level, claimerHandBefore, k, rank, pileBefore){
+    const D = DIFF[level] || DIFF.medium;
+    const h = me.hand.filter(c => c.r === rank).length;
+    if(k > 4 - h) return Math.random() < D.sure;
+    const after = claimerHandBefore - k;
+    let thr = Math.min(.85, .42 + .015 * (pileBefore + k));
+    if(after <= 0) thr = .15; else if(after <= 2) thr -= .1;
+    let p = lieChance(me, claimerHandBefore, k, rank) + me.susp;
+    p = p * (1 - D.dumb) + Math.random() * D.dumb;
+    p += (Math.random() - .5) * 2 * D.noise;
+    return p > thr;
+  }
+  // Which cards does bot `me` put down? rank = the required rank (null when it may choose), seqNext = rank after that (for planning).
+  function botPlays(me, level, rank, seqRank){
+    const D = DIFF[level] || DIFF.medium, hand = me.hand;
+    const count = r => hand.filter(c => c.r === r).length;
+    if(rank === null){                           // leading a free round: name the rank we hold most of, tell the truth
+      let best = 1, bc = -1; for(let r=1;r<=13;r++){ const n = count(r); if(n > bc || (n === bc && Math.random() < .4)){ bc = n; best = r; } }
+      return { rank:best, cards:hand.filter(c => c.r === best).slice(0, 4) };
+    }
+    const match = hand.filter(c => c.r === rank);
+    if(match.length && (match.length === hand.length || Math.random() > .08 + me.bluff * .12)){
+      const cards = match.slice(0, 4), extra = hand.filter(c => c.r !== rank);
+      if(cards.length < 4 && extra.length && Math.random() < me.bluff * D.bluff * .5){   // sneak one extra card in
+        cards.push(dumpOrder(extra, count, rank, seqRank)[0]);
+      }
+      return { rank, cards };
+    }
+    let n = 1; const roll = Math.random() * (LIE_W[1] + LIE_W[2] * me.bluff * 2 + LIE_W[3] * me.bluff);
+    if(roll > LIE_W[1]) n = roll > LIE_W[1] + LIE_W[2] * me.bluff * 2 ? 3 : 2;
+    n = Math.min(n, hand.length, 4);
+    const pool = hand.filter(c => c.r !== rank);
+    const chosen = dumpOrder(pool.length >= n ? pool : hand, count, rank, seqRank).slice(0, n);
+    return { rank, cards:chosen };
+  }
+  // Cards the bot would rather get rid of: singles whose rank is far off in the rotation come first.
+  function dumpOrder(cards, count, rank, seqRank){
+    const score = c => count(c.r) * 2 + (seqRank ? 1 - ((c.r - seqRank + 13) % 13) / 13 : 0.5) + Math.random() * .3;
+    return cards.slice().sort((a, b) => score(a) - score(b));
+  }
+  // ===== END BS ENGINE
+
+  // ---------- state ----------
+  const NAMES = [["Ava","🦊"],["Ben","🐻"],["Cy","🐼"],["Dee","🦉"]];
+  let settings = { opp:3, diff:"medium", rule:"seq" };
+  let stats = { games:0, wins:0, callsRight:0, callsWrong:0, caught:0, bluffs:0 };
+  let players = [], pile = [], turn = 0, seqRank = 1, poolRank = null, session = 0;
+  let over = false, ui = { mode:"idle", sel:new Set(), pickRank:null, reveal:null, lastPlay:null, say:{}, fresh:new Set() };
+  let pending = null, skipFn = null, log = [], humanTurns = 0;
+
+  function load(){
+    try{ const s = JSON.parse(localStorage.getItem("bs_settings") || "null"); if(s) settings = { opp:[1,2,3,4].includes(s.opp) ? s.opp : 3, diff:DIFF[s.diff] ? s.diff : "medium", rule:s.rule === "free" ? "free" : "seq" }; }catch(e){}
+    try{ const t = JSON.parse(localStorage.getItem("bs_stats") || "null"); if(t) stats = Object.assign(stats, t); }catch(e){}
+  }
+  const saveSettings = () => { try{ localStorage.setItem("bs_settings", JSON.stringify(settings)); }catch(e){} };
+  const saveStats = () => { try{ localStorage.setItem("bs_stats", JSON.stringify(stats)); }catch(e){} };
+
+  const sleep = ms => new Promise(r => setTimeout(r, FX.reducedMotion ? ms / 3 : ms));
+  class Abort extends Error {}
+  async function wait(ms, tok){ await sleep(ms); if(tok !== session) throw new Abort(); }
+  function skippable(ms, tok){
+    return new Promise((res, rej) => {
+      const t = setTimeout(done, FX.reducedMotion ? ms / 3 : ms);
+      function done(){ clearTimeout(t); skipFn = null; tok === session ? res() : rej(new Abort()); }
+      skipFn = done;
+    });
+  }
+  const ask = mode => new Promise(res => { ui.mode = mode; pending = res; render(); });
+  const addLog = t => { log.push(t); if(log.length > 6) log.shift(); };
+  const you = () => players[0];
+
+  // ---------- game flow ----------
+  function newGame(){
+    session++; const tok = session;
+    pending = null; skipFn = null; over = false; pile = []; log = []; humanTurns = 0;
+    const names = NAMES.slice(0, settings.opp);
+    players = [{ name:"You", emoji:"🙂", human:true, hand:[] }]
+      .concat(names.map(([name, emoji]) => ({ name, emoji, human:false, hand:[], bluff:.3 + Math.random() * .7, susp:(Math.random() - .5) * .16 })));
+    const deck = shuffle(newDeck()); let i = 0;
+    while(deck.length) players[i++ % players.length].hand.push(deck.pop());
+    players.forEach(p => sortHand(p.hand));
+    turn = Math.floor(Math.random() * players.length); seqRank = 1; poolRank = null;
+    ui = { mode:"idle", sel:new Set(), pickRank:null, reveal:null, lastPlay:null, say:{}, fresh:new Set() };
+    stats.games++; saveStats();
+    addLog(`New game: ${players.length} players, ${players[0].hand.length} cards each.`);
+    FX.sound("card"); render();
+    run(tok).catch(e => { if(!(e instanceof Abort)) console.error(e); });
+  }
+
+  async function run(tok){
+    while(!over){
+      const idx = turn, p = players[idx];
+      const required = settings.rule === "seq" ? seqRank : poolRank;     // null = this player names the rank
+      let play;
+      ui.say = {}; ui.reveal = null; render();
+      if(p.human){
+        humanTurns++;
+        ui.sel = new Set(); ui.pickRank = required === null ? bestRank(p.hand) : null;
+        play = await ask("play"); if(tok !== session) throw new Abort();
+        ui.mode = "idle";
+      } else {
+        ui.mode = "idle"; render(); await wait(850, tok);
+        play = botPlays(p, settings.diff, required, settings.rule === "seq" ? seqRank : null);
+      }
+      const rank = required === null ? play.rank : required;
+      const handBefore = p.hand.length, cards = play.cards;
+      const truthful = cards.every(c => c.r === rank);
+      p.hand = p.hand.filter(c => !cards.includes(c));
+      const pileBefore = pile.length; pile.push(...cards);
+      if(required === null && settings.rule === "free") poolRank = rank;
+      ui.lastPlay = { who:idx, n:cards.length, rank, cards };
+      ui.say[idx] = claimText(cards.length, rank);
+      addLog(`${p.name} ${p.human ? "play" : "plays"} ${claimText(cards.length, rank)}.`);
+      FX.sound("card"); render();
+      if(!p.human) await wait(700, tok);
+
+      // everyone after the player may shout BS (in turn order — the first to call wins the argument)
+      let caller = -1;
+      for(let k=1;k<players.length;k++){
+        const q = (idx + k) % players.length, qp = players[q];
+        if(qp.human){
+          ui.callInfo = { held:qp.hand.filter(c => c.r === rank).length };
+          const call = await ask("call"); if(tok !== session) throw new Abort();
+          ui.mode = "idle";
+          if(call){ caller = q; break; }
+        } else if(botCalls(qp, settings.diff, handBefore, cards.length, rank, pileBefore)){ caller = q; break; }
+      }
+      ui.mode = "idle";
+
+      if(caller >= 0) await challenge(tok, idx, caller, rank, cards, truthful);
+      else if(p.hand.length === 0){ await finish(tok, idx); return; }
+      else if(idx === 0 && !truthful){ stats.bluffs++; saveStats(); addLog("Nobody called it — your bluff worked!"); }
+
+      if(over) return;
+      if(players[idx].hand.length === 0){ await finish(tok, idx); return; }
+      turn = (idx + 1) % players.length;
+      if(settings.rule === "seq") seqRank = nextRank(seqRank);
+      ui.lastPlay = pile.length ? ui.lastPlay : null;
+      render();
+    }
+  }
+
+  async function challenge(tok, idx, caller, rank, cards, truthful){
+    const p = players[idx], c = players[caller];
+    ui.say = {}; ui.say[caller] = "BS!"; ui.reveal = null;
+    addLog(`${c.name} ${c.human ? "call" : "calls"} BS on ${p.name}!`);
+    FX.sound("push"); render(); await wait(650, tok);
+    const taker = truthful ? caller : idx, takes = pile.length;
+    ui.reveal = { cards, rank, truthful, who:idx, taker, takes };
+    FX.sound(truthful ? "win" : "error"); render();
+    // the pile moves to the loser's hand
+    players[taker].hand.push(...pile); sortHand(players[taker].hand);
+    if(taker === 0) pile.forEach(x => ui.fresh.add(x.id));
+    pile = []; poolRank = null;
+    if(caller === 0){ truthful ? stats.callsWrong++ : stats.callsRight++; }
+    if(idx === 0 && !truthful) stats.caught++;
+    saveStats();
+    const who = n => players[n].human ? "You" : players[n].name;
+    addLog(`${truthful ? "It was true" : "Liar"}! ${who(taker)} ${taker === 0 ? "take" : "takes"} the pile (${takes} card${takes === 1 ? "" : "s"}).`);
+    render();
+    await skippable(2600, tok);
+    ui.reveal = null; ui.lastPlay = null; ui.say = {}; render();
+    setTimeout(() => ui.fresh.clear(), 400);
+  }
+
+  async function finish(tok, idx){
+    over = true; ui.mode = "over"; ui.say = {};
+    const p = players[idx];
+    if(idx === 0){
+      stats.wins++; saveStats();
+      addLog("You got rid of all your cards — you win! 🎉");
+      FX.sound("bigwin"); FX.confetti({ count:180 });
+      rgReport("bs", `${settings.opp} bot${settings.opp > 1 ? "s" : ""} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Fewest turns to win", humanTurns, { unit:"turns", better:"low", detail:`${settings.rule === "seq" ? "sequential ranks" : "starter's choice"}` });
+    } else { addLog(`${p.name} is out of cards and wins.`); FX.sound("lose"); }
+    render();
+  }
+
+  // ---------- helpers ----------
+  function bestRank(hand){ let best = hand[0] ? hand[0].r : 1, bc = 0; for(let r=1;r<=13;r++){ const n = hand.filter(c => c.r === r).length; if(n > bc){ bc = n; best = r; } } return best; }
+
+  // ---------- rendering ----------
+  const cardHtml = (c, cls = "") => `<div class="card ${isRed(c) ? "red" : ""} ${cls}" data-id="${c.id}"><i class="tl">${RN[c.r]}<br>${SU[c.s]}</i><b class="mid">${SU[c.s]}</b></div>`;
+  const backHtml = (cls = "", style = "") => `<div class="card down ${cls}" style="${style}"><i class="tl"></i><b class="mid"></b></div>`;
+
+  function render(){
+    // opponents
+    $("opps").innerHTML = players.slice(1).map((p, i) => {
+      const n = i + 1, fan = Array.from({ length:Math.min(p.hand.length, 9) }, () => "<i></i>").join("");
+      return `<div class="seat ${turn === n && !over ? "active" : ""} ${p.hand.length === 0 ? "out" : ""}">
+        <div class="nm">${p.emoji} ${p.name}</div><div class="fan">${fan}</div>
+        <div class="ct"><b>${p.hand.length}</b> cards</div><div class="say">${ui.say[n] || ""}</div></div>`;
+    }).join("");
+    // required rank
+    const required = settings.rule === "seq" ? seqRank : poolRank;
+    $("need").innerHTML = over ? "" : (required === null
+      ? `${turn === 0 ? "You start a new round" : players[turn].name + " starts a new round"}<b>pick any rank</b>`
+      : `${turn === 0 ? "Your turn — play" : players[turn].name + "'s turn — play"}<b>${RP[required]}</b>`);
+    // pile / reveal / claim
+    let row = "";
+    if(ui.reveal){
+      const R = ui.reveal;
+      row = `<div style="display:grid;gap:8px;justify-items:center"><div class="reveal">${R.cards.map(c => cardHtml(c)).join("")}</div>
+        <div class="verdict ${R.truthful ? "honest" : "liar"}">${R.truthful ? "Telling the truth!" : "LIAR!"}</div>
+        <div class="claim">${players[R.who].human ? "You" : players[R.who].name} claimed <b>${claimText(R.cards.length, R.rank)}</b> — ${players[R.taker].human ? "you take" : players[R.taker].name + " takes"} the pile (<b>${R.takes}</b>)</div></div>`;
+    } else {
+      const show = Math.min(pile.length, 5);
+      const stack = pile.length ? `<div class="pile">${Array.from({ length:show }, (_, i) => backHtml("", `left:${i * 6}px;top:${(i % 2) * 2}px;transform:rotate(${(i - 2) * 3}deg)`)).join("")}<span class="cnt">${pile.length}</span></div>` : `<div class="pile empty"></div>`;
+      const lp = ui.lastPlay;
+      row = stack + (lp ? `<div class="claim">${players[lp.who].human ? "You" : players[lp.who].name} played <b>${claimText(lp.n, lp.rank)}</b></div>` : `<div class="claim">${over ? "Game over" : "Pile is empty"}</div>`);
+    }
+    $("pileRow").innerHTML = row;
+    $("msg").textContent = over ? (players.find(p => p.hand.length === 0) === you() ? "You win! 🎉" : (players.find(p => p.hand.length === 0).name + " wins.")) : (ui.mode === "play" ? "Select 1–4 cards, then say what they are." : ui.mode === "call" ? "Do you believe them?" : "");
+    // actions
+    const A = $("actions");
+    if(ui.mode === "play"){
+      const n = ui.sel.size, claimRank = required === null ? ui.pickRank : required;
+      let h = "";
+      if(required === null) h += `<div class="ranks" style="width:100%">${RN.slice(1).map((r, i) => `<button data-rank="${i + 1}" class="${ui.pickRank === i + 1 ? "on" : ""}" title="${RP[i + 1]}">${r}</button>`).join("")}</div>`;
+      h += `<button class="primary big" id="playBtn" ${n < 1 ? "disabled" : ""}>${n ? `Play ${claimText(n, claimRank)}` : "Select cards to play"}<kbd>Enter</kbd></button>`;
+      A.innerHTML = h;
+    } else if(ui.mode === "call"){
+      A.innerHTML = `<button class="bad big" id="bsBtn">🚨 BS!<kbd>B</kbd></button><button class="big" id="passBtn">Let it go<kbd>Space</kbd></button>`;
+    } else if(over){
+      A.innerHTML = `<button class="primary big" id="againBtn">Play again</button>`;
+    } else A.innerHTML = "";
+    $("info").textContent = ui.mode === "call" && ui.callInfo ? `You hold ${ui.callInfo.held} of that rank${ui.callInfo.held ? " — so at most " + (4 - ui.callInfo.held) + " can be elsewhere." : "."}` : "";
+    // hand
+    const hand = $("hand"), mine = you().hand;
+    hand.className = "hand" + (ui.mode === "play" ? "" : " locked");
+    hand.innerHTML = mine.map(c => cardHtml(c, (ui.sel.has(c.id) ? "sel " : "") + (ui.fresh.has(c.id) ? "fresh" : ""))).join("");
+    $("handCount").textContent = mine.length;
+    $("selInfo").textContent = ui.mode === "play" ? `${ui.sel.size} selected` : "";
+    $("log").innerHTML = log.map(l => `<div>${l}</div>`).join("");
+    $("wins").textContent = stats.wins;
+    $("stats").textContent = `Games ${stats.games} • Wins ${stats.wins} • Correct BS calls ${stats.callsRight} • Wrong calls ${stats.callsWrong} • Times caught ${stats.caught} • Bluffs that worked ${stats.bluffs}`;
+    document.querySelectorAll("#oppSeg button").forEach(b => b.classList.toggle("on", Number(b.dataset.v) === settings.opp));
+    document.querySelectorAll("#diffSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.diff));
+    document.querySelectorAll("#ruleSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === settings.rule));
+  }
+
+  // ---------- input ----------
+  $("hand").addEventListener("click", e => {
+    if(ui.mode !== "play") return;
+    const el = e.target.closest(".card"); if(!el) return;
+    const id = Number(el.dataset.id);
+    if(ui.sel.has(id)) ui.sel.delete(id);
+    else if(ui.sel.size < 4) ui.sel.add(id); else { FX.sound("error"); return; }
+    FX.sound("tick"); render();
+  });
+  function submitPlay(){
+    if(ui.mode !== "play" || !ui.sel.size || !pending) return;
+    const cards = you().hand.filter(c => ui.sel.has(c.id));
+    const required = settings.rule === "seq" ? seqRank : poolRank;
+    const r = pending; pending = null; r({ cards, rank:required === null ? ui.pickRank : required });
+  }
+  function answerCall(v){ if(ui.mode !== "call" || !pending) return; const r = pending; pending = null; if(v) FX.sound("push"); r(v); }
+  $("actions").addEventListener("click", e => {
+    const rk = e.target.closest("[data-rank]");
+    if(rk){ ui.pickRank = Number(rk.dataset.rank); FX.sound("tick"); render(); return; }
+    const b = e.target.closest("button"); if(!b) return;
+    if(b.id === "playBtn") submitPlay();
+    else if(b.id === "bsBtn") answerCall(true);
+    else if(b.id === "passBtn"){ FX.sound("click"); answerCall(false); }
+    else if(b.id === "againBtn") newGame();
+  });
+  $("center").addEventListener("click", () => { if(skipFn) skipFn(); });
+  document.addEventListener("keydown", e => {
+    if($("rulesBox").classList.contains("show")){ if(e.key === "Escape" || e.key === "Enter") closeRules(); return; }
+    if(e.target.closest && e.target.closest("select, input")) return;
+    if(e.key === "Enter" && ui.mode === "play"){ e.preventDefault(); submitPlay(); }
+    else if((e.key === "b" || e.key === "B") && ui.mode === "call") answerCall(true);
+    else if(e.key === " " && ui.mode === "call"){ e.preventDefault(); FX.sound("click"); answerCall(false); }
+    else if(e.key === "Escape" && ui.mode === "play"){ ui.sel.clear(); render(); }
+    else if(e.key === " " && skipFn){ e.preventDefault(); skipFn(); }
+  });
+
+  const confirmNew = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(true);
+  async function setSetting(k, v){
+    if(settings[k] === v) return;
+    if(!over && players.length && !(await confirmNew("Change this setting and start a new game? The current game will be lost."))) return;
+    settings[k] = v; saveSettings(); FX.sound("click"); newGame();
+  }
+  $("oppSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("opp", Number(b.dataset.v)); });
+  $("diffSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("diff", b.dataset.v); });
+  $("ruleSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting("rule", b.dataset.v); });
+  $("newBtn").addEventListener("click", async () => {
+    if(!over && !(await confirmNew("Start a new game? The current game will be lost."))) return;
+    FX.sound("click"); newGame();
+  });
+  const closeRules = () => $("rulesBox").classList.remove("show");
+  $("rulesBtn").addEventListener("click", () => $("rulesBox").classList.add("show"));
+  $("rulesOk").addEventListener("click", closeRules);
+  $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) closeRules(); });
+
+  load(); newGame();
+})();
+</script>
+</body>
+</html>
