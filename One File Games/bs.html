@@ -126,6 +126,7 @@
 <script src="../themes.js"></script>
 </head>
 <body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
 <div class="wrap">
   <div class="topbar">
     <div class="title">
@@ -318,7 +319,7 @@
         humanTurns++;
         ui.sel = new Set(); ui.pickRank = required === null ? bestRank(p.hand) : null;
         play = await ask("play"); if(tok !== session) throw new Abort();
-        ui.mode = "idle";
+        ui.mode = "idle"; ui.sel = new Set();      // the played cards must not stay "selected" if they come back to the hand
       } else {
         ui.mode = "idle"; render(); await wait(850, tok);
         play = botPlays(p, settings.diff, required, settings.rule === "seq" ? seqRank : null);
@@ -448,7 +449,7 @@
     // hand
     const hand = $("hand"), mine = you().hand;
     hand.className = "hand" + (ui.mode === "play" ? "" : " locked");
-    hand.innerHTML = mine.map(c => cardHtml(c, (ui.sel.has(c.id) ? "sel " : "") + (ui.fresh.has(c.id) ? "fresh" : ""))).join("");
+    hand.innerHTML = mine.map(c => cardHtml(c, (ui.mode === "play" && ui.sel.has(c.id) ? "sel " : "") + (ui.fresh.has(c.id) ? "fresh" : ""))).join("");
     $("handCount").textContent = mine.length;
     $("selInfo").textContent = ui.mode === "play" ? `${ui.sel.size} selected` : "";
     $("log").innerHTML = log.map(l => `<div>${l}</div>`).join("");

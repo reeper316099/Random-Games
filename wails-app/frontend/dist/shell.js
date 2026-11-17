@@ -46,7 +46,17 @@
     $("tabScores").setAttribute("aria-selected", String(scores));
     if (scores) loadScores();
   }
-  $("tabGames").addEventListener("click", () => showTab("games"));
+  // Back to the launcher: reloads the game iframe on games/index.html.
+  function goHome() {
+    const f = $("gameFrame");
+    try { f.contentWindow.location.replace("games/index.html"); } catch (e) { f.src = "games/index.html"; }
+  }
+  // Clicking "Games" while already on the Games tab (or the app logo) returns to the launcher; from High Scores it keeps your game.
+  $("tabGames").addEventListener("click", () => { const already = $("tabGames").classList.contains("active"); showTab("games"); if (already) goHome(); });
+  const brand = document.querySelector(".brand");
+  if (brand) { brand.style.cursor = "pointer"; brand.setAttribute("role", "link"); brand.setAttribute("tabindex", "0"); brand.title = "Back to all games";
+    brand.addEventListener("click", () => { showTab("games"); goHome(); });
+    brand.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showTab("games"); goHome(); } }); }
   $("tabScores").addEventListener("click", () => showTab("scores"));
 
   // ---------- full screen (desktop app only) ----------
