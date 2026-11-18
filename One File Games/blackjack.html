@@ -193,6 +193,11 @@
       <button class="good big" id="nextBtn">Next hand<kbd>Enter</kbd></button>
       <button id="resetBank" style="display:none">Get fresh chips</button>
     </div>
+    <div class="row" id="insRow" style="display:none">
+      <span id="insText" style="flex-basis:100%;text-align:center;font-size:14px"></span>
+      <button class="good big" id="insYes">Insure<kbd>I</kbd></button>
+      <button class="big" id="insNo">No thanks<kbd>N</kbd></button>
+    </div>
     <div class="row" id="playRow" style="display:none">
       <button class="primary big" id="hitBtn">Hit<kbd>H</kbd></button>
       <button class="primary big" id="standBtn">Stand<kbd>S</kbd></button>
@@ -246,8 +251,8 @@
   let settings = { ...DEFAULTS }, stats = { ...DEF_STATS };
 
   let shoe = [], bank = 0, bet = 0, lastBet = 0, runPeak = 0;
-  let hands = [], active = 0, dealer = [], phase = "bet", results = null, busy = false, flow = 0;
-  // phases: bet → dealing → play → dealer → over
+  let hands = [], active = 0, dealer = [], phase = "bet", results = null, busy = false, flow = 0, insBet = 0, insNet = 0;
+  // phases: bet → dealing → (insurance) → play → dealer → over
   const pause = ms => new Promise(r => setTimeout(r, FX.reducedMotion ? Math.min(ms, 80) : ms * settings.speed));
 
   // ---- persistence (guarded: storage may be unavailable) ----
@@ -360,7 +365,7 @@
     $("bet").textContent = FX.fmt(tableBet);
     $("shoeInfo").textContent = `${shoe.length} cards`;
 
-    const hideHole = phase === "dealing" || phase === "play";
+    const hideHole = phase === "dealing" || phase === "play" || phase === "insurance";
     syncChildren($("dCards"), dealer.map((c,i) => elFor(c, hideHole && i === 1)));
     const dT = $("dTotal");
     if(!dealer.length) dT.textContent = "";
@@ -408,6 +413,13 @@
     $("nextBtn").style.display = bank > 0 ? "" : "none";
     $("resetBank").style.display = (phase === "over" && bank <= 0) ? "" : "none";
     $("playRow").style.display = (phase === "play" || phase === "dealing" || phase === "dealer") ? "flex" : "none";
+    $("insRow").style.display = phase === "insurance" && !busy ? "flex" : "none";
+    if(phase === "insurance" && hands[0]){
+      const cost = Math.floor(hands[0].bet / 2), bj = isBJ(hands[0].cards);
+      $("insText").textContent = bj ? `Dealer shows an Ace and you have blackjack. Insure for ${FX.fmt(cost)} (this is "even money" — you win your bet either way)?`
+        : `Dealer shows an Ace. Insurance costs ${FX.fmt(cost)} and pays 2 to 1 if the dealer has blackjack.`;
+      $("insYes").textContent = bj ? "Even money" : `Insure (${FX.fmt(cost)})`;
+    }
     document.querySelectorAll(".chip").forEach(b => b.disabled = !betting || bet + Number(b.dataset.v) > bank);
     $("clearBtn").disabled = !betting || bet === 0;
     $("halfBtn").disabled = !betting || bet < 10;
@@ -418,7 +430,10 @@
     if(playing){
       const h = hands[active];
       $("dblBtn").disabled = !(h.cards.length === 2 && bank >= h.bet);
-      $("splitBtn").disabled = !(h.cards.length === 2 && val(h.cards[0]) === val(h.cards[1]) && bank >= h.bet && hands.length < MAX_HANDS);
+      const pair = h.cards.length === 2 && val(h.cards[0]) === val(h.cards[1]);
+      $("splitBtn").disabled = !(pair && bank >= h.bet && hands.length < MAX_HANDS);
+      $("splitBtn").title = !pair ? "Split needs two cards of the same value" : hands.length >= MAX_HANDS ? `You can split up to ${MAX_HANDS} hands` : bank < h.bet ? `Not enough chips to split — you need ${FX.fmt(h.bet - bank)} more` : "Split into two hands";
+      $("dblBtn").title = h.cards.length !== 2 ? "You can only double on your first two cards" : bank < h.bet ? `Not enough chips to double — you need ${FX.fmt(h.bet - bank)} more` : "Double your bet and take one card";
     }
     const played = stats.wins + stats.losses + stats.pushes;
     $("statsLine").textContent = `Hands ${FX.fmt(stats.hands)} • Won ${stats.wins} • Lost ${stats.losses} • Pushed ${stats.pushes}` +
@@ -451,12 +466,37 @@
     const f = ++flow;
     bank -= bet; lastBet = bet; saveBank();
     hands = [{cards:[], bet, doubled:false, done:false, fromSplit:false}];
+    insBet = 0; insNet = 0;
     dealer = []; results = null; active = 0; phase = "dealing"; busy = true;
     setMsg("Dealing…"); render();
     if(!(await give(hands[0].cards, f)) || !(await give(dealer, f)) || !(await give(hands[0].cards, f)) || !(await give(dealer, f))) return;
     phase = "play"; busy = false;
+    // dealer shows an Ace: offer insurance before anyone peeks at the hole card
+    const cost = Math.floor(hands[0].bet / 2);
+    if(dealer[0].r === "A" && cost >= 1 && bank >= cost){
+      phase = "insurance"; setMsg("Insurance?"); FX.sound("tick"); render(); return;
+    }
+    afterDeal();
+  }
+  function afterDeal(){
     if(isBJ(hands[0].cards) || isBJ(dealer)) return finish();
     setMsg("Your move."); render();
+  }
+  async function answerInsurance(yes){
+    if(phase !== "insurance" || busy) return;
+    const f = flow, cost = Math.floor(hands[0].bet / 2);
+    if(yes && bank >= cost){ bank -= cost; insBet = cost; saveBank(); FX.sound("chip"); }
+    busy = true; setMsg("Dealer peeks at the hole card…"); render();
+    await pause(900); if(f !== flow) return;
+    if(isBJ(dealer)){
+      if(insBet){ insNet = insBet * 2; bank += insBet * 3; saveBank(); }
+    } else if(insBet){
+      insNet = -insBet;
+      setMsg(`No dealer blackjack — insurance lost (−${FX.fmt(insBet)}).`); FX.sound("error"); render();
+      await pause(1100); if(f !== flow) return;
+    }
+    phase = "play"; busy = false;
+    afterDeal();
   }
 
   async function hit(){
@@ -469,7 +509,8 @@
   function stand(){ if(phase !== "play" || busy) return; hands[active].done = true; FX.sound("click"); advance(); }
   async function double(){
     const h = hands[active];
-    if(phase !== "play" || busy || h.cards.length !== 2 || bank < h.bet) return;
+    if(phase !== "play" || busy || h.cards.length !== 2) return;
+    if(bank < h.bet){ FX.sound("error"); setMsg(`Not enough chips to double — you need ${FX.fmt(h.bet - bank)} more.`); return; }
     const f = flow;
     bank -= h.bet; h.bet *= 2; h.doubled = true; saveBank(); FX.sound("chip");
     h.cards.push(draw()); h.done = true; busy = true; render();
@@ -478,7 +519,9 @@
   }
   async function split(){
     const h = hands[active];
-    if(phase !== "play" || busy || h.cards.length !== 2 || val(h.cards[0]) !== val(h.cards[1]) || bank < h.bet || hands.length >= MAX_HANDS) return;
+    if(phase !== "play" || busy || h.cards.length !== 2 || val(h.cards[0]) !== val(h.cards[1])) return;
+    if(hands.length >= MAX_HANDS){ FX.sound("error"); setMsg(`You can split up to ${MAX_HANDS} hands.`); return; }
+    if(bank < h.bet){ FX.sound("error"); setMsg(`Not enough chips to split — you need ${FX.fmt(h.bet - bank)} more.`); return; }
     const f = flow;
     bank -= h.bet; saveBank(); FX.sound("chip");
     const second = {cards:[h.cards.pop()], bet:h.bet, doubled:false, done:false, fromSplit:true};
@@ -532,20 +575,23 @@
       net -= h.bet; stats.losses++; return {cls:"lose", text:`Lose −${FX.fmt(h.bet)}`};
     });
     stats.hands += hands.length;
-    stats.streak = net > 0 ? stats.streak + 1 : net < 0 ? 0 : stats.streak;
+    const tot = net + insNet;                         // hands plus insurance
+    stats.streak = tot > 0 ? stats.streak + 1 : tot < 0 ? 0 : stats.streak;
     stats.bestStreak = Math.max(stats.bestStreak, stats.streak);
     saveBank(); saveStats();
-    if(net > 0) rgReport("blackjack", "", "Biggest single win", net, { unit:"chips", better:"high", detail:`${hands.length} hand${hands.length>1?"s":""}` });
+    if(net + insNet > 0) rgReport("blackjack", "", "Biggest single win", net + insNet, { unit:"chips", better:"high", detail:`${hands.length} hand${hands.length>1?"s":""}` });
     runPeak = Math.max(runPeak, bank); saveRunPeak();
     if(bank <= 0) endRun();
     phase = "over"; busy = false;
     const allBust = hands.every(h => total(h.cards).t > 21);
-    if(gotBJ && net > 0){ toast("BLACKJACK!", "bj"); FX.sound("bigwin"); FX.confetti({ count:110, y:.45 }); }
-    else if(net > 0){ toast(`YOU WIN +${FX.fmt(net)}`, "win"); FX.sound("win"); }
-    else if(net < 0){ toast(allBust ? "BUST" : dealerBJ ? "DEALER BLACKJACK" : "DEALER WINS", "lose"); FX.sound("lose"); }
+    if(gotBJ && tot > 0){ toast("BLACKJACK!", "bj"); FX.sound("bigwin"); FX.confetti({ count:110, y:.45 }); }
+    else if(tot > 0){ toast(`YOU WIN +${FX.fmt(tot)}`, "win"); FX.sound("win"); }
+    else if(tot < 0){ toast(allBust ? "BUST" : dealerBJ ? "DEALER BLACKJACK" : "DEALER WINS", "lose"); FX.sound("lose"); }
+    else if(insNet > 0){ toast("INSURANCE PAID", "push"); FX.sound("push"); }
     else { toast("PUSH", "push"); FX.sound("push"); }
-    setMsg(bank <= 0 ? "You're out of chips." : net > 0 ? `You won ${FX.fmt(net)} chips${dt > 21 ? " — dealer busts" : ""}.` : net < 0 ? `You lost ${FX.fmt(-net)} chips.` : "Push — bets returned.");
-    render(net > 0);
+    const insNote = insNet > 0 ? ` Insurance paid ${FX.fmt(insNet)}.` : insNet < 0 ? ` Insurance cost ${FX.fmt(-insNet)}.` : "";
+    setMsg(bank <= 0 ? "You're out of chips." : tot > 0 ? `You won ${FX.fmt(tot)} chips${dt > 21 ? " — dealer busts" : ""}.${insNote}` : tot < 0 ? `You lost ${FX.fmt(-tot)} chips.${insNote}` : insNet > 0 ? "Dealer blackjack — insurance pays 2 to 1, so you break even." : "Push — bets returned.");
+    render(tot > 0);
   }
   function hint(){
     if(phase !== "play" || busy) return;
@@ -567,6 +613,8 @@
   $("dblBtn").addEventListener("click", double);
   $("splitBtn").addEventListener("click", split);
   $("hintBtn").addEventListener("click", hint);
+  $("insYes").addEventListener("click", () => answerInsurance(true));
+  $("insNo").addEventListener("click", () => { FX.sound("click"); answerInsurance(false); });
   $("nextBtn").addEventListener("click", toBetting);
   $("resetBank").addEventListener("click", () => { bank = settings.start; lastBet = 0; saveBank(); toBetting(); });
 
@@ -593,7 +641,7 @@
     endRun();
     bank = settings.start; lastBet = 0; saveBank(); newShoe(); toBetting();
   }
-  const midHand = () => phase === "play" || phase === "dealing" || phase === "dealer";
+  const midHand = () => phase === "play" || phase === "dealing" || phase === "dealer" || phase === "insurance";
   $("applySettings").addEventListener("click", async () => {
     if(midHand() && !(await ask("This will end the current hand and restart. Continue?"))) return;
     settings = sanitize({ start:$("setStart").value, decks:$("setDecks").value, payout:$("setPayout").value, h17:$("setH17").value === "hit", speed:$("setSpeed").value });
@@ -609,6 +657,7 @@
     if(tag === "INPUT" || tag === "SELECT" || e.ctrlKey || e.metaKey || e.altKey) return;
     if(document.querySelector('[role="dialog"]')) return;
     const k = e.key.toLowerCase();
+    if(phase === "insurance"){ if(k === "i" || k === "y") answerInsurance(true); else if(k === "n") answerInsurance(false); }
     if(phase === "play"){
       if(k === "h") hit(); else if(k === "s") stand(); else if(k === "d") double(); else if(k === "p") split();
     }
