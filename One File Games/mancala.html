@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mancala</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --pit:clamp(48px, 11.5vw, 96px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 50% -10%, #4a2c12 0%, #26160b 45%, var(--bg) 85%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    padding:44px 16px 24px;
+  }
+  .wrap{ width:min(980px,100%); display:grid; gap:14px; align-content:start; }
+  .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .title h1{ margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+    background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+  .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+  button{ border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s; font-family:inherit; }
+  button:hover:not(:disabled){ filter:brightness(1.2); }
+  button:active:not(:disabled){ transform:scale(.96); }
+  button:disabled{ cursor:default; }
+  button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.55); }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .bar{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:center; padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .bar .lab{ font-size:12px; color:var(--muted); margin-right:6px; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+  .seg button{ border:0; border-radius:0; background:transparent; padding:8px 12px; font-size:13px; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
+
+  .boardWrap{ display:grid; gap:8px; }
+  .names{ display:flex; justify-content:space-between; padding:0 18px; font-size:13px; font-weight:800; color:var(--muted); }
+  .names .act{ color:var(--gold); }
+  .board{ display:grid; grid-template-columns:auto 1fr auto; gap:clamp(6px,1.6vw,14px); align-items:stretch; padding:clamp(10px,2.4vw,20px); border-radius:28px;
+    background:linear-gradient(180deg,#8a5a2b,#6b4220 50%,#55340f);
+    box-shadow:0 0 0 3px #2b1707, inset 0 2px 0 rgba(255,255,255,.25), inset 0 -10px 30px rgba(0,0,0,.35), 0 20px 50px rgba(0,0,0,.55); }
+  .store{ width:calc(var(--pit) * .95); min-height:calc(var(--pit) * 2.3); border-radius:calc(var(--pit) * .5); position:relative; display:grid; align-content:center; justify-items:center;
+    background:radial-gradient(ellipse at 50% 30%, #3a210b, #1f1106); box-shadow:inset 0 6px 14px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.2); }
+  .store .n{ font-size:clamp(20px,4.5vw,32px); font-weight:900; color:var(--gold); font-variant-numeric:tabular-nums; }
+  .store .tag{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; }
+  .store.flash, .pit.flash{ animation:flash .7s ease-out; }
+  @keyframes flash{ 0%{ box-shadow:inset 0 6px 14px rgba(0,0,0,.7), 0 0 0 4px var(--gold), 0 0 24px var(--gold); } 100%{ box-shadow:inset 0 6px 14px rgba(0,0,0,.7); } }
+  .pits{ display:grid; grid-template-columns:repeat(6, 1fr); grid-template-rows:auto auto; gap:clamp(6px,1.6vw,14px); }
+  .pit{ position:relative; aspect-ratio:1; min-width:0; border-radius:50%; padding:0; border:0; display:grid; place-items:center; color:var(--text);
+    background:radial-gradient(circle at 50% 35%, #3a210b, #1f1106); box-shadow:inset 0 6px 14px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.2); }
+  .pit.mine:not(:disabled){ cursor:pointer; }
+  .pit.mine:not(:disabled):hover{ box-shadow:inset 0 6px 14px rgba(0,0,0,.7), 0 0 0 3px var(--accent); filter:none; }
+  .pit.hint{ box-shadow:inset 0 6px 14px rgba(0,0,0,.7), 0 0 0 3px var(--ok), 0 0 18px rgba(106,255,182,.6); }
+  .pit.last{ box-shadow:inset 0 6px 14px rgba(0,0,0,.7), 0 0 0 3px var(--warn); }
+  .pit .cnt{ position:absolute; right:4%; bottom:2%; font-size:clamp(11px,2.4vw,15px); font-weight:900; background:rgba(0,0,0,.65); border-radius:999px; padding:0 6px; line-height:1.5; font-variant-numeric:tabular-nums; }
+  .pit .key{ position:absolute; left:8%; top:2%; font:700 10px ui-monospace, monospace; color:var(--muted); opacity:.8; }
+  .stones{ position:absolute; inset:14%; }
+  .stone{ position:absolute; width:22%; height:22%; border-radius:50%; transform:translate(-50%,-50%); box-shadow:inset -2px -3px 4px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.6); }
+  .stones.big .stone{ width:17%; height:17%; }
+  .msg{ text-align:center; min-height:24px; font-weight:800; font-size:16px; }
+  .info{ text-align:center; font-size:12px; color:var(--muted); min-height:18px; }
+  .log{ font-size:12px; color:var(--muted); display:grid; gap:2px; padding:6px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); min-height:40px; }
+
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(460px,100%); padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.18)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title"><h1>Mancala</h1><div class="sub">Kalah rules — sow your stones, steal with captures, chain extra turns</div></div>
+    <div class="row">
+      <span class="pill">Wins <b id="stWins">0</b></span>
+      <span class="pill">Games <b id="stGames">0</b></span>
+      <button id="rulesBtn">How to play</button>
+      <button class="primary" id="newBtn">New game</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span><span class="lab">Stones per pit</span><span class="seg" id="segStones"><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button></span></span>
+    <span><span class="lab">Bot</span><span class="seg" id="segDiff"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></span></span>
+    <span><span class="lab">First move</span><span class="seg" id="segFirst"><button data-v="you">You</button><button data-v="bot">Bot</button><button data-v="random">Random</button></span></span>
+    <span><span class="lab">Captures</span><span class="seg" id="segCap"><button data-v="on">On</button><button data-v="off">Off</button></span></span>
+    <span><span class="lab">Hints</span><span class="seg" id="segHint"><button data-v="off">Off</button><button data-v="on">On</button></span></span>
+  </div>
+
+  <div class="boardWrap">
+    <div class="names"><span id="nmBot">Bot</span><span id="nmYou">You</span></div>
+    <div class="board" id="board" aria-label="Mancala board"></div>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="info" id="info"></div>
+  <div class="log" id="log" aria-live="polite"></div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="How to play">
+  <h2>How to play Mancala (Kalah)</h2>
+  <p>Your six pits are the bottom row and your <b>store</b> is on the right. The bot's pits are on top, its store on the left. Pick one of your pits and its stones are dropped one at a time counter-clockwise (to the right on your row), through your store but skipping the bot's.</p>
+  <p><b>Extra turn:</b> if your last stone lands in your store, you go again.</p>
+  <p><b>Capture:</b> if your last stone lands in one of <i>your own empty pits</i> and the pit opposite has stones, you take them plus your last stone into your store (can be turned off).</p>
+  <p>The game ends when one side has no stones in its pits; the other side keeps what is left in its pits. Most stones in the store wins. Keys <b>1–6</b> play your pits left to right.</p>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+  const confirmNew = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(true);
+
+  // ===== ENGINE =====
+  // index: 0-5 your pits (left to right), 6 your store, 7-12 bot pits (7 is across from 5), 13 bot store.
+  // Sowing runs 0 → 13 and wraps; each side skips the other's store. Opposite of pit i is 12 - i.
+  const YOU = 0, BOT = 1;
+  const own = s => s === YOU ? 6 : 13, other = s => s === YOU ? 13 : 6;
+  const pitsOf = s => s === YOU ? [0,1,2,3,4,5] : [7,8,9,10,11,12];
+  const sideOf = i => i < 6 ? YOU : 7 <= i && i <= 12 ? BOT : -1;
+  function newBoard(n){ const p = new Array(14).fill(n); p[6] = 0; p[13] = 0; return p; }
+  // pure: returns the new board plus what happened (steps = every drop in order, for animation)
+  function applyMove(p0, pit, side, cap){
+    const p = p0.slice(), steps = [];
+    let n = p[pit], i = pit; p[pit] = 0;
+    while(n > 0){ i = (i + 1) % 14; if(i === other(side)) continue; p[i]++; steps.push(i); n--; }
+    const extraTurn = i === own(side);
+    let captured = 0, capPit = -1;
+    if(cap && !extraTurn && sideOf(i) === side && p[i] === 1 && p[12 - i] > 0){
+      captured = p[12 - i] + 1; capPit = i; p[own(side)] += captured; p[i] = 0; p[12 - i] = 0;
+    }
+    let ended = false;
+    const yourLeft = pitsOf(YOU).reduce((a, k) => a + p[k], 0), botLeft = pitsOf(BOT).reduce((a, k) => a + p[k], 0);
+    let swept = 0;
+    if(yourLeft === 0 || botLeft === 0){
+      ended = true; swept = yourLeft + botLeft;
+      pitsOf(YOU).forEach(k => { p[6] += p[k]; p[k] = 0; }); pitsOf(BOT).forEach(k => { p[13] += p[k]; p[k] = 0; });
+    }
+    return { p, steps, extraTurn, captured, capPit, ended, last:i, next: ended ? -1 : extraTurn ? side : 1 - side };
+  }
+  const legal = (p, side) => pitsOf(side).filter(k => p[k] > 0);
+
+  // ===== BOT =====
+  // minimax with alpha-beta; value = bot store − your store (+ small bonus for stones kept on the bot's side)
+  const evalB = p => (p[13] - p[6]) + 0.05 * (pitsOf(BOT).reduce((a, k) => a + p[k], 0) - pitsOf(YOU).reduce((a, k) => a + p[k], 0));
+  function search(p, side, depth, a, b, cap){
+    const ms = legal(p, side);
+    if(depth === 0 || !ms.length) return evalB(p);
+    // try moves that end in the store first (better pruning)
+    const order = ms.map(m => ({ m, r:applyMove(p, m, side, cap) })).sort((x, y) => (y.r.extraTurn - x.r.extraTurn) || (y.r.captured - x.r.captured));
+    let best = side === BOT ? -Infinity : Infinity;
+    for(const { r } of order){
+      const v = r.ended ? evalB(r.p) * 3 : search(r.p, r.next, depth - 1, a, b, cap);
+      if(side === BOT){ if(v > best) best = v; if(best > a) a = best; } else { if(v < best) best = v; if(best < b) b = best; }
+      if(a >= b) break;
+    }
+    return best;
+  }
+  function botChoose(p, diff, cap, side){
+    const ms = legal(p, side); if(!ms.length) return -1;
+    if(diff === "easy" && Math.random() < .35) return ms[Math.floor(Math.random() * ms.length)];
+    const depth = diff === "hard" ? 9 : diff === "medium" ? 5 : 2;
+    let best = null, bv = -Infinity;
+    ms.slice().sort(() => Math.random() - .5).forEach(m => {
+      const r = applyMove(p, m, side, cap);
+      const v = r.ended ? evalB(r.p) * 3 : search(r.p, r.next, depth - 1, -Infinity, Infinity, cap);
+      if(v > bv){ bv = v; best = m; }
+    });
+    return best;
+  }
+  // best move for you, used for hints (mirror of the bot search)
+  function hintFor(p, cap){
+    const ms = legal(p, YOU); let best = -1, bv = Infinity;
+    ms.forEach(m => {
+      const r = applyMove(p, m, YOU, cap);
+      const v = r.ended ? evalB(r.p) * 3 : search(r.p, r.next, 5, -Infinity, Infinity, cap);
+      if(v < bv){ bv = v; best = m; }
+    });
+    return best;
+  }
+
+  // ===== STATE =====
+  const load = (k, d) => { try{ const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; }catch(e){ return d; } };
+  const store = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+  const settings = Object.assign({ stones:"4", diff:"medium", first:"you", cap:"on", hint:"off" }, load("mancala_settings", {}));
+  const stats = Object.assign({ wins:0, games:0 }, load("mancala_stats", {}));
+  let board = newBoard(4), turn = YOU, over = false, busy = false, gen = 0, lastPit = -1;
+  let g = null;   // per-game counters
+  const wait = (ms, my) => new Promise((res, rej) => setTimeout(() => my !== gen ? rej("abort") : res(), FX.reducedMotion ? 0 : ms));
+
+  const COLORS = ["#e94f64","#4fa6e9","#f0c040","#5fd08a","#b57bee","#f08a3c","#f4f4f4"];
+  function stonesHtml(n, pitIdx){
+    const show = Math.min(n, 24), big = show > 12; let h = "";
+    for(let k = 0; k < show; k++){
+      // deterministic scatter so stones don't jump around between renders
+      const ang = (k * 2.399963 + pitIdx), rad = show === 1 ? 0 : Math.sqrt((k + .5) / show) * 46;
+      const x = 50 + Math.cos(ang) * rad, y = 50 + Math.sin(ang) * rad;
+      h += `<i class="stone" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;background:${COLORS[(k + pitIdx) % COLORS.length]}"></i>`;
+    }
+    return `<span class="stones${big ? " big" : ""}">${h}</span>`;
+  }
+  function pitHtml(i, b, hint){
+    const mine = i < 6, n = b[i];
+    return `<button class="pit${mine ? " mine" : ""}${i === lastPit ? " last" : ""}${hint === i ? " hint" : ""}" data-i="${i}" ${mine && turn === YOU && !over && !busy && n > 0 ? "" : "disabled"} aria-label="${mine ? "Your pit " + (i + 1) : "Bot pit"}: ${n} stones">${stonesHtml(n, i)}${mine ? `<span class="key">${i + 1}</span>` : ""}<span class="cnt">${n}</span></button>`;
+  }
+  function render(b = board, flash){
+    const hint = settings.hint === "on" && turn === YOU && !over && !busy ? hintFor(b, settings.cap === "on") : -1;
+    let top = "", bot = "";
+    for(let i = 12; i >= 7; i--) top += pitHtml(i, b, hint);
+    for(let i = 0; i <= 5; i++) bot += pitHtml(i, b, hint);
+    $("board").innerHTML = `<div class="store" id="sBot"><span class="tag">Bot</span><span class="n">${b[13]}</span></div><div class="pits">${top}${bot}</div><div class="store" id="sYou"><span class="tag">You</span><span class="n">${b[6]}</span></div>`;
+    $("board").querySelectorAll(".pit.mine").forEach(el => el.onclick = () => humanMove(+el.dataset.i));
+    if(flash === YOU) $("sYou").classList.add("flash"); else if(flash === BOT) $("sBot").classList.add("flash");
+    $("nmYou").className = !over && turn === YOU ? "act" : ""; $("nmBot").className = !over && turn === BOT ? "act" : "";
+    $("stWins").textContent = stats.wins; $("stGames").textContent = stats.games;
+    for(const k of ["stones","diff","first","cap","hint"]) $("seg" + k[0].toUpperCase() + k.slice(1)).querySelectorAll("button").forEach(bt => bt.classList.toggle("on", bt.dataset.v === settings[k]));
+  }
+  const setMsg = t => $("msg").textContent = t;
+  const logLines = [];
+  function addLog(t){ logLines.push(t); if(logLines.length > 6) logLines.shift(); $("log").innerHTML = logLines.map(l => `<div>${l}</div>`).join(""); }
+
+  // ===== GAME FLOW =====
+  async function newGame(){
+    gen++; const my = gen;
+    board = newBoard(+settings.stones); over = false; busy = false; lastPit = -1; logLines.length = 0; $("log").innerHTML = "";
+    turn = settings.first === "you" ? YOU : settings.first === "bot" ? BOT : (Math.random() < .5 ? YOU : BOT);
+    g = { moves:0, captures:0, capStones:0, bestCap:0, extras:0, botExtras:0, started:+settings.stones, firstMover: turn };
+    $("info").textContent = ""; render();
+    addLog(turn === YOU ? "You move first." : "The bot moves first.");
+    nextTurn(my);
+  }
+  async function nextTurn(my){
+    if(over) return;
+    if(turn === YOU){ setMsg("Your move — pick a pit."); $("info").textContent = ""; render(); return; }
+    setMsg("Bot is thinking…"); busy = true; render();
+    try{
+      await wait(450, my);
+      const m = botChoose(board, settings.diff, settings.cap === "on", BOT);
+      await playMove(m, BOT, my);
+    }catch(e){ if(e !== "abort") throw e; }
+  }
+  async function humanMove(i){
+    if(over || busy || turn !== YOU || board[i] <= 0) return;
+    const my = gen; busy = true; render();
+    try{ await playMove(i, YOU, my); }catch(e){ if(e !== "abort") throw e; }
+  }
+  async function playMove(pit, side, my){
+    const r = applyMove(board, pit, side, settings.cap === "on");
+    const who = side === YOU ? "You" : "Bot";
+    const live = board.slice(); live[pit] = 0; lastPit = -1; busy = true; render(live);
+    for(const idx of r.steps){
+      await wait(side === YOU ? 170 : 200, my);
+      live[idx]++; FX.sound("tick"); render(live);
+    }
+    board = r.p; lastPit = r.last; g.moves += side === YOU ? 1 : 0;
+    let flash = r.extraTurn ? side : -1;
+    let line = `${who} played ${side === YOU ? "pit " + (pit + 1) : "pit " + (13 - pit)} (${r.steps.length} stone${r.steps.length === 1 ? "" : "s"})`;
+    if(r.extraTurn){ line += " — lands in the store, goes again!"; FX.sound("win"); if(side === YOU) g.extras++; else g.botExtras++; }
+    if(r.captured){
+      line += ` — captures ${r.captured - 1} +1!`; flash = side; FX.sound("bigwin");
+      if(side === YOU){ g.captures++; g.capStones += r.captured; g.bestCap = Math.max(g.bestCap, r.captured); }
+    }
+    if(r.ended && !r.captured) flash = -1;
+    addLog(line); render(board, flash); busy = false;
+    if(r.ended){ finish(my); return; }
+    turn = r.next; await wait(r.extraTurn ? 350 : 150, my); nextTurn(my);
+  }
+  function finish(my){
+    over = true; busy = false;
+    const you = board[6], bot = board[13], margin = you - bot, won = margin > 0;
+    stats.games++; if(won) stats.wins++; store("mancala_stats", stats); render();
+    setMsg(margin > 0 ? `🏆 You win ${you}–${bot}!` : margin < 0 ? `The bot wins ${bot}–${you}.` : `A draw, ${you}–${bot}.`);
+    $("info").textContent = "Press New game to play again.";
+    if(won){ FX.sound("bigwin"); FX.confetti({ count:200 }); } else FX.sound("lose");
+    const lvl = settings.diff[0].toUpperCase() + settings.diff.slice(1);
+    rgReport("mancala", `${settings.stones} stones · ${lvl}${settings.cap === "off" ? " · no captures" : ""}`, "Best margin", margin, { unit:"stones", better:"high",
+      detail:`${margin > 0 ? "won" : margin < 0 ? "lost" : "drew"} ${you}–${bot}`, info:[
+        ["Game"], ["Stones per pit", settings.stones], ["Bot", lvl], ["Captures", settings.cap === "on" ? "on" : "off"], ["First move", g.firstMover === YOU ? "You" : "Bot"], ["Hints", settings.hint],
+        ["Result"], ["You", String(you)], ["Bot", String(bot)], ["Your moves", String(g.moves)],
+        ["Your play"], ["Extra turns earned", String(g.extras)], ["Captures", String(g.captures)], ["Stones captured", String(g.capStones)], ["Biggest capture", String(g.bestCap)] ] });
+  }
+
+  // ===== UI wiring =====
+  for(const k of ["stones","diff","first","cap","hint"]){
+    $("seg" + k[0].toUpperCase() + k.slice(1)).onclick = async e => {
+      const v = e.target.dataset && e.target.dataset.v; if(!v || settings[k] === v) return;
+      if(k === "hint"){ settings.hint = v; store("mancala_settings", settings); render(); return; }
+      if(g && g.moves > 0 && !over && !(await confirmNew("Change this setting and start a new game?"))) return;
+      settings[k] = v; store("mancala_settings", settings); newGame();
+    };
+  }
+  $("newBtn").onclick = async () => { if(g && g.moves > 0 && !over && !(await confirmNew("Abandon this game and start a new one?"))) return; newGame(); };
+  $("rulesBtn").onclick = () => $("rulesBox").classList.add("show");
+  $("rulesOk").onclick = () => $("rulesBox").classList.remove("show");
+  document.addEventListener("keydown", e => {
+    if(e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if(e.key >= "1" && e.key <= "6") humanMove(+e.key - 1);
+    else if(e.key === "Escape") $("rulesBox").classList.remove("show");
+  });
+  window.__mancala = { applyMove, legal, newBoard, botChoose, get board(){ return board; }, get g(){ return g; } };   // test hook
+  newGame();
+})();
+</script>
+</body>
+</html>

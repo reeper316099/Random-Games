@@ -7,9 +7,10 @@ A small collection of browser games, including both single-file games and multi-
 ### One File Games
 - `One File Games/bs.html` — BS (Cheat): bluff your cards away against 1–4 bots and call out their lies
 - `One File Games/video-poker.html` — Video Poker (Jacks or Better 9/6): hold/draw, pay table, max-bet royal flush, double-up gamble
+- `One File Games/mancala.html` — Mancala (Kalah) vs a bot: extra turns, captures, 3–6 stones per pit, easy/medium/hard, optional hints
 - `One File Games/hearts.html` — Hearts vs 3 bots: card passing, hearts breaking, shooting the moon, target score 50/100
 - `One File Games/spades.html` — Spades: partnership bidding (you + Max vs 2 bots), Nil bids, bags, scoring to 250/500
-- `One File Games/remorse-chess.html` — Remorse Chess: chess where pieces react to captures (guilt, devastation, psychopaths, vengeance, absolution by bishops); every rule is a setting, with Orthodox / Full / Lite presets
+- `One File Games/remorse-chess.html` — Remorse Chess: chess where pieces react to captures (guilt, devastation, psychopaths, vengeance, absolution by bishops); every rule is a setting, with Orthodox / Full / Lite presets; save, replay and share games in algebraic notation with feelings and dice recorded (e.g. `Bxa6 {🎲4🙂 👁b7=6⚪}`)
 - `One File Games/blackjack.html` — Blackjack (play-money chips, animated dealing, strategy hints)
 - `One File Games/checkers.html` — Checkers vs the computer (three skill levels) or a friend
 - `One File Games/chess.html` — Chess vs the computer (three skill levels, with a choice of the built-in engine or bundled Stockfish) or a friend; drag-and-drop, promotion choice, hints, undo, save and replay
@@ -47,7 +48,7 @@ See [LICENSE](LICENSE).
 ## Desktop app
 
 A Go + [Wails](https://wails.io) desktop version lives in [`wails-app/`](wails-app/). It adds a **High Scores** tab
-covering all games and lets you **save chess games in algebraic notation (PGN) and replay them move by move**.
+covering all games and lets you **save chess and Remorse Chess games in algebraic notation (PGN) and replay them move by move**.
 Pushing a `v*` tag builds it for Windows, macOS and Linux and publishes a GitHub Release. See
 [`wails-app/README.md`](wails-app/README.md).
 

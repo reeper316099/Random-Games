@@ -92,6 +92,25 @@
   .set input[type=checkbox]{ width:20px; height:20px; accent-color:#6aa6ff; }
   .tbl{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
   .tbl div{ display:grid; gap:3px; justify-items:center; font-size:11px; color:var(--muted); } .tbl select{ width:100%; padding:5px 2px; font-size:11px; }
+  .hist{ display:flex; flex-wrap:wrap; gap:2px 4px; max-height:190px; overflow:auto; font-size:12.5px; line-height:1.5; padding:6px 8px; border-radius:10px; background:rgba(0,0,0,.22); }
+  .hist .num{ color:var(--muted); margin-left:4px; }
+  .hist .ply{ padding:0 4px; border-radius:6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:nowrap; }
+  .hist .ply i{ font-style:normal; font-family:ui-sans-serif,system-ui,sans-serif; font-size:11px; opacity:.9; margin-left:2px; }
+  .replaying .hist .ply{ cursor:pointer; } .replaying .hist .ply:hover{ background:rgba(255,255,255,.1); }
+  .hist .ply.cur{ background:rgba(106,166,255,.35); font-weight:800; }
+  .hist .none{ color:var(--muted); font-size:12px; }
+  .replayBar{ display:none; flex-direction:column; gap:8px; padding:10px; border:1px solid rgba(106,166,255,.45); border-radius:12px; background:rgba(106,166,255,.08); }
+  .replayBar.on{ display:flex; }
+  .replayBar .rtitle{ font-weight:800; font-size:13px; }
+  .row2{ display:flex; gap:6px; flex-wrap:wrap; } .row2 button{ padding:7px 10px; font-size:12px; }
+  .savePanel{ display:grid; gap:8px; }
+  .savePanel input[type=text], .savePanel textarea{ width:100%; padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--text); font:inherit; font-size:13px; }
+  .savePanel textarea{ min-height:90px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .saveItem{ display:grid; gap:4px; padding:8px; border:1px solid rgba(255,255,255,.1); border-radius:10px; background:rgba(0,0,0,.18); }
+  .saveItem b{ font-size:13px; word-break:break-word; } .saveItem small{ color:var(--muted); }
+  .sstatus{ font-size:12px; color:var(--ok); min-height:16px; } .sstatus.err{ color:var(--danger); }
+  .faint{ color:var(--muted); font-size:12px; font-weight:400; text-transform:none; letter-spacing:0; }
+  details summary{ cursor:pointer; }
   @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
 </style>
 <script src="../themes.js"></script>
@@ -127,10 +146,35 @@
     </div>
     <div class="side">
       <div><h3>Status</h3><div class="status" id="status"></div><div style="display:flex;gap:10px;align-items:center;margin-top:8px"><div class="dice" id="dice">🎲</div><div id="diceTxt" style="font-size:13px;color:var(--muted)">No rolls yet.</div></div></div>
+      <div class="replayBar" id="replayBar">
+        <div class="rtitle" id="replayTitle"></div>
+        <div class="row2"><button id="rFirst" title="Start">⏮</button><button id="rPrev" title="Back (←)">◀</button><button id="rAuto">▶ Play</button><button id="rNext" title="Forward (→)">▶|</button><button id="rLast" title="End">⏭</button></div>
+        <div class="row2"><button id="rContinue" class="primary">Play on from here</button><button id="rExit">Exit replay</button></div>
+      </div>
+      <div id="sidePanel"><h3>Move notation <span class="faint">(algebraic + feelings)</span></h3><div class="hist" id="hist"></div></div>
       <div><h3>Event log</h3><div class="feed" id="feed"></div></div>
+      <div class="savePanel">
+        <h3>Save &amp; load</h3>
+        <input type="text" id="saveName" maxlength="80" placeholder="Name this game (optional)" aria-label="Game name" />
+        <div class="row2"><button id="saveBtn" class="primary">💾 Save game</button><button id="copyBtn">📋 Copy notation</button><button id="replayCurBtn">⏪ Replay this game</button></div>
+        <div class="sstatus" id="saveStatus" role="status"></div>
+        <h3>Saved games <span class="faint" id="saveWhere"></span></h3>
+        <div id="saveList"></div>
+        <details><summary><h3 style="display:inline">Import notation</h3></summary>
+          <textarea id="pgnIn" placeholder="Paste a saved Remorse Chess game (or a normal PGN)" aria-label="Notation text"></textarea>
+          <div class="row2" style="margin-top:6px"><button id="pgnReplay">▶ Replay</button><button id="pgnSave">💾 Save</button></div>
+        </details>
+      </div>
       <div><h3>Badges</h3><div class="legend">
         <span>😔 guilt-ridden — can't capture</span><span>😭<b>n</b> devastated — frozen, <b>n</b> turns to absolve</span>
         <span>😈 psychopath · 🩸 bloodlust</span><span>⚪ vengeance (one guilt-free capture)</span><span>🙂 never rolled / unaffected</span></div></div>
+      <details><summary><h3 style="display:inline">Notation key</h3></summary><div class="legend" style="margin-top:6px">
+        <span>Standard algebraic notation (Nf3, exd5, O-O, e8=Q+) with feelings after the move:</span>
+        <span><b>🎲4🙂</b> capture roll (4 → unaffected) · <b>🎲1😭</b> devastated · <b>🎲2😔</b> guilt · <b>🎲6😈</b> psychopath</span>
+        <span><b>👁d5=2😔</b> the piece on d5 witnessed it, rolled 2 → guilt (· nothing, ⚪ vengeance, →😭 doubled)</span>
+        <span><b>↻😔</b> reaction came back (permanent) · <b>⚪✓</b> guilt-free vengeance capture</span>
+        <span><b>B@c1🙏</b> bishop absolves itself · <b>🙏e4</b> absolved the piece on e4</span>
+        <span><b>⚡</b> extra move · <b>🩸</b> bloodlust · <b>💔</b> friendly fire · <b>💀d5</b> self-capture · <b>👑✝</b> king taken</span></div></details>
     </div>
   </div>
 </div>
@@ -417,6 +461,8 @@
   // ===== game state / flow =====
   let st = newState(), sel = -1, lastMove = null, over = false, busy = false, runId = 0, pendingPromo = null, sinceStart = 0;
   let legalNow = [];
+  const cloneS = x => ({ ...x, capTable:x.capTable.slice(), witTable:x.witTable.slice() });
+  let userS = cloneS(S), moveLog = [], replay = null, liveStash = null, scoreOK = true;
   const myColor = () => prefs.mode === "two" ? null : prefs.side;
   const isHuman = c => prefs.mode === "two" || c === prefs.side;
   const wait = ms => new Promise(r => setTimeout(r, FX.reducedMotion ? 0 : ms));
@@ -424,12 +470,16 @@
   const setStatus = t => $("status").textContent = t;
 
   function newGame(){
-    runId++; st = newState(); sel = -1; lastMove = null; over = false; busy = false; pendingPromo = null; legalNow = [];
+    runId++; if(replay){ stopAuto(); replay = null; liveStash = null; renderReplayBar(); }
+    S = cloneS(userS); scoreOK = true; moveLog = [];
+    st = newState(); sel = -1; lastMove = null; over = false; busy = false; pendingPromo = null; legalNow = [];
     $("feed").innerHTML = ""; $("over").classList.remove("show"); $("actions").innerHTML = ""; $("dice").textContent = "🎲"; $("diceTxt").textContent = "No rolls yet.";
     log(S.captureRolls || S.witness ? "Remorse rules are on. Good luck." : "Orthodox chess (all remorse rules off).");
     refresh(); maybeBot();
   }
   function refresh(){
+    if(replay){ render(); return; }
+    renderHistory();
     if(!over){ const o = outcome(st); if(o) return end(o); }
     legalNow = isHuman(st.turn) ? legal(st, st.turn) : [];
     render();
@@ -445,16 +495,16 @@
     else { title = "Draw"; sub = "100 moves without a capture or pawn move."; }
     const humanWin = o.winner && prefs.mode === "bot" && o.winner === prefs.side;
     if(humanWin){ FX.sound("bigwin"); FX.confetti({ count:200 }); title = "You win!"; sub = o.end === "mate" ? "Checkmate." : sub;
-      rgReport("remorse-chess", `vs ${prefs.diff[0].toUpperCase() + prefs.diff.slice(1)}`, "Fewest moves to win", Math.ceil(st.moves / 2), { unit:"moves", better:"low", detail:ruleLabel(), info:remorseInfo(o) }); }
+      if(scoreOK) rgReport("remorse-chess", `vs ${prefs.diff[0].toUpperCase() + prefs.diff.slice(1)}`, "Fewest moves to win", Math.ceil(st.moves / 2), { unit:"moves", better:"low", detail:ruleLabel(), info:remorseInfo(o) }); }
     else FX.sound(o.winner && prefs.mode === "bot" ? "lose" : "win");
     setStatus(title + " — " + sub); $("ot").textContent = title; $("os").textContent = sub; $("over").classList.add("show");
   }
 
   // names the rule set so scores from different settings can be told apart
-  function ruleLabel(){
+  function ruleLabel(S0 = S){
     const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
     const pick = o => { const r = {}; Object.keys(DEFAULTS).forEach(k => r[k] = k in o ? o[k] : DEFAULTS[k]); return r; };
-    for(const [name, p] of [["Orthodox chess", PRESETS.orthodox], ["Full Remorse", PRESETS.full], ["Lite Remorse", PRESETS.lite]]) if(same(S, pick(p))) return name;
+    for(const [name, p] of [["Orthodox chess", PRESETS.orthodox], ["Full Remorse", PRESETS.full], ["Lite Remorse", PRESETS.lite]]) if(same(S0, pick(p))) return name;
     return "Custom Remorse rules";
   }
   const CAPNAME = { dev:"Devastated", guilt:"Guilt-ridden", none:"Unaffected", psycho:"Psychopath" }, WITNAME = { guilt:"Guilt", none:"Nothing", venge:"Vengeance" };
@@ -477,7 +527,9 @@
     if(busy || over) return; busy = true; const id = runId;
     const mover = st.board[mv.from], victimBefore = mv.cap ? st.board[mv.ep ? mv.epSq : mv.to] : null;
     const rolls = [];
+    const base = sanBase(st, mv, legal(st, st.turn)), wasExtra = st.extraNow;
     const ev = applyMove(st, mv, d6); lastMove = mv; sel = -1;
+    moveLog.push(makeEntry(base, mv, ev, st, mover.c, wasExtra));
     FX.sound(mv.cap ? "stop" : "card");
     // narrate
     ev.forEach(e => {
@@ -500,7 +552,7 @@
     maybeBot();
   }
   async function maybeBot(){
-    if(over || isHuman(st.turn) || busy) return;
+    if(replay || over || isHuman(st.turn) || busy) return;
     const id = runId; busy = true; await wait(420); busy = false; if(id !== runId || over) return;
     await new Promise(r => setTimeout(r, 20));               // let the "thinking" text paint before the search blocks
     if(id !== runId) return;
@@ -526,7 +578,7 @@
       const r = flip ? 7 - vr : vr, f = flip ? 7 - vf : vf, i = r * 8 + f, p = st.board[i], mv = targets.get(i);
       const cls = ["sq", (r + f) % 2 ? "dark" : "light", i === sel ? "sel" : "", lastMove && (i === lastMove.from || i === lastMove.to) ? "last" : "", i === check ? "check" : "",
         mv && !mv.absolve ? "legal" : "", mv && mv.cap ? "capture" : "", mv && mv.friendly ? "friendly" : "", mv && mv.absolve ? "legal absolve" : "",
-        p && p.dev ? "devast" : "", p && p.guilty ? "guilty" : "", p && isHuman(st.turn) && p.c === st.turn && !over ? "mine" : ""].join(" ");
+        p && p.dev ? "devast" : "", p && p.guilty ? "guilty" : "", p && !replay && isHuman(st.turn) && p.c === st.turn && !over ? "mine" : ""].join(" ");
       h += `<div class="${cls}" data-sq="${i}">${vf === 0 ? `<i class="co rk">${8 - r}</i>` : ""}${vr === 7 ? `<i class="co fl">${"abcdefgh"[f]}</i>` : ""}${p ? `<span class="pc ${p.c}">${GLYPH[p.t]}</span>${badges(p)}` : ""}</div>`;
     }
     $("board").innerHTML = h;
@@ -547,7 +599,7 @@
 
   // ===== input =====
   $("board").addEventListener("click", e => {
-    if(busy || over || pendingPromo) return;
+    if(busy || over || pendingPromo || replay) return;
     const el = e.target.closest(".sq"); if(!el || !isHuman(st.turn)) return;
     const i = Number(el.dataset.sq), p = st.board[i];
     if(sel >= 0){
@@ -566,7 +618,7 @@
     else if(b.dataset.absolve){ const mv = legalNow.find(m => m.absolve && m.from === sel); if(mv) play(mv); }
   });
   const confirmNew = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(true);
-  const inGame = () => !over && st.moves > 0;
+  const inGame = () => replay ? (!!liveStash && !liveStash.over && liveStash.moveLog.length > 0) : (!over && st.moves > 0);
   async function setPref(k, v){
     if(prefs[k] === v) return;
     if(inGame() && !(await confirmNew("Change this and start a new game? The current game will be lost."))) return;
@@ -577,17 +629,273 @@
   $("againBtn").addEventListener("click", newGame);
   const show = (id, on) => $(id).classList.toggle("show", on);
   $("rulesBtn").addEventListener("click", () => show("rulesBox", true)); $("rulesOk").addEventListener("click", () => show("rulesBox", false));
-  $("setBtn").addEventListener("click", () => { buildSettings(); show("setBox", true); }); $("setClose").addEventListener("click", () => show("setBox", false));
+  $("setBtn").addEventListener("click", () => { if(replay){ saveMsg("Exit the replay to change the rules.", true); return; } buildSettings(); show("setBox", true); }); $("setClose").addEventListener("click", () => show("setBox", false));
   $("setBody").addEventListener("change", () => {});
   $("setBox").addEventListener("click", e => {
     const b = e.target.closest("[data-preset]"); if(b){ S = { ...DEFAULTS, ...PRESETS[b.dataset.preset] }; buildSettings(); }
     else if(e.target === $("setBox")) show("setBox", false);
   });
-  $("setApply").addEventListener("click", () => { S = readSettings(); store("rchess_rules", S); show("setBox", false); FX.sound("click"); newGame(); });
+  $("setApply").addEventListener("click", () => { S = readSettings(); userS = cloneS(S); store("rchess_rules", S); show("setBox", false); FX.sound("click"); newGame(); });
   $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) show("rulesBox", false); });
-  document.addEventListener("keydown", e => { if(e.key === "Escape"){ show("rulesBox", false); show("setBox", false); sel = -1; pendingPromo = null; render(); } });
+  document.addEventListener("keydown", e => {
+    if(replay && !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || "")){ if(e.key === "ArrowLeft"){ showPly(replay.idx - 1); return; } if(e.key === "ArrowRight"){ showPly(replay.idx + 1); return; } }
+    if(e.key === "Escape"){ show("rulesBox", false); show("setBox", false); sel = -1; pendingPromo = null; render(); } });
 
-  window.__rc = { get st(){ return st; }, set st(v){ st = v; }, S:() => S, setS:v => { S = { ...S, ...v }; }, legal, applyMove, outcome, info:() => remorseInfo({ end:"mate" }), label:() => ruleLabel(), newState, cloneState, mk, botMove, play, refresh };   // for testing
+
+  // ===== notation: algebraic + feelings =====
+  // Standard algebraic notation for a move *before* it is played. B@c1 = a bishop absolving itself on c1.
+  function sanBase(stt, mv, list){
+    const p = stt.board[mv.from], file = i => "abcdefgh"[i & 7];
+    if(mv.absolve) return p.t + "@" + sqName(mv.from);
+    if(mv.castle) return (mv.to & 7) === 6 ? "O-O" : "O-O-O";
+    const to = sqName(mv.to);
+    if(p.t === "P") return (mv.cap ? file(mv.from) + "x" + to : to) + (mv.promo ? "=" + mv.promo : "");
+    let s = p.t;
+    const others = list.filter(l => !l.absolve && !l.castle && l.from !== mv.from && l.to === mv.to && stt.board[l.from] && stt.board[l.from].t === p.t);
+    if(others.length){
+      const sameFile = others.some(o => (o.from & 7) === (mv.from & 7)), sameRank = others.some(o => (o.from >> 3) === (mv.from >> 3));
+      s += !sameFile ? file(mv.from) : !sameRank ? String(8 - (mv.from >> 3)) : sqName(mv.from);
+    }
+    return s + (mv.cap ? "x" : "") + to;
+  }
+  const FEEL = { dev:"😭", guilt:"😔", none:"🙂", psycho:"😈" }, WFEEL = { guilt:"😔", none:"·", venge:"⚪" };
+  // the feelings that follow a move, in the order things happened (dice values are included so a game can be replayed exactly)
+  function spiceOf(ev, mv){
+    const out = [];
+    if(mv.friendly) out.push("💔");
+    for(const e of ev){
+      if(e.k === "roll") out.push(e.why === "witness" ? `👁${sqName(e.sq)}=${e.r}${WFEEL[e.res] || "·"}` : `🎲${e.r}${FEEL[e.res] || ""}`);
+      else if(e.k === "again") out.push("↻" + (FEEL[e.res] || ""));
+      else if(e.k === "free") out.push("⚪✓");
+      else if(e.k === "double") out.push("→😭");
+      else if(e.k === "absolve") out.push(e.self ? "🙏" : "🙏" + sqName(e.sq));
+      else if(e.k === "extra") out.push("⚡");
+      else if(e.k === "selfcap") out.push("💀" + sqName(e.sq));
+      else if(e.k === "cap" && e.victim.t === "K") out.push("👑✝");
+    }
+    const cap = ev.find(e => e.k === "cap");
+    if(cap && cap.piece.react === "psycho" && S.bloodlustAt > 0 && cap.piece.kills === S.bloodlustAt) out.push("🩸");
+    return out.join(" ");
+  }
+  function makeEntry(base, mv, ev, after, mover, wasExtra){
+    let san = base;
+    if(inCheck(after.board, foe(mover))){
+      const o = after.extraNow ? null : outcome(after);
+      san += o && o.end === "mate" ? "#" : "+";
+    }
+    return { san, spice:spiceOf(ev, mv), mover, extra:!!wasExtra, from:mv.from, to:mv.to };
+  }
+  const normToken = t => t.replace(/[^\x00-\x7F].*$/u, "").replace(/[+#!?]+$/, "").replace(/0/g, "O").replace(/([a-h][18])([QRBN])$/, "$1=$2");
+  function findBySan(stt, tok){
+    const want = normToken(tok), list = legal(stt, stt.turn);
+    return list.find(mv => sanBase(stt, mv, list) === want) || list.find(mv => mv.promo === "Q" && sanBase(stt, mv, list) === want + "=Q") || null;
+  }
+  const diceIn = t => { const out = []; String(t || "").replace(/🎲(\d)|👁[a-h][1-8]=(\d)/gu, (_, a, b) => { out.push(Number(a || b)); return ""; }); return out; };
+
+  // ----- save format: PGN with a Remorse header, feelings and dice in comments -----
+  function rulesHeader(Sx){ const d = {}; Object.keys(DEFAULTS).forEach(k => { if(JSON.stringify(Sx[k]) !== JSON.stringify(DEFAULTS[k])) d[k] = Sx[k]; }); return encodeURIComponent(JSON.stringify(d)); }
+  function rulesFromHeader(v){
+    const base = cloneS(DEFAULTS);
+    if(v == null) return Object.assign(base, PRESETS.orthodox);       // a normal chess PGN → plain chess
+    try{
+      const d = JSON.parse(decodeURIComponent(v));
+      Object.keys(DEFAULTS).forEach(k => { if(k in d && typeof d[k] === typeof DEFAULTS[k] && (!Array.isArray(DEFAULTS[k]) || (Array.isArray(d[k]) && d[k].length === DEFAULTS[k].length))) base[k] = Array.isArray(d[k]) ? d[k].slice() : d[k]; });
+    }catch(e){}
+    return base;
+  }
+  function liveResult(){ const o = outcome(st); return !o ? "*" : o.winner ? (o.winner === "w" ? "1-0" : "0-1") : "1/2-1/2"; }
+  function toPGN(entries, res, name, Sx){
+    const d = new Date(), pad = n => String(n).padStart(2, "0"), esc = t => String(t).replace(/["\\\r\n]/g, " ");
+    const bot = prefs.mode === "bot", cpu = "Computer (" + prefs.diff + ")";
+    const white = bot ? (prefs.side === "w" ? "You" : cpu) : "White", black = bot ? (prefs.side === "b" ? "You" : cpu) : "Black";
+    const head = [["Event", name || "Casual game"], ["Site", "Random Games"], ["Date", `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`], ["Round", "-"],
+      ["White", white], ["Black", black], ["Result", res || "*"], ["Variant", "Remorse Chess"], ["RuleSet", ruleLabel(Sx)], ["RemorseRules", rulesHeader(Sx)]]
+      .map(([k, v]) => `[${k} "${esc(v)}"]`).join("\n");
+    const parts = []; let full = 0;
+    entries.forEach(e => { if(e.mover === "w" && !e.extra){ full++; parts.push(full + "."); } parts.push(e.san); if(e.spice) parts.push("{" + e.spice + "}"); });
+    parts.push(res || "*");
+    const lines = []; let line = "";
+    for(const w of parts){ if((line + " " + w).trim().length > 80){ lines.push(line); line = w; } else line = (line + " " + w).trim(); }
+    if(line) lines.push(line);
+    return head + "\n\n" + lines.join("\n") + "\n";
+  }
+  function parsePGN(text){
+    const hdr = k => (text.match(new RegExp("\\[" + k + "\\s+\"([^\"]*)\"\\]")) || [])[1];
+    const name = hdr("Event") || "", res = hdr("Result") || "*", rules = hdr("RemorseRules");
+    const body = text.replace(/^\s*\[[^\]]*\]\s*$/gm, " ").replace(/;[^\n]*/g, " ");
+    const toks = []; const re = /\{([^}]*)\}|\$\d+|\d+\.(?:\.\.)?|(1-0|0-1|1\/2-1\/2|\*)(?=\s|$)|([^\s{}()]+)/gu; let m;
+    while((m = re.exec(body))){
+      if(m[1] !== undefined){ if(toks.length) toks[toks.length - 1].note += " " + m[1]; }
+      else if(m[3]){ const t = m[3]; if(/^[\d.]+$/.test(t)) continue; toks.push({ san:t, note:t }); }
+    }
+    return { name: name === "Casual game" ? "" : name, result: res, S: rulesFromHeader(rules), remorse: rules != null, moves: toks.map(t => ({ san:t.san, dice:diceIn(t.note) })) };
+  }
+
+  // ----- replay -----
+  function stopAuto(){ if(replay && replay.timer){ clearInterval(replay.timer); replay.timer = null; } }
+  // Replays a parsed game with the recorded dice. Returns an error string or null.
+  function startReplay(parsed, name){
+    if(!parsed.moves.length) return "There are no moves to replay.";
+    const prevS = S; S = parsed.S;
+    const cur = newState(), states = [cloneState(cur)], entries = [], mvs = [null];
+    for(let i = 0; i < parsed.moves.length; i++){
+      const tk = parsed.moves[i], mv = findBySan(cur, tk.san);
+      const label = `Move ${Math.floor(i / 2) + 1}${i % 2 ? "…" : "."} “${tk.san}”`;
+      if(!mv){ S = prevS; return `${label} isn't legal in that position.`; }
+      const base = sanBase(cur, mv, legal(cur, cur.turn)), wasExtra = cur.extraNow, mover = cur.board[mv.from].c, q = tk.dice.slice();
+      let ev;
+      try{ ev = applyMove(cur, mv, () => { if(!q.length) throw new Error("dice"); return q.shift(); }); }
+      catch(e){ S = prevS; return `${label}: the dice rolls for this move are missing, so the reactions can't be replayed.`; }
+      if(q.length){ S = prevS; return `${label}: the recorded dice don't match these rules.`; }
+      entries.push(makeEntry(base, mv, ev, cur, mover, wasExtra)); states.push(cloneState(cur)); mvs.push(mv);
+    }
+    runId++; busy = false;
+    if(!replay) liveStash = { st, moveLog, lastMove, over, S:prevS, status:$("status").textContent, overShown:$("over").classList.contains("show"), pendingPromo, sel };
+    else stopAuto();
+    replay = { entries, states, mvs, idx:0, name:name || "Saved game", timer:null, S:parsed.S, result:parsed.result };
+    over = false; pendingPromo = null; $("over").classList.remove("show");
+    showPly(0);
+    return null;
+  }
+  function showPly(i){
+    if(!replay) return;
+    replay.idx = Math.max(0, Math.min(replay.entries.length, i));
+    st = cloneState(replay.states[replay.idx]); sel = -1; lastMove = replay.mvs[replay.idx];
+    const n = replay.entries.length, k = replay.idx, e = replay.entries[k - 1];
+    setStatus(k === 0 ? "Start position." : `${e.mover === "w" ? "White" : "Black"}: ${e.san} ${e.spice}` + (k === n ? "  (end of game)" : ""));
+    render(); renderHistory(); renderReplayBar();
+  }
+  function toggleAuto(){
+    if(!replay) return;
+    if(replay.timer){ stopAuto(); renderReplayBar(); return; }
+    if(replay.idx >= replay.entries.length) showPly(0);
+    replay.timer = setInterval(() => { if(!replay || replay.idx >= replay.entries.length){ stopAuto(); renderReplayBar(); return; } showPly(replay.idx + 1); }, 1100);
+    renderReplayBar();
+  }
+  function exitReplay(){
+    if(!replay) return;
+    stopAuto(); replay = null; const l = liveStash; liveStash = null;
+    S = l.S; st = l.st; moveLog = l.moveLog; lastMove = l.lastMove; over = l.over; pendingPromo = l.pendingPromo; sel = -1;
+    $("over").classList.toggle("show", l.overShown); setStatus(l.status);
+    renderReplayBar(); render(); renderHistory(); if(!over) refresh(); maybeBot();
+  }
+  function continueFromReplay(){
+    if(!replay) return;
+    stopAuto();
+    const k = replay.idx, rp = replay;
+    replay = null; liveStash = null; S = rp.S; scoreOK = false;     // a game continued from a replay doesn't post a high score
+    st = cloneState(rp.states[k]); moveLog = rp.entries.slice(0, k); lastMove = rp.mvs[k]; over = false; busy = false; pendingPromo = null; sel = -1; runId++;
+    $("over").classList.remove("show"); $("feed").innerHTML = ""; log(`Continuing “${rp.name}” from move ${k}. Rules: ${ruleLabel(S)}. (Won't count for high scores.)`);
+    renderReplayBar(); refresh(); maybeBot();
+  }
+  function renderReplayBar(){
+    $("replayBar").classList.toggle("on", !!replay); $("sidePanel").classList.toggle("replaying", !!replay);
+    if(!replay) return;
+    $("replayTitle").textContent = `▶ ${replay.name} — move ${replay.idx}/${replay.entries.length} · ${ruleLabel(replay.S)}`;
+    $("rAuto").textContent = replay.timer ? "⏸ Pause" : "▶ Play";
+    $("rFirst").disabled = $("rPrev").disabled = replay.idx === 0;
+    $("rNext").disabled = $("rLast").disabled = replay.idx >= replay.entries.length;
+  }
+  function renderHistory(){
+    const entries = replay ? replay.entries : moveLog, box = $("hist");
+    if(!entries.length){ box.innerHTML = `<span class="none">No moves yet.</span>`; return; }
+    let h = "", full = 0;
+    entries.forEach((e, i) => {
+      if(e.mover === "w" && !e.extra){ full++; h += `<span class="num">${full}.</span>`; }
+      h += `<span class="ply${replay && replay.idx === i + 1 ? " cur" : ""}" data-ply="${i + 1}">${e.san}${e.spice ? `<i>${e.spice}</i>` : ""}</span>`;
+    });
+    box.innerHTML = h;
+    const cur = box.querySelector(".cur"); if(cur) cur.scrollIntoView({ block:"nearest" }); else box.scrollTop = box.scrollHeight;
+  }
+
+  // ----- save / load -----
+  const LOCAL_KEY = "rchess_saves";
+  let inApp = false;
+  const localSaves = () => { try{ const a = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(e){ return []; } };
+  const setLocalSaves = a => { try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(a)); return true; }catch(e){ return false; } };
+  function saveMsg(t, err){ const e = $("saveStatus"); e.textContent = t; e.classList.toggle("err", !!err); }
+  async function detectHost(){ try{ inApp = !!(window.RGHost && await window.RGHost.available()); }catch(e){ inApp = false; } }
+  async function storeSave(name, pgn){
+    if(inApp){ await window.RGHost.call("SaveGame", "remorse-chess", name, pgn); return; }
+    const a = localSaves();
+    if(a.length >= 100) throw new Error("Too many saved games in this browser (100). Delete some first.");
+    a.push({ id:Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name, data:pgn, created:new Date().toISOString() });
+    if(!setLocalSaves(a)) throw new Error("Browser storage is unavailable.");
+  }
+  async function listSaves(){
+    if(inApp){ const l = await window.RGHost.call("ListSaves", "remorse-chess"); return Array.isArray(l) ? l : []; }
+    return localSaves().slice().sort((a, b) => (b.created || "").localeCompare(a.created || ""));
+  }
+  async function removeSave(id){ if(inApp) await window.RGHost.call("DeleteSave", id); else setLocalSaves(localSaves().filter(x => x.id !== id)); }
+  const defaultName = () => new Date().toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" }) + " · " + moveLog.length + " moves · " + ruleLabel(S);
+  async function copyText(text){
+    try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+    try{ const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok; }catch(e){ return false; }
+  }
+  const liveText = name => toPGN(moveLog, liveResult(), name, S);
+  async function saveCurrent(){
+    if(replay){ saveMsg("Exit the replay to save the live game.", true); return; }
+    if(!moveLog.length){ saveMsg("Play at least one move first.", true); return; }
+    const name = $("saveName").value.trim() || defaultName();
+    try{ await storeSave(name, liveText(name)); saveMsg("Saved “" + name + "”."); $("saveName").value = ""; }
+    catch(e){ saveMsg("Could not save: " + e.message, true); return; }
+    refreshSaves();
+  }
+  async function refreshSaves(){
+    const box = $("saveList"); let list = [];
+    try{ list = await listSaves(); }catch(e){ box.textContent = "Could not load saved games: " + e.message; return; }
+    $("saveWhere").textContent = inApp ? "(stored in the app)" : "(stored in this browser)";
+    box.innerHTML = "";
+    if(!list.length){ const p = document.createElement("div"); p.className = "faint"; p.textContent = "None yet."; box.appendChild(p); return; }
+    list.forEach(sv => {
+      const item = document.createElement("div"); item.className = "saveItem";
+      const b = document.createElement("b"); b.textContent = sv.name || "Untitled";
+      const sm = document.createElement("small"), parsed = parsePGN(sv.data || "");
+      sm.textContent = `${parsed.moves.length} moves · ${parsed.result} · ${parsed.remorse ? ruleLabel(parsed.S) : "Orthodox chess"} · ${sv.created ? new Date(sv.created).toLocaleDateString() : ""}`;
+      const row = document.createElement("div"); row.className = "row2";
+      const mkb = (label, fn) => { const bt = document.createElement("button"); bt.textContent = label; bt.addEventListener("click", fn); row.appendChild(bt); return bt; };
+      mkb("▶ Replay", () => { const err = startReplay(parsed, sv.name); saveMsg(err || "", !!err); });
+      mkb("📋 Copy", async () => saveMsg((await copyText(sv.data)) ? "Notation copied." : "Could not copy.", false));
+      const del = mkb("✕ Delete", async () => {
+        if(del.dataset.armed !== "1"){ del.dataset.armed = "1"; del.textContent = "Sure?"; setTimeout(() => { del.dataset.armed = ""; del.textContent = "✕ Delete"; }, 3000); return; }
+        try{ await removeSave(sv.id); }catch(e){ saveMsg("Could not delete: " + e.message, true); return; }
+        refreshSaves();
+      });
+      item.append(b, sm, row); box.appendChild(item);
+    });
+  }
+  $("saveBtn").addEventListener("click", saveCurrent);
+  $("copyBtn").addEventListener("click", async () => {
+    if(replay){ saveMsg("Exit the replay to copy the live game.", true); return; }
+    if(!moveLog.length){ saveMsg("Play at least one move first.", true); return; }
+    saveMsg((await copyText(liveText(null))) ? "Notation copied." : "Could not copy.", false);
+  });
+  $("replayCurBtn").addEventListener("click", () => {
+    if(replay){ saveMsg("Already replaying — exit the replay first.", true); return; }
+    if(!moveLog.length){ saveMsg("Play at least one move first.", true); return; }
+    const err = startReplay(parsePGN(liveText(null)), "This game"); saveMsg(err || "", !!err);
+  });
+  $("pgnReplay").addEventListener("click", () => { const p = parsePGN($("pgnIn").value); const err = startReplay(p, p.name || "Imported game"); saveMsg(err || "", !!err); });
+  $("pgnSave").addEventListener("click", async () => {
+    const text = $("pgnIn").value, p = parsePGN(text);
+    if(!p.moves.length){ saveMsg("There are no moves to save.", true); return; }
+    // make sure it replays before storing it
+    const prevS = S; S = p.S; const q = newState(); let bad = null;
+    try{ for(let i = 0; i < p.moves.length && !bad; i++){ const mv = findBySan(q, p.moves[i].san); if(!mv){ bad = `Move ${Math.floor(i / 2) + 1}${i % 2 ? "…" : "."} “${p.moves[i].san}” isn't legal.`; break; } const dq = p.moves[i].dice.slice(); applyMove(q, mv, () => { if(!dq.length) throw new Error("dice"); return dq.shift(); }); } }
+    catch(e){ bad = "The dice rolls for some move are missing."; }
+    S = prevS;
+    if(bad){ saveMsg(bad, true); return; }
+    const name = p.name || defaultName();
+    try{ await storeSave(name, text); saveMsg("Saved “" + name + "”."); $("pgnIn").value = ""; }catch(e){ saveMsg("Could not save: " + e.message, true); return; }
+    refreshSaves();
+  });
+  $("rFirst").addEventListener("click", () => showPly(0)); $("rPrev").addEventListener("click", () => replay && showPly(replay.idx - 1));
+  $("rNext").addEventListener("click", () => replay && showPly(replay.idx + 1)); $("rLast").addEventListener("click", () => replay && showPly(replay.entries.length));
+  $("rAuto").addEventListener("click", toggleAuto); $("rExit").addEventListener("click", exitReplay); $("rContinue").addEventListener("click", continueFromReplay);
+  $("hist").addEventListener("click", e => { const el = e.target.closest("[data-ply]"); if(el && replay){ stopAuto(); showPly(Number(el.dataset.ply)); } });
+  detectHost().then(refreshSaves);
+
+  window.__rc = { parsePGN, startReplay, liveText, moveLog:() => moveLog, replayState:() => replay, sanBase, findBySan, get st(){ return st; }, set st(v){ st = v; }, S:() => S, setS:v => { S = { ...S, ...v }; }, legal, applyMove, outcome, info:() => remorseInfo({ end:"mate" }), label:() => ruleLabel(), newState, cloneState, mk, botMove, play, refresh };   // for testing
   newGame();
 })();
 </script>

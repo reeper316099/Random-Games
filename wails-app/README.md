@@ -3,7 +3,7 @@
 A [Wails](https://wails.io) (Go + native webview) wrapper around the games in this repo. It adds:
 
 - **High Scores tab** — a table for every game, saved to a file on your computer; click any score for its full details (bets and rolls, rule settings, engine strength …)
-- **Saved chess games** — saved as standard algebraic notation (PGN) and replayable move by move
+- **Saved chess games** — saved as standard algebraic notation (PGN) and replayable move by move; Remorse Chess games are saved the same way, with the dice rolls and reactions recorded so replays are exact
 
 The games themselves are the same HTML files used on GitHub Pages; the app copies them in at build time.
 
@@ -12,7 +12,7 @@ The games themselves are the same HTML files used on GitHub Pages; the app copie
 | File | Contents | Location |
 |---|---|---|
 | `scores.json` | high-score tables | `RandomGames/` inside your OS config folder |
-| `saves.json` | saved chess games (PGN) | same folder |
+| `saves.json` | saved chess and Remorse Chess games (PGN) | same folder |
 
 Config folder: `~/Library/Application Support` (macOS), `%AppData%` (Windows), `~/.config` (Linux).
 The High Scores tab shows the exact path. Game settings and chip totals are kept in the app's own web storage.
