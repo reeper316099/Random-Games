@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Spades</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --cw:clamp(46px, 9vw, 70px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 50% -10%, #1d2f5a 0%, #101a30 45%, var(--bg) 85%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    padding:44px 16px 24px;
+  }
+  .wrap{ width:min(980px,100%); display:grid; gap:14px; align-content:start; }
+  .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .title h1{ margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+    background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+  .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+  button{ border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s; }
+  button:hover:not(:disabled){ filter:brightness(1.2); }
+  button:active:not(:disabled){ transform:scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.55); }
+  button.big{ padding:13px 26px; font-size:16px; }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  kbd{ font:600 10px ui-monospace, monospace; padding:1px 5px; border-radius:5px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.25); margin-left:6px; opacity:.8; }
+  .bar{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:center; padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .bar .lab{ font-size:12px; color:var(--muted); margin-right:6px; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+  .seg button{ border:0; border-radius:0; background:transparent; padding:8px 12px; font-size:13px; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
+
+  .table{ position:relative; margin:10px; border-radius:36px; padding:18px 16px 20px;
+    background:radial-gradient(ellipse at 50% 30%, #1f7a4a 0%, #14563a 55%, #0a3324 100%);
+    box-shadow:0 0 0 10px #5b3516, 0 0 0 12px #2b1707, 0 0 0 13px rgba(255,211,106,.35), 0 26px 60px rgba(0,0,0,.6), inset 0 0 80px rgba(0,0,0,.5);
+    display:grid; gap:12px; min-height:380px; overflow:hidden; }
+  .opps{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .seat{ min-width:150px; padding:8px 12px 10px; border-radius:14px; background:rgba(0,0,0,.3); border:1px solid var(--line); text-align:center; transition:box-shadow .2s, transform .2s; }
+  .seat.active{ box-shadow:0 0 0 2px var(--gold), 0 0 18px rgba(255,211,106,.5); transform:translateY(-2px); }
+  .seat .nm{ font-weight:800; font-size:14px; }
+  .seat .ct{ font-size:12px; color:var(--muted); }
+  .seat .ct b{ color:var(--gold); font-size:15px; }
+  .fan{ display:flex; justify-content:center; height:30px; margin:4px 0 2px; }
+  .fan i{ width:20px; height:28px; border-radius:4px; margin-left:-12px; border:1px solid rgba(255,255,255,.55); background:repeating-linear-gradient(45deg,#3b4a9a 0 4px,#2a3578 4px 8px); box-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .fan i:first-child{ margin-left:0; }
+  .center{ display:grid; justify-items:center; gap:8px; text-align:center; }
+  .trick{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; min-height:calc(var(--cw) * 1.4 + 30px); align-items:flex-start; }
+  .tslot{ display:grid; gap:4px; justify-items:center; font-size:12px; color:#d9f3e4; }
+  .tslot.winning .card{ box-shadow:0 0 0 3px var(--gold), 0 0 16px rgba(255,211,106,.8), 0 3px 8px rgba(0,0,0,.45); }
+  .tslot.empty .card{ background:rgba(0,0,0,.15); border:2px dashed rgba(255,255,255,.25); box-shadow:none; }
+  .msg{ min-height:22px; font-size:15px; font-weight:700; }
+  .info{ font-size:12px; color:#d9f3e4; min-height:16px; text-align:center; }
+  .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; min-height:46px; }
+
+  .card{ position:relative; width:var(--cw); height:calc(var(--cw) * 1.4); border-radius:8%/6%; flex:none; user-select:none;
+    background:linear-gradient(160deg,#fff,#eef0f7); color:#1b1c23; border:1px solid rgba(0,0,0,.35); box-shadow:0 3px 8px rgba(0,0,0,.45); font-weight:800; display:block; }
+  .card.red{ color:#c92a3e; }
+  .card .tl{ position:absolute; left:8%; top:5%; font-style:normal; font-size:calc(var(--cw) * .27); line-height:1.05; text-align:center; }
+  .card .mid{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw) * .52); font-weight:400; }
+  .card.down{ background:repeating-linear-gradient(45deg,#3b4a9a 0 6px,#2a3578 6px 12px); border:2px solid #fff; }
+  .card.down .tl, .card.down .mid{ display:none; }
+  .hand{ display:flex; flex-wrap:wrap; justify-content:center; padding:20px 6px 6px; min-height:calc(var(--cw) * 1.4 + 30px); }
+  .hand .card{ margin:0 calc(var(--cw) * -.1) 6px; cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .hand .card:hover{ transform:translateY(-6px); }
+  .hand .card.sel{ transform:translateY(-18px); box-shadow:0 0 0 3px var(--gold), 0 0 18px rgba(255,211,106,.8), 0 8px 12px rgba(0,0,0,.5); z-index:2; }
+  .hand .card.dim{ filter:brightness(.55); cursor:not-allowed; }
+  .hand .card.dim:hover{ transform:none; }
+  .hand.locked .card{ cursor:default; } .hand.locked .card:hover{ transform:none; }
+  .hand .card.fresh{ animation:pop .35s ease; }
+  @keyframes pop{ from{ transform:translateY(-24px) scale(1.1); opacity:0; } to{ transform:none; opacity:1; } }
+  .handBox{ padding:6px 8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .handHead{ display:flex; justify-content:space-between; gap:10px; padding:6px 10px 0; font-size:13px; color:var(--muted); flex-wrap:wrap; }
+  .handHead b{ color:var(--gold); }
+  .score{ border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); padding:8px 12px; overflow-x:auto; }
+  .score table{ border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums; }
+  .score th, .score td{ padding:4px 10px; text-align:center; border-bottom:1px solid rgba(255,255,255,.08); }
+  .score th{ color:var(--muted); font-weight:700; } .score td:first-child, .score th:first-child{ text-align:left; color:var(--muted); }
+  .score tr.tot td{ font-weight:900; color:var(--gold); border-bottom:0; }
+  .score .low{ color:var(--ok); } .score .moon{ color:var(--gold); }
+  .log{ font-size:12px; color:var(--muted); display:grid; gap:2px; padding:6px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); min-height:40px; }
+  .log div:last-child{ color:var(--text); }
+  .bidrow{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:560px; }
+  .bidrow button{ min-width:44px; padding:9px 10px; }
+  .seat .bid{ font-size:12px; color:var(--gold); font-weight:800; }
+  .seat.partner{ border-color:rgba(106,255,182,.5); }
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(460px,100%); padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+  @media (max-width:560px){ .table{ margin:6px 0; padding:14px 10px 16px; } .seat{ min-width:96px; padding:6px 8px; } .trick{ gap:8px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+<script src="../themes.js"></script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>♠ Spades</h1>
+      <div class="sub">Bid your tricks, team up with Max, and make your contract</div>
+    </div>
+    <div class="row">
+      <span class="pill">Wins <b id="wins">0</b></span>
+      <button id="rulesBtn">How to play</button>
+      <button id="newBtn" class="primary">New game</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span><span class="lab">Play to</span><span class="seg" id="targetSeg"><button data-v="250">250</button><button data-v="500">500</button></span></span>
+    <span><span class="lab">Bots</span><span class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></span></span>
+    <span><span class="lab">Nil bids</span><span class="seg" id="nilSeg"><button data-v="on">On</button><button data-v="off">Off</button></span></span>
+    <span data-season-slot></span>
+  </div>
+
+  <div class="table">
+    <div class="opps" id="opps"></div>
+    <div class="center">
+      <div class="trick" id="trick"></div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="actions" id="actions"></div>
+    <div class="info" id="info"></div>
+  </div>
+
+  <div class="handBox">
+    <div class="handHead"><span id="handLabel">Your hand</span><span id="selInfo"></span></div>
+    <div class="hand" id="hand" aria-label="Your hand"></div>
+  </div>
+
+  <div class="score" id="score"></div>
+  <div class="log" id="log" aria-live="polite"></div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="How to play">
+  <h2>How to play Spades</h2>
+  <p>You and <b>Max</b> (across from you) are a team against Ava and Zoe. <b>♠ Spades are always trump.</b> Each hand, everyone bids how many tricks they expect to win. Your team's bids add up to your <b>contract</b>.</p>
+  <p>Follow suit if you can; otherwise you may trump with a spade. You can't lead a spade until one has been played ("broken"), unless you only hold spades. The highest spade wins; with no spades, the highest card of the led suit wins.</p>
+  <p><b>Scoring:</b> make your contract for 10 points per trick bid, plus 1 per extra trick (a "bag" — ten bags cost 100 points). Miss it and lose 10 per trick bid. A <b>Nil</b> bid (win zero tricks) is worth +100 if you pull it off and −100 if you don't.</p>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+
+  // ===== SPADES ENGINE (pure logic, no DOM) =====
+  // suit: 0 ♠(trump)  1 ♥  2 ♦  3 ♣     rank: 2..14 (14 = Ace)
+  const RN = {11:"J",12:"Q",13:"K",14:"A"}; const rn = r => RN[r] || String(r);
+  const SU = ["♠","♥","♦","♣"];
+  const isRed = c => c.s === 1 || c.s === 2;
+  const cname = c => rn(c.r) + SU[c.s];
+  const sortHand = h => h.sort((a, b) => [0,1,3,2].indexOf(a.s) - [0,1,3,2].indexOf(b.s) || a.r - b.r);
+  const team = seat => seat % 2;                    // seats 0,2 = team 0 (you + Max); 1,3 = team 1
+  function newDeck(){ const d = []; for(let s=0;s<4;s++) for(let r=2;r<=14;r++) d.push({ id:s*13 + r, r, s }); for(let i=d.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]] = [d[j],d[i]]; } return d; }
+  function legalMoves(hand, trick, broken){
+    if(!trick.length){ if(!broken){ const ns = hand.filter(c => c.s !== 0); if(ns.length) return ns; } return hand.slice(); }
+    const led = trick[0].card.s, f = hand.filter(c => c.s === led);
+    return f.length ? f : hand.slice();
+  }
+  function trickWinner(trick){
+    let w = trick[0];
+    for(const t of trick){ const a = t.card, b = w.card; if(a.s === b.s ? a.r > b.r : a.s === 0) w = t; }
+    return w;
+  }
+  // rough number of tricks a hand will take
+  function estimate(h){
+    const by = s => h.filter(c => c.s === s);
+    const sp = by(0); let e = 0;
+    sp.forEach(c => { if(c.r === 14) e += 1; else if(c.r === 13) e += sp.length >= 2 ? .9 : .4; else if(c.r === 12) e += sp.length >= 3 ? .7 : .25; else if(c.r === 11 && sp.length >= 4) e += .3; });
+    if(sp.length > 3) e += (sp.length - 3) * .8;
+    for(const s of [1,2,3]){
+      const c = by(s), n = c.length;
+      if(c.some(x => x.r === 14)) e += 1;
+      if(c.some(x => x.r === 13)) e += n >= 3 ? .8 : (n === 2 ? .5 : .1);
+      if(c.some(x => x.r === 12) && n >= 4) e += .4;
+      if(sp.length >= 2 && sp.length <= 5){ if(n === 0) e += 1.2; else if(n === 1 && !c.some(x => x.r === 14)) e += .4; }
+    }
+    return e;
+  }
+  function botBid(h, level, nilOk){
+    const e = estimate(h);
+    const spHigh = h.some(c => c.s === 0 && c.r >= 11), highs = h.filter(c => c.r >= 12).length;
+    if(nilOk && level !== "easy" && e < .85 && !spHigh && highs <= 2 && h.filter(c => c.s === 0).length <= 2 && !h.some(c => c.r === 14)) return 0;
+    let b = Math.round(e + (level === "hard" ? .1 : 0));
+    if(level === "easy") b += Math.random() < .5 ? 1 : -1;
+    return Math.max(1, Math.min(10, b));
+  }
+  // ctx: hand, trick, broken, seat, bids[4], tricksWon[4], level
+  function botPlay(ctx){
+    const { hand, trick, seat, bids, tricksWon, level } = ctx;
+    const legal = legalMoves(hand, trick, ctx.broken);
+    if(legal.length === 1) return legal[0];
+    if(level === "easy" && Math.random() < .3) return legal[Math.floor(Math.random() * legal.length)];
+    const asc = (a, b) => a.r - b.r, lowest = a => a.slice().sort(asc)[0], highest = a => a.slice().sort(asc)[a.length - 1];
+    const partner = (seat + 2) % 4;
+    const nil = bids[seat] === 0;
+    const need = !nil && tricksWon[seat] + tricksWon[partner] < (bids[seat] || 0) + (bids[partner] || 0);
+    const beats = (c, w) => c.s === w.s ? c.r > w.r : c.s === 0;
+    if(!trick.length){
+      if(nil) return lowest(legal);
+      const ns = legal.filter(c => c.s !== 0);
+      if(need && ns.length){ const aces = ns.filter(c => c.r === 14); if(aces.length) return aces[0]; const k = ns.filter(c => c.r === 13); if(k.length && level !== "easy") return k[0]; }
+      if(need && !ns.length) return highest(legal);
+      return lowest(ns.length ? ns : legal);
+    }
+    const w = trickWinner(trick), last = trick.length === 3, led = trick[0].card.s;
+    const winners = legal.filter(c => beats(c, w.card)).sort(asc);
+    const partnerWinning = w.seat === partner;
+    if(nil){                                      // never take a trick
+      const under = legal.filter(c => !beats(c, w.card)).sort(asc);
+      return under.length ? under[under.length - 1] : lowest(legal);
+    }
+    if(bids[partner] === 0 && tricksWon[partner] === 0 && partnerWinning){      // cover a nil partner
+      if(winners.length) return winners[0];
+    }
+    if(partnerWinning && (last || w.card.r >= 13 || w.card.s === 0)) return lowest(legal);   // partner has it
+    if(need){
+      if(winners.length){
+        // win as cheaply as possible; if last to play, cheapest winner. otherwise cheapest winner but prefer a non-trump
+        const nonTrump = winners.filter(c => c.s !== 0); return (nonTrump.length ? nonTrump : winners)[0];
+      }
+    } else if(winners.length && last && w.card.r < 8 && w.card.s === led){ return winners[0]; }          // grab a cheap trick late
+    // can't or don't want to win: throw the lowest, but protect spades
+    const ns = legal.filter(c => c.s !== 0);
+    return lowest(ns.length ? ns : legal);
+  }
+  function scoreTeam(bidSum, tricks, nils){   // nils: [{success:boolean}]
+    let pts = 0, bags = 0;
+    if(bidSum > 0){ if(tricks >= bidSum){ pts += bidSum * 10 + (tricks - bidSum); bags = tricks - bidSum; } else pts -= bidSum * 10; }
+    nils.forEach(n => pts += n.success ? 100 : -100);
+    return { pts, bags };
+  }
+  // ===== END ENGINE =====
+
+  const NAMES = ["You", "Ava", "Max", "Zoe"], SEAT_LABEL = ["", "West", "North · partner", "East"];
+  const DEF = { target:250, diff:"medium", nil:"on" };
+  let settings = { ...DEF }, stats = { wins:0, games:0 };
+  const store = (k, v) => { try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } };
+  const load = () => { const s = store("spades_settings"); if(s) settings = { ...DEF, ...s }; const st = store("spades_stats"); if(st) stats = { ...stats, ...st }; };
+  const saveSettings = () => store("spades_settings", settings);
+
+  // ===== state =====
+  let players = [], tot = [0,0], bagsTot = [0,0], history = [], handNo = 0, dealer = 3, trick = [], broken = false, leader = 0, turn = -1;
+  let bids = [null,null,null,null], tricksWon = [0,0,0,0], ui = { mode:"idle" }, pending = null, over = false, runTok = 0;
+  const you = () => players[0];
+  const wait = (ms, tok) => new Promise((res, rej) => setTimeout(() => tok === runTok ? res() : rej("abort"), FX.reducedMotion ? 0 : ms));
+  const ask = () => new Promise(res => { pending = res; });
+  const addLog = t => { const l = $("log"); const d = document.createElement("div"); d.textContent = t; l.appendChild(d); while(l.children.length > 5) l.firstChild.remove(); };
+  const setMsg = t => $("msg").textContent = t;
+  const bidText = b => b === null ? "" : b === 0 ? "Nil" : String(b);
+
+  function newGame(){
+    runTok++; pending = null; over = false;
+    players = NAMES.map(name => ({ name, hand:[] }));
+    tot = [0,0]; bagsTot = [0,0]; history = []; handNo = 0; dealer = 3; trick = []; bids = [null,null,null,null]; tricksWon = [0,0,0,0];
+    $("log").innerHTML = ""; $("actions").innerHTML = ""; setMsg(""); ui = { mode:"idle" }; render(); run(runTok);
+  }
+  async function run(tok){ try{ while(!over) await playHand(tok); } catch(e){ if(e !== "abort") throw e; } }
+
+  async function playHand(tok){
+    const deck = newDeck();
+    players.forEach((p, i) => p.hand = sortHand(deck.slice(i * 13, i * 13 + 13)));
+    handNo++; dealer = (dealer + 1) % 4; trick = []; broken = false; bids = [null,null,null,null]; tricksWon = [0,0,0,0]; turn = -1;
+    FX.sound("card"); addLog(`Hand ${handNo}: bidding.`); render();
+    for(let k = 1; k <= 4; k++){
+      const s = (dealer + k) % 4; turn = s; render();
+      if(s === 0){ ui.mode = "bid"; setMsg("Your bid — how many tricks will you win?"); render(); bids[0] = await ask(); ui.mode = "idle"; }
+      else { setMsg(`${players[s].name} is bidding…`); await wait(650, tok); bids[s] = botBid(players[s].hand, settings.diff, settings.nil === "on"); }
+      FX.sound("tick"); addLog(`${players[s].name} bid ${bids[s] === 0 ? "Nil" : bids[s]}.`); render();
+    }
+    turn = -1; await wait(500, tok);
+    leader = (dealer + 1) % 4;
+    for(let t = 0; t < 13; t++){
+      trick = [];
+      for(let k = 0; k < 4; k++){
+        turn = (leader + k) % 4; setMsg(turn === 0 ? "Your turn." : `${players[turn].name} is thinking…`); render();
+        let card;
+        if(turn === 0){ ui.mode = "play"; render(); card = await ask(); ui.mode = "idle"; }
+        else { await wait(520, tok); card = botPlay({ hand:players[turn].hand, trick, broken, seat:turn, bids, tricksWon, level:settings.diff }); }
+        players[turn].hand = players[turn].hand.filter(c => c.id !== card.id);
+        trick.push({ seat:turn, card });
+        if(card.s === 0 && !broken){ broken = true; addLog(`${players[turn].name} broke spades.`); }
+        FX.sound(card.s === 0 ? "tick" : "card"); render();
+      }
+      turn = -1;
+      const w = trickWinner(trick); tricksWon[w.seat]++;
+      render(w.seat); setMsg(`${players[w.seat].name} take${w.seat === 0 ? "" : "s"} the trick.`);
+      FX.sound(team(w.seat) === 0 ? "push" : "tick"); await wait(950, tok);
+      leader = w.seat; trick = []; render();
+    }
+    await finishHand(tok);
+  }
+
+  async function finishHand(tok){
+    const out = [0,1].map(tm => {
+      const mem = [tm, tm + 2];
+      const nils = mem.filter(s => bids[s] === 0).map(s => ({ seat:s, success:tricksWon[s] === 0 }));
+      const bidSum = mem.reduce((a, s) => a + (bids[s] || 0), 0);
+      const tricks = mem.reduce((a, s) => a + tricksWon[s], 0);
+      return { bidSum, tricks, nils, ...scoreTeam(bidSum, tricks, nils) };
+    });
+    let note = [];
+    out.forEach((o, tm) => {
+      let pts = o.pts; bagsTot[tm] += o.bags;
+      if(bagsTot[tm] >= 10){ bagsTot[tm] -= 10; pts -= 100; note.push(`${tm === 0 ? "Your team" : "Ava & Zoe"} hit 10 bags (−100)`); }
+      tot[tm] += pts; o.total = pts;
+    });
+    history.push(out.map(o => o.total));
+    const line = tm => `${tm === 0 ? "You & Max" : "Ava & Zoe"}: bid ${out[tm].bidSum}${out[tm].nils.length ? " + nil" : ""}, took ${out[tm].tricks} → ${out[tm].total >= 0 ? "+" : ""}${out[tm].total}`;
+    out.forEach((o, tm) => o.nils.forEach(n => addLog(`${players[n.seat].name} ${n.success ? "made" : "failed"} Nil (${n.success ? "+100" : "−100"}).`)));
+    addLog(line(0)); addLog(line(1)); note.forEach(addLog);
+    FX.sound(out[0].total >= 0 ? "win" : "lose");
+    const ended = tot.some(t => t >= settings.target);
+    if(ended && tot[0] !== tot[1]){
+      over = true; const won = tot[0] > tot[1]; render();
+      setMsg(won ? "🏆 You and Max win the game!" : "Ava and Zoe win the game.");
+      stats.games++;
+      if(won){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 });
+        rgReport("spades", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Winning margin", tot[0] - tot[1], { unit:"pts", better:"high", detail:`${tot[0]}–${tot[1]} in ${handNo} hands` }); }
+      else FX.sound("lose");
+      store("spades_stats", stats);
+      $("actions").innerHTML = `<button class="primary big" id="againBtn">Play again</button>`; render(); return;
+    }
+    ui.mode = "between"; setMsg("Hand over."); $("actions").innerHTML = `<button class="primary big" id="nextBtn">Next hand <kbd>Enter</kbd></button>`; render();
+    await ask(); ui.mode = "idle"; $("actions").innerHTML = "";
+  }
+
+  // ===== rendering =====
+  const cardHtml = (c, cls = "", extra = "") => `<div class="card ${isRed(c) ? "red" : ""} ${cls}" ${extra}><i class="tl">${rn(c.r)}<br>${SU[c.s]}</i><b class="mid">${SU[c.s]}</b></div>`;
+  function render(winSeat){
+    const me = you();
+    $("wins").textContent = stats.wins;
+    $("opps").innerHTML = [1,2,3].map(i => { const p = players[i];
+      return `<div class="seat ${turn === i ? "active" : ""} ${i === 2 ? "partner" : ""}"><div class="nm">${p.name} <span style="font-weight:500;color:var(--muted);font-size:11px">${SEAT_LABEL[i]}</span></div><div class="fan">${Array.from({ length:Math.min(p.hand.length, 13) }, () => "<i></i>").join("")}</div><div class="ct"><span class="bid">Bid ${bids[i] === null ? "–" : bidText(bids[i])}</span> · taken <b>${tricksWon[i]}</b></div></div>`; }).join("");
+    $("trick").innerHTML = [0,1,2,3].map(s => { const t = trick.find(x => x.seat === s); const w = trick.length && winSeat === undefined ? trickWinner(trick).seat : winSeat;
+      return `<div class="tslot ${t ? "" : "empty"} ${w === s && t ? "winning" : ""}">${t ? cardHtml(t.card) : `<div class="card"></div>`}<span>${players[s] ? players[s].name : ""}</span></div>`; }).join("");
+    const legal = ui.mode === "play" ? legalMoves(me.hand, trick, broken) : [];
+    $("hand").classList.toggle("locked", ui.mode !== "play");
+    $("hand").innerHTML = me.hand.map(c => cardHtml(c, ui.mode === "play" && !legal.some(l => l.id === c.id) ? "dim" : "", `data-id="${c.id}"`)).join("");
+    $("handLabel").innerHTML = `Your hand — <b>${me.hand.length}</b> cards · your bid <b>${bidText(bids[0]) || "–"}</b> · taken <b>${tricksWon[0]}</b>`;
+    const t0 = bids[0] === null || bids[2] === null ? null : (bids[0] || 0) + (bids[2] || 0);
+    $("selInfo").textContent = handNo ? `Team: ${tricksWon[0] + tricksWon[2]} taken${t0 !== null ? ` / ${t0} bid` : ""}${broken ? " · ♠ broken" : ""}` : "";
+    if(ui.mode === "bid"){
+      const nilOk = settings.nil === "on", est = Math.round(estimate(me.hand));
+      $("actions").innerHTML = `<div class="bidrow">${Array.from({ length:14 }, (_, n) => n === 0 && !nilOk ? "" : `<button data-bid="${n}" class="${n === est ? "primary" : ""}">${n === 0 ? "Nil" : n}</button>`).join("")}</div>`;
+    }
+    else if($("actions").querySelector(".bidrow")) $("actions").innerHTML = "";
+    $("info").textContent = ui.mode === "bid" ? "Tip: count your spades and your Aces and Kings." : "";
+    $("score").innerHTML = `<table><tr><th>Hand</th><th>You &amp; Max</th><th>Ava &amp; Zoe</th></tr>` +
+      history.map((h, i) => `<tr><td>${i + 1}</td><td>${h[0]}</td><td>${h[1]}</td></tr>`).join("") +
+      `<tr class="tot"><td>Total (bags)</td><td class="${tot[0] > tot[1] ? "low" : ""}">${tot[0]} (${bagsTot[0]})</td><td class="${tot[1] > tot[0] ? "low" : ""}">${tot[1]} (${bagsTot[1]})</td></tr></table>`;
+    [["targetSeg","target"],["diffSeg","diff"],["nilSeg","nil"]].forEach(([id, k]) => [...$(id).children].forEach(b => b.classList.toggle("on", b.dataset.v === String(settings[k]))));
+  }
+
+  // ===== input =====
+  $("hand").addEventListener("click", e => {
+    const el = e.target.closest(".card[data-id]"); if(!el || ui.mode !== "play" || !pending) return;
+    const c = you().hand.find(x => x.id === Number(el.dataset.id)); if(!c) return;
+    const legal = legalMoves(you().hand, trick, broken);
+    if(!legal.some(l => l.id === c.id)){ FX.sound("error"); setMsg(!trick.length ? "You can't lead a spade until spades are broken." : `You must follow suit (${SU[trick[0].card.s]}).`); return; }
+    const r = pending; pending = null; r(c);
+  });
+  $("actions").addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    if(b.dataset.bid !== undefined && ui.mode === "bid" && pending){ const r = pending; pending = null; FX.sound("click"); r(Number(b.dataset.bid)); }
+    else if(b.id === "nextBtn" && pending){ const r = pending; pending = null; r(); }
+    else if(b.id === "againBtn") newGame();
+  });
+  document.addEventListener("keydown", e => {
+    if($("rulesBox").classList.contains("show")){ if(e.key === "Escape" || e.key === "Enter") closeRules(); return; }
+    if(e.key === "Enter" && ui.mode === "between" && pending){ e.preventDefault(); const r = pending; pending = null; r(); }
+  });
+  const confirmNew = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(true);
+  async function setSetting(k, v){
+    if(String(settings[k]) === String(v)) return;
+    if(!over && handNo && !(await confirmNew("Change this setting and start a new game? The current game will be lost."))) return;
+    settings[k] = k === "target" ? Number(v) : v; saveSettings(); FX.sound("click"); newGame();
+  }
+  [["targetSeg","target"],["diffSeg","diff"],["nilSeg","nil"]].forEach(([id, k]) => $(id).addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting(k, b.dataset.v); }));
+  $("newBtn").addEventListener("click", async () => { if(!over && !(await confirmNew("Start a new game? The current game will be lost."))) return; FX.sound("click"); newGame(); });
+  const closeRules = () => $("rulesBox").classList.remove("show");
+  $("rulesBtn").addEventListener("click", () => $("rulesBox").classList.add("show"));
+  $("rulesOk").addEventListener("click", closeRules);
+  $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) closeRules(); });
+
+  window.__spades = { legalMoves, trickWinner, botPlay, botBid, scoreTeam, estimate };   // for testing
+  load(); newGame();
+})();
+</script>
+</body>
+</html>

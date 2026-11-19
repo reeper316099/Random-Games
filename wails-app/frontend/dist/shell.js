@@ -8,6 +8,10 @@
   const GAMES = {
     blackjack:   { name: "Blackjack",               icon: "🃏" },
     bs:          { name: "BS (Cheat)",              icon: "🤥" },
+    hearts:      { name: "Hearts",                  icon: "♥️" },
+    spades:      { name: "Spades",                  icon: "♠️" },
+    "video-poker": { name: "Video Poker",           icon: "🂡" },
+    "remorse-chess": { name: "Remorse Chess",       icon: "♞" },
     checkers:    { name: "Checkers",                icon: "🔴" },
     chess:       { name: "Chess",                   icon: "♟️" },
     dice:        { name: "High Roller Dice",        icon: "🎲" },

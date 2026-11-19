@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Remorse Chess</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --gold:#ffd36a;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{ margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 18% 0%, #3a1a4a 0%, #1a1030 46%, var(--bg) 82%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding:44px 16px 24px; }
+  .wrap{ width:min(1060px,100%); display:grid; gap:12px; align-content:start; }
+  .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .title h1{ margin:0; font-size:22px; font-weight:900; letter-spacing:.4px; }
+  .title h1 span{ background:linear-gradient(90deg,#fff,#e0b0ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:3px; }
+  .grp{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+  .seg button{ border:0; border-radius:0; background:transparent; padding:9px 12px; font-size:13px; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
+  button, select{ font:inherit; }
+  button{ border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text); padding:9px 14px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s; }
+  button:hover:not(:disabled){ filter:brightness(1.25); } button:active:not(:disabled){ transform:scale(.96); } button:disabled{ opacity:.4; cursor:not-allowed; }
+  button.primary{ border-color:rgba(106,166,255,.55); background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); }
+  button.gold{ border-color:rgba(255,211,106,.7); background:linear-gradient(180deg, rgba(255,211,106,.45), rgba(240,160,32,.2)); }
+  select{ border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); padding:6px 8px; border-radius:10px; font-size:12px; font-weight:700; }
+  button:focus-visible, select:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .pill{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.28); font-weight:700; font-size:12px; }
+  .main{ display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; align-items:start; }
+  @media (max-width: 920px){ .main{ grid-template-columns:1fr; } }
+  .boardShell{ background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02)); border:1px solid var(--line); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:grid; gap:8px; justify-items:center; }
+  .strip{ width:min(640px,100%); display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:12px; background:rgba(0,0,0,.25); border:1px solid transparent; min-height:38px; font-size:14px; font-weight:800; }
+  .dot{ width:11px; height:11px; border-radius:50%; background:#fff; border:1px solid rgba(0,0,0,.4); display:inline-block; }
+  .strip.active{ border-color:rgba(255,211,106,.55); box-shadow:0 0 14px rgba(255,211,106,.25); }
+  .strip i{ font-style:normal; font-weight:600; color:var(--muted); font-size:12px; }
+  .bwrap{ position:relative; width:min(640px,100%); }
+  .board{ --sq:80px; --sqL:#e8d8f0; --sqD:#8a64a8; position:relative; width:100%; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
+    border-radius:10px; overflow:hidden; box-shadow:0 14px 40px rgba(0,0,0,.55), 0 0 0 5px #2a1d12, 0 0 0 6px rgba(255,255,255,.18); user-select:none; -webkit-user-select:none; }
+  .sq{ position:relative; display:grid; place-items:center; cursor:default; }
+  .sq.light{ background:var(--sqL); } .sq.dark{ background:var(--sqD); }
+  .sq.last::before{ content:""; position:absolute; inset:0; background:rgba(255,222,60,.42); }
+  .sq.sel::before{ content:""; position:absolute; inset:0; background:rgba(80,150,255,.55); }
+  .sq.check::before{ content:""; position:absolute; inset:0; background:radial-gradient(circle, rgba(255,40,40,.95) 0%, rgba(255,40,40,.55) 40%, transparent 72%); }
+  .sq.legal::after{ content:""; position:absolute; width:30%; height:30%; border-radius:50%; background:rgba(20,30,50,.32); pointer-events:none; }
+  .sq.legal.capture::after{ width:88%; height:88%; background:transparent; border:calc(var(--sq) * .08) solid rgba(20,30,50,.32); }
+  .sq.legal.friendly::after{ border-color:rgba(255,60,60,.65); }
+  .sq.legal.absolve::after{ width:88%; height:88%; background:transparent; border:calc(var(--sq) * .06) dashed rgba(255,255,255,.85); }
+  .sq.legal, .sq.mine{ cursor:pointer; }
+  .pc{ position:relative; z-index:2; font-size:calc(var(--sq) * .82); line-height:1; pointer-events:none; font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Apple Symbols","DejaVu Sans",serif; }
+  .pc.w{ color:#fff; -webkit-text-stroke:calc(var(--sq) * .018) #2b2b33; text-shadow:0 2px 3px rgba(0,0,0,.45); }
+  .pc.b{ color:#1b1c23; -webkit-text-stroke:calc(var(--sq) * .012) #000; text-shadow:0 1px 0 rgba(255,255,255,.25), 0 2px 3px rgba(0,0,0,.4); }
+  .bdg{ position:absolute; z-index:3; font-size:calc(var(--sq) * .26); line-height:1; pointer-events:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.7)); }
+  .bdg.tr{ top:3%; right:4%; } .bdg.tl{ top:3%; left:4%; } .bdg.bl{ bottom:3%; left:4%; } .bdg.br{ bottom:3%; right:4%; font-weight:900; color:#fff; text-shadow:0 0 3px #000; }
+  .sq.devast .pc{ filter:grayscale(.7) opacity(.7); }
+  .sq.guilty .pc{ filter:saturate(.6); }
+  .co{ position:absolute; font-style:normal; font-weight:800; font-size:calc(var(--sq) * .15); pointer-events:none; z-index:1; opacity:.8; }
+  .co.rk{ top:3%; left:5%; } .co.fl{ bottom:2%; right:5%; }
+  .sq.light .co{ color:var(--sqD); } .sq.dark .co{ color:var(--sqL); }
+  .over{ position:absolute; inset:0; z-index:20; display:none; place-items:center; background:rgba(6,9,16,.62); backdrop-filter:blur(2px); border-radius:10px; }
+  .over.show{ display:grid; }
+  .over .card{ text-align:center; padding:22px 26px; border-radius:16px; background:rgba(16,22,38,.95); border:1px solid rgba(255,211,106,.55); box-shadow:0 20px 50px rgba(0,0,0,.6); }
+  .over .ot{ font-size:28px; font-weight:900; background:linear-gradient(180deg,#fff,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .over .os{ color:var(--muted); margin:6px 0 14px; font-size:14px; }
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; min-height:40px; align-items:center; }
+  .dice{ width:48px; height:48px; border-radius:10px; background:#fff; color:#1b1c23; font-size:30px; font-weight:900; display:grid; place-items:center; box-shadow:0 4px 10px rgba(0,0,0,.5); }
+  .dice.roll{ animation:roll .6s ease; }
+  @keyframes roll{ 0%{ transform:rotate(0) scale(.6); } 60%{ transform:rotate(360deg) scale(1.15); } 100%{ transform:rotate(360deg) scale(1); } }
+  .side{ background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02)); border:1px solid var(--line); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); display:grid; gap:12px; }
+  .side h3{ margin:0 0 6px; font-size:13px; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); }
+  .status{ font-weight:800; min-height:20px; }
+  .feed{ display:grid; gap:4px; max-height:300px; overflow:auto; font-size:12.5px; line-height:1.4; }
+  .feed div{ padding:4px 8px; border-radius:8px; background:rgba(0,0,0,.2); }
+  .feed .roll{ color:var(--gold); } .feed .bad{ color:#ffb0b0; } .feed .good{ color:var(--ok); }
+  .legend{ font-size:12px; color:var(--muted); display:grid; gap:2px; }
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(560px,100%); max-height:90vh; overflow:auto; padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+  .overlay ul{ margin:0; padding-left:18px; color:var(--muted); font-size:14px; line-height:1.5; }
+  .set{ display:grid; gap:8px; }
+  .set h4{ margin:8px 0 0; font-size:13px; color:var(--gold); letter-spacing:.4px; }
+  .set label{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:13px; color:var(--text); }
+  .set label small{ color:var(--muted); display:block; font-size:11px; }
+  .set input[type=number]{ width:64px; padding:6px 8px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.35); color:var(--text); font-weight:700; }
+  .set input[type=checkbox]{ width:20px; height:20px; accent-color:#6aa6ff; }
+  .tbl{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  .tbl div{ display:grid; gap:3px; justify-items:center; font-size:11px; color:var(--muted); } .tbl select{ width:100%; padding:5px 2px; font-size:11px; }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+<script src="../themes.js"></script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>♞ <span>Remorse Chess</span></h1>
+      <div class="sub">Chess where pieces feel guilt — dice decide how they react to taking a life</div>
+    </div>
+    <div class="grp">
+      <span class="seg" id="modeSeg"><button data-v="bot">vs Computer</button><button data-v="two">2 Players</button></span>
+      <span class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></span>
+      <span class="seg" id="sideSeg"><button data-v="w">White</button><button data-v="b">Black</button></span>
+      <button id="rulesBtn">Rules</button>
+      <button id="setBtn">⚙ Rule settings</button>
+      <button id="newBtn" class="primary">New game</button>
+      <span data-season-slot></span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="boardShell">
+      <div class="strip" id="topStrip"></div>
+      <div class="bwrap">
+        <div class="board" id="board"></div>
+        <div class="over" id="over"><div class="card"><div class="ot" id="ot"></div><div class="os" id="os"></div><button class="primary" id="againBtn">Play again</button></div></div>
+      </div>
+      <div class="strip" id="botStrip"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+    <div class="side">
+      <div><h3>Status</h3><div class="status" id="status"></div><div style="display:flex;gap:10px;align-items:center;margin-top:8px"><div class="dice" id="dice">🎲</div><div id="diceTxt" style="font-size:13px;color:var(--muted)">No rolls yet.</div></div></div>
+      <div><h3>Event log</h3><div class="feed" id="feed"></div></div>
+      <div><h3>Badges</h3><div class="legend">
+        <span>😔 guilt-ridden — can't capture</span><span>😭<b>n</b> devastated — frozen, <b>n</b> turns to absolve</span>
+        <span>😈 psychopath · 🩸 bloodlust</span><span>⚪ vengeance (one guilt-free capture)</span><span>🙂 never rolled / unaffected</span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="Rules">
+  <h2>Remorse Chess rules</h2>
+  <p>Normal chess — checkmate the king to win — plus a <b>reaction system</b>. The first time a piece captures, a D6 decides how it feels (each piece rolls once and keeps that reaction):</p>
+  <ul>
+    <li><b>1 – Devastated 😭:</b> frozen. A bishop must absolve it within 3 turns or it removes itself.</li>
+    <li><b>2–3 – Guilt-ridden 😔:</b> still moves, but refuses to capture until absolved.</li>
+    <li><b>4–5 – Unaffected:</b> plays normally.</li>
+    <li><b>6 – Psychopath 😈:</b> gets an extra move after a capture (no stacking). After 3 captures: bloodlust 🩸 — only moves to capture, even friendly pieces.</li>
+  </ul>
+  <p><b>Absolution:</b> move a bishop to a square next to a guilty/devastated friendly piece to clear it (this is your turn). A guilty bishop can absolve itself — select it and press “Absolve self”. Bishops roll too.</p>
+  <p><b>Witnesses:</b> when a piece is captured, each surviving neighbour of the victim rolls: 1–2 temporary guilt (already guilty → devastated), 3–4 nothing, 5–6 vengeance ⚪ — one guilt-free capture of the same type of piece that made the kill.</p>
+  <p>Everything is adjustable in <b>⚙ Rule settings</b> (presets: Orthodox chess, Full Remorse, Lite).</p>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<div class="overlay" id="setBox"><div class="box" role="dialog" aria-modal="true" aria-label="Rule settings">
+  <h2>Rule settings</h2>
+  <div class="grp"><button data-preset="orthodox">Orthodox chess</button><button data-preset="full">Full Remorse</button><button data-preset="lite">Lite</button></div>
+  <div class="set" id="setBody"></div>
+  <p>Changes apply to the next new game.</p>
+  <div class="grp"><button class="primary" id="setApply">Save &amp; new game</button><button id="setClose">Cancel</button></div>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(){}, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+
+  // ===== REMORSE CHESS ENGINE (pure logic, no DOM) =====
+  const DEFAULTS = {
+    captureRolls:true, capTable:["dev","guilt","guilt","none","none","psycho"],
+    permanent:true, devTurns:3, devSelfCapture:true,
+    psychoExtra:true, bloodlustAt:3, bloodlustFriendly:true,
+    bishopsAbsolve:true, selfAbsolve:true, bishopRolls:true, kingReacts:false,
+    witness:true, witnessWho:"victim", witTable:["guilt","guilt","none","none","venge","venge"], doubling:true, psychoImmune:true,
+    vengeance:true, vengeCharges:1, vengeSameType:true
+  };
+  let S = { ...DEFAULTS };
+  const VAL = { P:100, N:320, B:330, R:500, Q:900, K:0 };
+  const GLYPH = { K:"♚︎", Q:"♛︎", R:"♜︎", B:"♝︎", N:"♞︎", P:"♟︎" };
+  const KN = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+  const KG = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+  const BD = [[-1,-1],[-1,1],[1,-1],[1,1]], RD = [[-1,0],[1,0],[0,-1],[0,1]];
+  let nextId = 1;
+  const rc = i => [i >> 3, i & 7], at = (r, f) => (r < 0 || r > 7 || f < 0 || f > 7) ? -1 : r * 8 + f;
+  const sqName = i => "abcdefgh"[i & 7] + (8 - (i >> 3));
+  const mk = (t, c) => ({ id:nextId++, t, c, react:null, guilty:false, dev:0, devAt:-1, kills:0, venge:null, moved:false });
+  function newState(){
+    const b = Array(64).fill(null), back = ["R","N","B","Q","K","B","N","R"];
+    for(let f=0;f<8;f++){ b[f] = mk(back[f], "b"); b[8+f] = mk("P", "b"); b[48+f] = mk("P", "w"); b[56+f] = mk(back[f], "w"); }
+    return { board:b, turn:"w", ep:-1, ply:0, half:0, extraNow:false, wantExtra:false, moves:0 };
+  }
+  const clonePiece = p => p && { ...p, venge:p.venge ? { ...p.venge } : null };
+  const cloneState = s => ({ ...s, board:s.board.map(clonePiece) });
+  const foe = c => c === "w" ? "b" : "w";
+  const bloodlust = p => p.react === "psycho" && S.bloodlustAt > 0 && p.kills >= S.bloodlustAt;
+  // can piece p capture a piece of type tt?
+  const capable = (p, tt) => !p.dev && (!p.guilty || (S.vengeance && p.venge && (!S.vengeSameType || p.venge.t === tt)));
+
+  // is square `sq` attacked (i.e. capturable) by `by`?
+  function attacked(b, sq, by){
+    const [r, f] = rc(sq);
+    const hit = (rr, ff, types) => { const i = at(rr, ff); if(i < 0) return false; const p = b[i]; return p && p.c === by && types.includes(p.t) && capable(p, "K"); };
+    const pr = by === "w" ? r + 1 : r - 1;
+    if(hit(pr, f - 1, ["P"]) || hit(pr, f + 1, ["P"])) return true;
+    for(const [dr, df] of KN) if(hit(r + dr, f + df, ["N"])) return true;
+    for(const [dr, df] of KG) if(hit(r + dr, f + df, ["K"])) return true;
+    for(const [dirs, types] of [[BD, ["B","Q"]], [RD, ["R","Q"]]]) for(const [dr, df] of dirs){
+      let rr = r + dr, ff = f + df;
+      while(at(rr, ff) >= 0){ const p = b[at(rr, ff)]; if(p){ if(p.c === by && types.includes(p.t) && capable(p, "K")) return true; break; } rr += dr; ff += df; }
+    }
+    return false;
+  }
+  const kingSq = (b, c) => b.findIndex(p => p && p.t === "K" && p.c === c);
+  const inCheck = (b, c) => { const k = kingSq(b, c); return k >= 0 && attacked(b, k, foe(c)); };
+
+  function pseudo(st, color){
+    const b = st.board, out = [];
+    for(let i = 0; i < 64; i++){
+      const p = b[i]; if(!p || p.c !== color) continue;
+      const [r, f] = rc(i), blood = bloodlust(p);
+      if(p.t === "B" && S.bishopsAbsolve && S.selfAbsolve && (p.guilty || p.dev)) out.push({ from:i, to:i, absolve:true });
+      if(p.dev) continue;
+      const tryTo = (rr, ff) => {       // returns true if the ray may continue
+        const j = at(rr, ff); if(j < 0) return false;
+        const t = b[j];
+        if(!t){ if(!blood) out.push({ from:i, to:j }); return true; }
+        if(t.c !== color){ if(capable(p, t.t)) out.push({ from:i, to:j, cap:true }); }
+        else if(blood && S.bloodlustFriendly && t.t !== "K") out.push({ from:i, to:j, cap:true, friendly:true });
+        return false;
+      };
+      if(p.t === "N") KN.forEach(([dr, df]) => tryTo(r + dr, f + df));
+      else if(p.t === "K"){
+        KG.forEach(([dr, df]) => tryTo(r + dr, f + df));
+        if(!p.moved && !blood && !attacked(b, i, foe(color))){
+          for(const [rf, kt, rt, between] of [[7, 6, 5, [5,6]], [0, 2, 3, [1,2,3]]]){
+            const rk = b[r * 8 + rf];
+            if(rk && rk.t === "R" && rk.c === color && !rk.moved && between.every(x => !b[r * 8 + x]) && ![kt, rt].some(x => attacked(b, r * 8 + x, foe(color)))) out.push({ from:i, to:r * 8 + kt, castle:true, rookFrom:r * 8 + rf, rookTo:r * 8 + rt });
+          }
+        }
+      } else if(p.t === "P"){
+        const dir = color === "w" ? -1 : 1, last = color === "w" ? 0 : 7, start = color === "w" ? 6 : 1;
+        const push = (mv) => { if((mv.to >> 3) === last){ for(const pr of ["Q","R","B","N"]) out.push({ ...mv, promo:pr }); } else out.push(mv); };
+        if(!blood){
+          const a = at(r + dir, f);
+          if(a >= 0 && !b[a]){ push({ from:i, to:a }); const a2 = at(r + 2 * dir, f); if(r === start && !b[a2]) out.push({ from:i, to:a2, dbl:true }); }
+        }
+        for(const df of [-1, 1]){
+          const j = at(r + dir, f + df); if(j < 0) continue;
+          const t = b[j];
+          if(t && t.c !== color && capable(p, t.t)) push({ from:i, to:j, cap:true });
+          else if(t && t.c === color && blood && S.bloodlustFriendly && t.t !== "K") push({ from:i, to:j, cap:true, friendly:true });
+          else if(!t && j === st.ep){ const vs = at(r, f + df), v = b[vs]; if(v && v.c !== color && v.t === "P" && capable(p, "P")) out.push({ from:i, to:j, cap:true, ep:true, epSq:vs }); }
+        }
+      } else {
+        const dirs = p.t === "B" ? BD : p.t === "R" ? RD : BD.concat(RD);
+        for(const [dr, df] of dirs){ let rr = r + dr, ff = f + df; while(tryTo(rr, ff)){ if(b[at(rr, ff)]) break; rr += dr; ff += df; } }
+      }
+    }
+    return out;
+  }
+  function legal(st, color){
+    const b = st.board;
+    return pseudo(st, color).filter(mv => {
+      const nb = b.slice();
+      if(!mv.absolve){
+        if(mv.ep) nb[mv.epSq] = null;
+        nb[mv.to] = nb[mv.from]; nb[mv.from] = null;
+        if(mv.castle){ nb[mv.rookTo] = nb[mv.rookFrom]; nb[mv.rookFrom] = null; }
+      }
+      const k = kingSq(nb, color);
+      return k < 0 ? true : !attacked(nb, k, foe(color));
+    });
+  }
+  const neighbours = sq => { const [r, f] = rc(sq), o = []; for(const [dr, df] of KG){ const j = at(r + dr, f + df); if(j >= 0) o.push(j); } return o; };
+  const d6 = () => 1 + Math.floor(Math.random() * 6);
+  const NICE = { dev:"devastated 😭", guilt:"guilt-ridden 😔", none:"unaffected 🙂", psycho:"a psychopath 😈", venge:"vengeful ⚪" };
+  const nm = p => (p.c === "w" ? "White " : "Black ") + { K:"king", Q:"queen", R:"rook", B:"bishop", N:"knight", P:"pawn" }[p.t];
+
+  // Apply a move, mutate st, return events. roll(): d6 value, or null during search (no dice).
+  function applyMove(st, mv, roll){
+    const b = st.board, ev = [], p = b[mv.from], color = p.c, ply = ++st.ply;
+    let victim = null, capSq = -1;
+    if(mv.absolve){ p.guilty = false; p.dev = 0; ev.push({ k:"absolve", piece:p, self:true, sq:mv.from }); }
+    else {
+      if(mv.cap){ capSq = mv.ep ? mv.epSq : mv.to; victim = b[capSq]; b[capSq] = null; }
+      b[mv.to] = p; b[mv.from] = null; p.moved = true;
+      if(mv.castle){ b[mv.rookTo] = b[mv.rookFrom]; b[mv.rookFrom] = null; b[mv.rookTo].moved = true; }
+      if(mv.promo){ p.t = mv.promo; p.react = null; p.guilty = false; p.kills = 0; p.venge = null; ev.push({ k:"promo", piece:p, sq:mv.to }); }
+      st.ep = mv.dbl ? (mv.from + mv.to) / 2 : -1;
+      if(victim){
+        ev.push({ k:"cap", piece:p, victim, sq:capSq });
+        p.kills++;
+        let free = false;
+        if(S.vengeance && p.venge && (!S.vengeSameType || p.venge.t === victim.t)){ free = true; if(--p.venge.n <= 0) p.venge = null; ev.push({ k:"free", piece:p, sq:mv.to }); }
+        if(!free && S.captureRolls && (p.t !== "K" || S.kingReacts) && (p.t !== "B" || S.bishopRolls)){
+          let res = null;
+          if(p.react && S.permanent) res = p.react;
+          else { const r = roll(); if(r != null){ res = S.capTable[r - 1]; p.react = res; ev.push({ k:"roll", piece:p, r, res, sq:mv.to, why:"capture" }); } }
+          if(res === "dev"){ p.dev = S.devTurns; p.devAt = ply; }
+          else if(res === "guilt") p.guilty = true;
+          if(res && p.react === res && S.permanent && !ev.some(e => e.k === "roll")) ev.push({ k:"again", piece:p, res, sq:mv.to });
+        }
+        if(p.react === "psycho" && S.psychoExtra && !st.extraNow) st.wantExtra = true;
+        if(S.witness){
+          for(const n of neighbours(capSq)){
+            const w = b[n]; if(!w || w === p) continue;
+            if(S.witnessWho === "victim" && w.c !== victim.c) continue;
+            if(w.t === "K" && !S.kingReacts) continue;
+            if(S.psychoImmune && w.react === "psycho") continue;
+            const r = roll(); if(r == null) continue;
+            const res = S.witTable[r - 1];
+            ev.push({ k:"roll", piece:w, r, res, sq:n, why:"witness" });
+            if(res === "guilt"){ if(w.guilty && S.doubling){ w.dev = S.devTurns; w.devAt = ply; ev.push({ k:"double", piece:w, sq:n }); } else w.guilty = true; }
+            else if(res === "venge" && S.vengeance && !w.venge) w.venge = { t:p.t, n:S.vengeCharges };
+          }
+        }
+      }
+      if(p.t === "B" && S.bishopsAbsolve) for(const n of neighbours(mv.to)){ const q = b[n]; if(q && q.c === color && (q.guilty || q.dev)){ q.guilty = false; q.dev = 0; ev.push({ k:"absolve", piece:q, by:p, sq:n }); } }
+    }
+    st.half = (victim || p.t === "P") ? 0 : st.half + 1;
+    if(st.wantExtra){ st.wantExtra = false; st.extraNow = true; ev.push({ k:"extra", piece:p }); }
+    else {
+      st.extraNow = false;
+      for(let i = 0; i < 64; i++){ const q = b[i]; if(q && q.c === color && q.dev > 0 && q.devAt !== ply){
+        if(S.devSelfCapture){ if(--q.dev === 0){ b[i] = null; ev.push({ k:"selfcap", piece:q, sq:i }); } } else q.dev = Math.max(1, q.dev - 1);
+      } }
+      st.turn = foe(color); st.moves++;
+    }
+    return ev;
+  }
+  // status of the game for the side to move: null | {end:"mate"|"stalemate"|"king"|"fifty", winner}
+  function outcome(st){
+    const wk = kingSq(st.board, "w") >= 0, bk = kingSq(st.board, "b") >= 0;
+    if(!wk) return { end:"king", winner:"b" }; if(!bk) return { end:"king", winner:"w" };
+    if(st.half >= 200) return { end:"fifty" };
+    if(!legal(st, st.turn).length) return inCheck(st.board, st.turn) ? { end:"mate", winner:foe(st.turn) } : { end:"stalemate" };
+    return null;
+  }
+
+  // ----- bot -----
+  const PST = i => { const [r, f] = rc(i); return 6 - (Math.abs(3.5 - r) + Math.abs(3.5 - f)) * 1.2; };
+  function evaluate(st, side){
+    let s = 0;
+    for(let i = 0; i < 64; i++){ const p = st.board[i]; if(!p) continue;
+      let v = VAL[p.t] + (p.t === "P" ? ((p.c === "w" ? 7 - (i >> 3) : (i >> 3)) * 4) : (p.t === "N" || p.t === "B" ? PST(i) : 0));
+      if(p.t === "K") v = 0;
+      if(p.guilty) v -= VAL[p.t] * .3 + 6; if(p.dev) v -= VAL[p.t] * (.5 + (S.devTurns - p.dev) * .15) + 10;
+      if(p.react === "psycho") v += 25; if(p.venge) v += 22; if(bloodlust(p)) v += 15;
+      s += p.c === side ? v : -v;
+    }
+    return s;
+  }
+  function search(st, depth, alpha, beta, root){
+    const moves = legal(st, st.turn);
+    if(!moves.length){ const mated = inCheck(st.board, st.turn); return mated ? (st.turn === root ? -99999 - depth : 99999 + depth) : 0; }
+    if(depth === 0) return evaluate(st, root);
+    const max = st.turn === root;
+    moves.sort((a, b) => (b.cap ? VAL[st.board[b.to] ? st.board[b.to].t : "P"] : 0) - (a.cap ? VAL[st.board[a.to] ? st.board[a.to].t : "P"] : 0));
+    let best = max ? -Infinity : Infinity;
+    for(const mv of moves){
+      const ns = cloneState(st); applyMove(ns, mv, () => null);
+      const v = search(ns, depth - 1, alpha, beta, root);
+      if(max){ if(v > best) best = v; if(best > alpha) alpha = best; } else { if(v < best) best = v; if(best < beta) beta = best; }
+      if(beta <= alpha) break;
+    }
+    return best;
+  }
+  function botMove(st, level){
+    const side = st.turn, moves = legal(st, side); if(!moves.length) return null;
+    const depth = level === "hard" ? 3 : level === "medium" ? 2 : 1, noise = level === "easy" ? 140 : level === "medium" ? 12 : 3;
+    let best = null, bv = -Infinity;
+    for(const mv of moves){
+      const ns = cloneState(st); applyMove(ns, mv, () => null);
+      // with an extra move the same side moves again: search handles that via turn check
+      const v = search(ns, depth - 1, -Infinity, Infinity, side) + Math.random() * noise;
+      if(v > bv){ bv = v; best = mv; }
+    }
+    return best;
+  }
+  // ===== END ENGINE =====
+
+  // ----- settings UI model -----
+  const store = (k, v) => { try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } };
+  let prefs = { mode:"bot", diff:"medium", side:"w" };
+  { const p = store("rchess_prefs"); if(p) prefs = { ...prefs, ...p }; const s = store("rchess_rules"); if(s) S = { ...DEFAULTS, ...s }; }
+  const PRESETS = {
+    orthodox:{ captureRolls:false, witness:false, vengeance:false },
+    full:{ ...DEFAULTS },
+    lite:{ ...DEFAULTS, witness:false, vengeance:false }
+  };
+  const CAP_OPT = [["dev","Devastated"],["guilt","Guilt-ridden"],["none","Unaffected"],["psycho","Psychopath"]];
+  const WIT_OPT = [["guilt","Guilt"],["none","Nothing"],["venge","Vengeance"]];
+  const chk = (k, label, hint = "") => `<label><span>${label}${hint ? `<small>${hint}</small>` : ""}</span><input type="checkbox" data-k="${k}" ${S[k] ? "checked" : ""}></label>`;
+  const num = (k, label, min, max, hint = "") => `<label><span>${label}${hint ? `<small>${hint}</small>` : ""}</span><input type="number" data-k="${k}" min="${min}" max="${max}" value="${S[k]}"></label>`;
+  const tbl = (k, opts) => `<div class="tbl">${S[k].map((v, i) => `<div>${i + 1}<select data-t="${k}" data-i="${i}">${opts.map(([val, lab]) => `<option value="${val}" ${v === val ? "selected" : ""}>${lab}</option>`).join("")}</select></div>`).join("")}</div>`;
+  function buildSettings(){
+    $("setBody").innerHTML =
+      `<h4>Capture reaction</h4>` + chk("captureRolls", "Reaction roll on capture") + `<span style="font-size:12px;color:var(--muted)">Roll → reaction table:</span>` + tbl("capTable", CAP_OPT) +
+      chk("permanent", "Reaction is permanent per piece", "Off: re-roll on every capture") + num("devTurns", "Devastated: turns to absolve", 1, 9) + chk("devSelfCapture", "Devastated piece self-captures when time runs out") +
+      chk("bishopRolls", "Bishops roll for their own captures") + chk("kingReacts", "Kings can react / be affected") +
+      `<h4>Psychopath</h4>` + chk("psychoExtra", "Extra move after a capture") + num("bloodlustAt", "Captures needed for bloodlust", 0, 15, "0 = never") + chk("bloodlustFriendly", "Bloodlust may capture friendly pieces") +
+      `<h4>Absolution</h4>` + chk("bishopsAbsolve", "Bishops can absolve (move next to the piece)") + chk("selfAbsolve", "Guilty bishops can absolve themselves") +
+      `<h4>Witness rolls</h4>` + chk("witness", "Neighbours of a captured piece roll") +
+      `<label><span>Who rolls</span><select data-k="witnessWho"><option value="victim" ${S.witnessWho === "victim" ? "selected" : ""}>Victim's side</option><option value="all" ${S.witnessWho === "all" ? "selected" : ""}>Everyone adjacent</option></select></label>` +
+      `<span style="font-size:12px;color:var(--muted)">Roll → witness table:</span>` + tbl("witTable", WIT_OPT) +
+      chk("doubling", "Guilty witness rolling guilt becomes devastated") + chk("psychoImmune", "Psychopaths are immune to witness effects") +
+      `<h4>Vengeance</h4>` + chk("vengeance", "Vengeance enabled") + num("vengeCharges", "Guilt-free captures per vengeance", 1, 5) + chk("vengeSameType", "Only against the same piece type that made the kill");
+  }
+  function readSettings(){
+    const n = { ...S, capTable:S.capTable.slice(), witTable:S.witTable.slice() };
+    $("setBody").querySelectorAll("[data-k]").forEach(el => { n[el.dataset.k] = el.type === "checkbox" ? el.checked : el.type === "number" ? Math.max(Number(el.min), Math.min(Number(el.max), Number(el.value) || 0)) : el.value; });
+    $("setBody").querySelectorAll("[data-t]").forEach(el => { n[el.dataset.t][Number(el.dataset.i)] = el.value; });
+    return n;
+  }
+
+  // ===== game state / flow =====
+  let st = newState(), sel = -1, lastMove = null, over = false, busy = false, runId = 0, pendingPromo = null, sinceStart = 0;
+  let legalNow = [];
+  const myColor = () => prefs.mode === "two" ? null : prefs.side;
+  const isHuman = c => prefs.mode === "two" || c === prefs.side;
+  const wait = ms => new Promise(r => setTimeout(r, FX.reducedMotion ? 0 : ms));
+  const log = (t, cls = "") => { const f = $("feed"); const d = document.createElement("div"); if(cls) d.className = cls; d.textContent = t; f.appendChild(d); f.scrollTop = f.scrollHeight; while(f.children.length > 60) f.firstChild.remove(); };
+  const setStatus = t => $("status").textContent = t;
+
+  function newGame(){
+    runId++; st = newState(); sel = -1; lastMove = null; over = false; busy = false; pendingPromo = null; legalNow = [];
+    $("feed").innerHTML = ""; $("over").classList.remove("show"); $("actions").innerHTML = ""; $("dice").textContent = "🎲"; $("diceTxt").textContent = "No rolls yet.";
+    log(S.captureRolls || S.witness ? "Remorse rules are on. Good luck." : "Orthodox chess (all remorse rules off).");
+    refresh(); maybeBot();
+  }
+  function refresh(){
+    if(!over){ const o = outcome(st); if(o) return end(o); }
+    legalNow = isHuman(st.turn) ? legal(st, st.turn) : [];
+    render();
+    const t = st.turn === "w" ? "White" : "Black";
+    setStatus(over ? $("status").textContent : (isHuman(st.turn) ? `${t} to move${st.extraNow ? " — extra move! 😈" : ""}${inCheck(st.board, st.turn) ? " — CHECK" : ""}` : `${t} (computer) is thinking…`));
+  }
+  function end(o){
+    over = true; busy = false; render();
+    let title, sub = "";
+    if(o.end === "mate"){ title = "Checkmate"; sub = `${o.winner === "w" ? "White" : "Black"} wins.`; }
+    else if(o.end === "king"){ title = "King captured"; sub = `${o.winner === "w" ? "White" : "Black"} wins — the extra move took the king.`; }
+    else if(o.end === "stalemate"){ title = "Stalemate"; sub = "No legal moves — draw."; }
+    else { title = "Draw"; sub = "100 moves without a capture or pawn move."; }
+    const humanWin = o.winner && prefs.mode === "bot" && o.winner === prefs.side;
+    if(humanWin){ FX.sound("bigwin"); FX.confetti({ count:200 }); title = "You win!"; sub = o.end === "mate" ? "Checkmate." : sub;
+      rgReport("remorse-chess", `vs ${prefs.diff[0].toUpperCase() + prefs.diff.slice(1)}`, "Fewest moves to win", Math.ceil(st.moves / 2), { unit:"moves", better:"low", detail:S.captureRolls ? "remorse rules" : "orthodox" }); }
+    else FX.sound(o.winner && prefs.mode === "bot" ? "lose" : "win");
+    setStatus(title + " — " + sub); $("ot").textContent = title; $("os").textContent = sub; $("over").classList.add("show");
+  }
+
+  async function play(mv){
+    if(busy || over) return; busy = true; const id = runId;
+    const mover = st.board[mv.from], victimBefore = mv.cap ? st.board[mv.ep ? mv.epSq : mv.to] : null;
+    const rolls = [];
+    const ev = applyMove(st, mv, d6); lastMove = mv; sel = -1;
+    FX.sound(mv.cap ? "stop" : "card");
+    // narrate
+    ev.forEach(e => {
+      if(e.k === "cap") log(`${nm(e.piece)} took ${nm(e.victim)} on ${sqName(e.sq)}.`, e.victim.t === "K" ? "bad" : "");
+      else if(e.k === "free") log(`⚪ ${nm(e.piece)} used its vengeance — guilt-free capture.`, "good");
+      else if(e.k === "roll"){ rolls.push(e); log(`🎲 ${e.why === "witness" ? nm(e.piece) + " on " + sqName(e.sq) + " saw it" : nm(e.piece) + " reacts"}: rolled ${e.r} → ${NICE[e.res]}`, "roll"); }
+      else if(e.k === "again") log(`${nm(e.piece)} feels the same way again (${NICE[e.res]}).`, "roll");
+      else if(e.k === "double") log(`${nm(e.piece)} was already guilty — now devastated 😭`, "bad");
+      else if(e.k === "absolve") log(e.self ? `${nm(e.piece)} absolved itself.` : `${nm(e.by)} absolved ${nm(e.piece)} on ${sqName(e.sq)}.`, "good");
+      else if(e.k === "selfcap") log(`${nm(e.piece)} couldn't live with it and is gone. 💔`, "bad");
+      else if(e.k === "extra") log(`😈 ${nm(e.piece)} gets an extra move!`, "roll");
+      else if(e.k === "promo") log(`${nm(e.piece)} promoted.`);
+    });
+    if(st.board.some(p => p && p.react === "psycho" && bloodlust(p) && p.kills === S.bloodlustAt && p === mover)) log(`🩸 ${nm(mover)} has bloodlust now.`, "bad");
+    if(rolls.length){ const last = rolls[rolls.length - 1]; const dEl = $("dice"); dEl.textContent = last.r; dEl.classList.remove("roll"); void dEl.offsetWidth; dEl.classList.add("roll"); $("diceTxt").textContent = `Rolled ${last.r}: ${NICE[last.res]}`; FX.sound("roll"); }
+    refresh();
+    busy = false;
+    if(rolls.length) await wait(500);
+    if(id !== runId) return;
+    maybeBot();
+  }
+  async function maybeBot(){
+    if(over || isHuman(st.turn) || busy) return;
+    const id = runId; busy = true; await wait(420); busy = false; if(id !== runId || over) return;
+    await new Promise(r => setTimeout(r, 20));               // let the "thinking" text paint before the search blocks
+    if(id !== runId) return;
+    const mv = botMove(st, prefs.diff);
+    if(!mv){ refresh(); return; }
+    play(mv);
+  }
+
+  // ===== rendering =====
+  function badges(p){
+    let tl = "", tr = "", bl = "", br = "";
+    if(p.dev) tr += "😭", br = String(p.dev); else if(p.guilty) tr += "😔";
+    if(p.react === "psycho") tl += bloodlust(p) ? "🩸" : "😈";
+    if(p.venge) bl += "⚪" + (p.venge.n > 1 ? p.venge.n : "");
+    return (tr ? `<i class="bdg tr">${tr}</i>` : "") + (tl ? `<i class="bdg tl">${tl}</i>` : "") + (bl ? `<i class="bdg bl">${bl}</i>` : "") + (br ? `<i class="bdg br">${br}</i>` : "");
+  }
+  function render(){
+    const flip = prefs.mode === "bot" ? prefs.side === "b" : false;
+    const check = inCheck(st.board, st.turn) ? kingSq(st.board, st.turn) : -1;
+    const targets = new Map(); if(sel >= 0) legalNow.filter(m => m.from === sel).forEach(m => targets.set(m.to, m));
+    let h = "";
+    for(let vr = 0; vr < 8; vr++) for(let vf = 0; vf < 8; vf++){
+      const r = flip ? 7 - vr : vr, f = flip ? 7 - vf : vf, i = r * 8 + f, p = st.board[i], mv = targets.get(i);
+      const cls = ["sq", (r + f) % 2 ? "dark" : "light", i === sel ? "sel" : "", lastMove && (i === lastMove.from || i === lastMove.to) ? "last" : "", i === check ? "check" : "",
+        mv && !mv.absolve ? "legal" : "", mv && mv.cap ? "capture" : "", mv && mv.friendly ? "friendly" : "", mv && mv.absolve ? "legal absolve" : "",
+        p && p.dev ? "devast" : "", p && p.guilty ? "guilty" : "", p && isHuman(st.turn) && p.c === st.turn && !over ? "mine" : ""].join(" ");
+      h += `<div class="${cls}" data-sq="${i}">${vf === 0 ? `<i class="co rk">${8 - r}</i>` : ""}${vr === 7 ? `<i class="co fl">${"abcdefgh"[f]}</i>` : ""}${p ? `<span class="pc ${p.c}">${GLYPH[p.t]}</span>${badges(p)}` : ""}</div>`;
+    }
+    $("board").innerHTML = h;
+    const sc = c => { const lost = []; const have = {}; st.board.forEach(p => { if(p && p.c === c) have[p.t] = (have[p.t] || 0) + 1; }); const start = { P:8, N:2, B:2, R:2, Q:1 };
+      for(const t of ["Q","R","B","N","P"]) for(let k = (have[t] || 0); k < start[t]; k++) lost.push(GLYPH[t]); return lost.join(""); };
+    const strip = (c) => `<span class="dot"></span>${c === "w" ? "White" : "Black"} <i>${prefs.mode === "bot" ? (c === prefs.side ? "you" : "computer · " + prefs.diff) : ""}</i> <span style="opacity:.6;margin-left:auto;letter-spacing:1px">${sc(foe(c))}</span>`;
+    const top = flip ? "w" : "b", bot = flip ? "b" : "w";
+    $("topStrip").innerHTML = strip(top); $("botStrip").innerHTML = strip(bot);
+    $("topStrip").classList.toggle("active", !over && st.turn === top); $("botStrip").classList.toggle("active", !over && st.turn === bot);
+    // actions: promotion / self-absolve
+    const a = $("actions");
+    if(pendingPromo){ a.innerHTML = `<span>Promote to:</span>` + ["Q","R","B","N"].map(t => `<button data-promo="${t}" class="gold" style="font-size:22px">${GLYPH[t]}</button>`).join(""); }
+    else if(sel >= 0 && targets.size && [...targets.values()].some(m => m.absolve)) a.innerHTML = `<button data-absolve="1" class="primary">🙏 Absolve self</button>`;
+    else a.innerHTML = "";
+    [["modeSeg","mode"],["diffSeg","diff"],["sideSeg","side"]].forEach(([id, k]) => [...$(id).children].forEach(b => b.classList.toggle("on", b.dataset.v === prefs[k])));
+    $("diffSeg").style.display = prefs.mode === "bot" ? "" : "none"; $("sideSeg").style.display = prefs.mode === "bot" ? "" : "none";
+  }
+
+  // ===== input =====
+  $("board").addEventListener("click", e => {
+    if(busy || over || pendingPromo) return;
+    const el = e.target.closest(".sq"); if(!el || !isHuman(st.turn)) return;
+    const i = Number(el.dataset.sq), p = st.board[i];
+    if(sel >= 0){
+      const cand = legalNow.filter(m => m.from === sel && m.to === i && !m.absolve);
+      if(cand.length){
+        if(cand.length > 1){ pendingPromo = cand; render(); return; }
+        return play(cand[0]);
+      }
+    }
+    if(p && p.c === st.turn){ sel = i === sel ? -1 : i; FX.sound("tick"); render(); }
+    else { sel = -1; render(); }
+  });
+  $("actions").addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    if(b.dataset.promo && pendingPromo){ const mv = pendingPromo.find(m => m.promo === b.dataset.promo); pendingPromo = null; if(mv) play(mv); }
+    else if(b.dataset.absolve){ const mv = legalNow.find(m => m.absolve && m.from === sel); if(mv) play(mv); }
+  });
+  const confirmNew = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(true);
+  const inGame = () => !over && st.moves > 0;
+  async function setPref(k, v){
+    if(prefs[k] === v) return;
+    if(inGame() && !(await confirmNew("Change this and start a new game? The current game will be lost."))) return;
+    prefs[k] = v; store("rchess_prefs", prefs); FX.sound("click"); newGame();
+  }
+  [["modeSeg","mode"],["diffSeg","diff"],["sideSeg","side"]].forEach(([id, k]) => $(id).addEventListener("click", e => { const b = e.target.closest("button"); if(b) setPref(k, b.dataset.v); }));
+  $("newBtn").addEventListener("click", async () => { if(inGame() && !(await confirmNew("Start a new game? The current game will be lost."))) return; FX.sound("click"); newGame(); });
+  $("againBtn").addEventListener("click", newGame);
+  const show = (id, on) => $(id).classList.toggle("show", on);
+  $("rulesBtn").addEventListener("click", () => show("rulesBox", true)); $("rulesOk").addEventListener("click", () => show("rulesBox", false));
+  $("setBtn").addEventListener("click", () => { buildSettings(); show("setBox", true); }); $("setClose").addEventListener("click", () => show("setBox", false));
+  $("setBody").addEventListener("change", () => {});
+  $("setBox").addEventListener("click", e => {
+    const b = e.target.closest("[data-preset]"); if(b){ S = { ...DEFAULTS, ...PRESETS[b.dataset.preset] }; buildSettings(); }
+    else if(e.target === $("setBox")) show("setBox", false);
+  });
+  $("setApply").addEventListener("click", () => { S = readSettings(); store("rchess_rules", S); show("setBox", false); FX.sound("click"); newGame(); });
+  $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) show("rulesBox", false); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape"){ show("rulesBox", false); show("setBox", false); sel = -1; pendingPromo = null; render(); } });
+
+  window.__rc = { get st(){ return st; }, set st(v){ st = v; }, S:() => S, setS:v => { S = { ...S, ...v }; }, legal, applyMove, outcome, newState, cloneState, mk, botMove, play, refresh };   // for testing
+  newGame();
+})();
+</script>
+</body>
+</html>

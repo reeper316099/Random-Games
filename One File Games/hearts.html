@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Hearts</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --cw:clamp(46px, 9vw, 70px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 50% -10%, #5a1d2b 0%, #2a1020 45%, var(--bg) 85%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    padding:44px 16px 24px;
+  }
+  .wrap{ width:min(980px,100%); display:grid; gap:14px; align-content:start; }
+  .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .title h1{ margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+    background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+  .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+  button{ border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s; }
+  button:hover:not(:disabled){ filter:brightness(1.2); }
+  button:active:not(:disabled){ transform:scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.55); }
+  button.big{ padding:13px 26px; font-size:16px; }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  kbd{ font:600 10px ui-monospace, monospace; padding:1px 5px; border-radius:5px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.25); margin-left:6px; opacity:.8; }
+  .bar{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:center; padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .bar .lab{ font-size:12px; color:var(--muted); margin-right:6px; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+  .seg button{ border:0; border-radius:0; background:transparent; padding:8px 12px; font-size:13px; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
+
+  .table{ position:relative; margin:10px; border-radius:36px; padding:18px 16px 20px;
+    background:radial-gradient(ellipse at 50% 30%, #1f7a4a 0%, #14563a 55%, #0a3324 100%);
+    box-shadow:0 0 0 10px #5b3516, 0 0 0 12px #2b1707, 0 0 0 13px rgba(255,211,106,.35), 0 26px 60px rgba(0,0,0,.6), inset 0 0 80px rgba(0,0,0,.5);
+    display:grid; gap:12px; min-height:380px; overflow:hidden; }
+  .opps{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .seat{ min-width:150px; padding:8px 12px 10px; border-radius:14px; background:rgba(0,0,0,.3); border:1px solid var(--line); text-align:center; transition:box-shadow .2s, transform .2s; }
+  .seat.active{ box-shadow:0 0 0 2px var(--gold), 0 0 18px rgba(255,211,106,.5); transform:translateY(-2px); }
+  .seat .nm{ font-weight:800; font-size:14px; }
+  .seat .ct{ font-size:12px; color:var(--muted); }
+  .seat .ct b{ color:var(--gold); font-size:15px; }
+  .fan{ display:flex; justify-content:center; height:30px; margin:4px 0 2px; }
+  .fan i{ width:20px; height:28px; border-radius:4px; margin-left:-12px; border:1px solid rgba(255,255,255,.55); background:repeating-linear-gradient(45deg,#3b4a9a 0 4px,#2a3578 4px 8px); box-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .fan i:first-child{ margin-left:0; }
+  .center{ display:grid; justify-items:center; gap:8px; text-align:center; }
+  .trick{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; min-height:calc(var(--cw) * 1.4 + 30px); align-items:flex-start; }
+  .tslot{ display:grid; gap:4px; justify-items:center; font-size:12px; color:#d9f3e4; }
+  .tslot.winning .card{ box-shadow:0 0 0 3px var(--gold), 0 0 16px rgba(255,211,106,.8), 0 3px 8px rgba(0,0,0,.45); }
+  .tslot.empty .card{ background:rgba(0,0,0,.15); border:2px dashed rgba(255,255,255,.25); box-shadow:none; }
+  .msg{ min-height:22px; font-size:15px; font-weight:700; }
+  .info{ font-size:12px; color:#d9f3e4; min-height:16px; text-align:center; }
+  .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; min-height:46px; }
+
+  .card{ position:relative; width:var(--cw); height:calc(var(--cw) * 1.4); border-radius:8%/6%; flex:none; user-select:none;
+    background:linear-gradient(160deg,#fff,#eef0f7); color:#1b1c23; border:1px solid rgba(0,0,0,.35); box-shadow:0 3px 8px rgba(0,0,0,.45); font-weight:800; display:block; }
+  .card.red{ color:#c92a3e; }
+  .card .tl{ position:absolute; left:8%; top:5%; font-style:normal; font-size:calc(var(--cw) * .27); line-height:1.05; text-align:center; }
+  .card .mid{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw) * .52); font-weight:400; }
+  .card.down{ background:repeating-linear-gradient(45deg,#3b4a9a 0 6px,#2a3578 6px 12px); border:2px solid #fff; }
+  .card.down .tl, .card.down .mid{ display:none; }
+  .hand{ display:flex; flex-wrap:wrap; justify-content:center; padding:20px 6px 6px; min-height:calc(var(--cw) * 1.4 + 30px); }
+  .hand .card{ margin:0 calc(var(--cw) * -.1) 6px; cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .hand .card:hover{ transform:translateY(-6px); }
+  .hand .card.sel{ transform:translateY(-18px); box-shadow:0 0 0 3px var(--gold), 0 0 18px rgba(255,211,106,.8), 0 8px 12px rgba(0,0,0,.5); z-index:2; }
+  .hand .card.dim{ filter:brightness(.55); cursor:not-allowed; }
+  .hand .card.dim:hover{ transform:none; }
+  .hand.locked .card{ cursor:default; } .hand.locked .card:hover{ transform:none; }
+  .hand .card.fresh{ animation:pop .35s ease; }
+  @keyframes pop{ from{ transform:translateY(-24px) scale(1.1); opacity:0; } to{ transform:none; opacity:1; } }
+  .handBox{ padding:6px 8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .handHead{ display:flex; justify-content:space-between; gap:10px; padding:6px 10px 0; font-size:13px; color:var(--muted); flex-wrap:wrap; }
+  .handHead b{ color:var(--gold); }
+  .score{ border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); padding:8px 12px; overflow-x:auto; }
+  .score table{ border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums; }
+  .score th, .score td{ padding:4px 10px; text-align:center; border-bottom:1px solid rgba(255,255,255,.08); }
+  .score th{ color:var(--muted); font-weight:700; } .score td:first-child, .score th:first-child{ text-align:left; color:var(--muted); }
+  .score tr.tot td{ font-weight:900; color:var(--gold); border-bottom:0; }
+  .score .low{ color:var(--ok); } .score .moon{ color:var(--gold); }
+  .log{ font-size:12px; color:var(--muted); display:grid; gap:2px; padding:6px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); min-height:40px; }
+  .log div:last-child{ color:var(--text); }
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(460px,100%); padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+  @media (max-width:560px){ .table{ margin:6px 0; padding:14px 10px 16px; } .seat{ min-width:96px; padding:6px 8px; } .trick{ gap:8px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+<script src="../themes.js"></script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>♥ Hearts</h1>
+      <div class="sub">Dodge the hearts and the Queen of Spades — lowest score wins</div>
+    </div>
+    <div class="row">
+      <span class="pill">Wins <b id="wins">0</b></span>
+      <button id="rulesBtn">How to play</button>
+      <button id="newBtn" class="primary">New game</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span><span class="lab">Play to</span><span class="seg" id="targetSeg"><button data-v="50">50</button><button data-v="100">100</button></span></span>
+    <span><span class="lab">Bots</span><span class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></span></span>
+    <span><span class="lab">Passing</span><span class="seg" id="passSeg"><button data-v="on">3 cards</button><button data-v="off">Off</button></span></span>
+    <span><span class="lab">Shoot the moon</span><span class="seg" id="moonSeg"><button data-v="others" title="Everyone else gets +26">Others +26</button><button data-v="me" title="The shooter gets −26">Shooter −26</button></span></span>
+    <span data-season-slot></span>
+  </div>
+
+  <div class="table">
+    <div class="opps" id="opps"></div>
+    <div class="center">
+      <div class="trick" id="trick"></div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="actions" id="actions"></div>
+    <div class="info" id="info"></div>
+  </div>
+
+  <div class="handBox">
+    <div class="handHead"><span id="handLabel">Your hand</span><span id="selInfo"></span></div>
+    <div class="hand" id="hand" aria-label="Your hand"></div>
+  </div>
+
+  <div class="score" id="score"></div>
+  <div class="log" id="log" aria-live="polite"></div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="How to play">
+  <h2>How to play Hearts</h2>
+  <p>Four players. <b>Avoid taking points:</b> every ♥ is 1 point and the Queen of Spades (♠Q) is 13. The player with the <b>lowest score</b> when someone reaches the target wins.</p>
+  <p>Each hand starts by passing 3 cards (left, right, across, then no pass). The player with the <b>2♣</b> leads it. You must follow suit if you can. Nobody can lead a ♥ until a heart has been played ("broken"), and no points can be played on the first trick unless you have nothing else.</p>
+  <p><b>Shooting the moon:</b> take every heart <i>and</i> the Queen of Spades in one hand and everybody else gets +26 (or you get −26, depending on the setting).</p>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+
+  // ===== HEARTS ENGINE (pure logic, no DOM) =====
+  // suit: 0 ♠  1 ♥  2 ♦  3 ♣     rank: 2..14 (14 = Ace)
+  const RN = {11:"J",12:"Q",13:"K",14:"A"}; const rn = r => RN[r] || String(r);
+  const SU = ["♠","♥","♦","♣"];
+  const isRed = c => c.s === 1 || c.s === 2;
+  const cname = c => rn(c.r) + SU[c.s];
+  const pts = c => c.s === 1 ? 1 : (c.s === 0 && c.r === 12 ? 13 : 0);
+  const is2C = c => c.s === 3 && c.r === 2;
+  const sortHand = h => h.sort((a, b) => [3,2,0,1].indexOf(a.s) - [3,2,0,1].indexOf(b.s) || a.r - b.r);
+  function newDeck(){ const d = []; for(let s=0;s<4;s++) for(let r=2;r<=14;r++) d.push({ id:s*13 + r, r, s }); for(let i=d.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]] = [d[j],d[i]]; } return d; }
+  // trick = [{seat, card}] in play order
+  function legalMoves(hand, trick, broken, first){
+    if(!trick.length){
+      if(first){ const c = hand.filter(is2C); if(c.length) return c; }
+      if(!broken){ const nh = hand.filter(c => c.s !== 1); if(nh.length) return nh; }
+      return hand.slice();
+    }
+    const led = trick[0].card.s, follow = hand.filter(c => c.s === led);
+    if(follow.length) return follow;
+    if(first){ const safe = hand.filter(c => !pts(c)); if(safe.length) return safe; }
+    return hand.slice();
+  }
+  function trickWinner(trick){ let w = trick[0]; for(const t of trick) if(t.card.s === w.card.s && t.card.r > w.card.r) w = t; return w; }
+  // which 3 cards a bot passes
+  function botPass(hand, level){
+    const spades = hand.filter(c => c.s === 0).length;
+    const val = c => {
+      let v = c.r;
+      if(c.s === 0 && c.r === 12) v += 80;
+      else if(c.s === 0 && c.r >= 13 && spades <= 4) v += 40;
+      if(c.s === 1) v += c.r >= 10 ? 12 : 3;
+      if(level === "hard"){ const n = hand.filter(x => x.s === c.s).length; if(n <= 2 && c.s !== 0 && c.s !== 1) v += 14 - n * 3; }
+      return v + (level === "easy" ? Math.random() * 14 : 0);
+    };
+    return hand.slice().sort((a, b) => val(b) - val(a)).slice(0, 3);
+  }
+  // which card a bot plays. `ctx` has: hand, trick, broken, first, played (Set of ids seen), level
+  function botPlay(ctx){
+    const { hand, trick, level } = ctx;
+    const legal = legalMoves(hand, trick, ctx.broken, ctx.first);
+    if(legal.length === 1) return legal[0];
+    if(level === "easy" && Math.random() < .35) return legal[Math.floor(Math.random() * legal.length)];
+    const byRank = (a, b) => a.r - b.r;
+    if(!trick.length){      // leading
+      const safe = legal.filter(c => c.s !== 1 && !(c.s === 0 && c.r >= 12));
+      const pool = safe.length ? safe : legal;
+      // lead the lowest card, favouring suits where the lowest is very low
+      return pool.slice().sort((a, b) => a.r - b.r + (a.s === 0 ? 2 : 0) - (b.s === 0 ? 2 : 0))[0];
+    }
+    const led = trick[0].card.s, follow = legal.filter(c => c.s === led);
+    if(follow.length){
+      const w = trickWinner(trick), trickPts = trick.reduce((a, t) => a + pts(t.card), 0), last = trick.length === 3;
+      const below = follow.filter(c => c.r < w.card.r).sort(byRank);
+      if(below.length) return below[below.length - 1];                          // duck as high as possible
+      // forced to win (or can win): if last and no points on the table, take it with the highest card that is not a penalty
+      const lows = follow.slice().sort(byRank);
+      if(last && trickPts === 0){ const nonPts = lows.filter(c => !pts(c)); if(nonPts.length) return nonPts[nonPts.length - 1]; }
+      return lows[0];
+    }
+    // void: dump penalties
+    const qs = legal.find(c => c.s === 0 && c.r === 12); if(qs) return qs;
+    const hs = legal.filter(c => c.s === 1).sort(byRank); if(hs.length) return hs[hs.length - 1];
+    if(level !== "easy"){ const bigSpade = legal.find(c => c.s === 0 && c.r >= 13); if(bigSpade) return bigSpade; }
+    return legal.slice().sort(byRank)[legal.length - 1];
+  }
+  // ===== END ENGINE =====
+
+  const NAMES = ["You", "Ava", "Max", "Zoe"];
+  const SEAT_LABEL = ["", "West", "North", "East"];
+  const DEF = { target:100, diff:"medium", pass:"on", moon:"others" };
+  let settings = { ...DEF };
+  const store = (k, v) => { try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } };
+  const load = () => { const s = store("hearts_settings"); if(s) settings = { ...DEF, ...s }; const st = store("hearts_stats"); stats = { ...stats, ...(st || {}) }; };
+  const saveSettings = () => store("hearts_settings", settings);
+  let stats = { wins:0, games:0 };
+
+  // ===== game state =====
+  let players = [], scores = [0,0,0,0], history = [], handNo = 0, trick = [], broken = false, first = true, leader = 0, turn = -1;
+  let ui = { mode:"idle", sel:new Set() }, pending = null, over = false, runTok = 0, dir = "hold", seen = new Set();
+  const you = () => players[0];
+  const wait = (ms, tok) => new Promise((res, rej) => setTimeout(() => tok === runTok ? res() : rej("abort"), FX.reducedMotion ? 0 : ms));
+  const ask = () => new Promise(res => { pending = res; });
+  const addLog = t => { const l = $("log"); const d = document.createElement("div"); d.textContent = t; l.appendChild(d); while(l.children.length > 5) l.firstChild.remove(); };
+  const setMsg = t => $("msg").textContent = t;
+
+  function newGame(){
+    runTok++; pending = null; over = false;
+    players = NAMES.map((name, i) => ({ name, hand:[], taken:[], handPts:0 }));
+    scores = [0,0,0,0]; history = []; handNo = 0; trick = []; $("log").innerHTML = "";
+    $("actions").innerHTML = ""; setMsg(""); render();
+    run(runTok);
+  }
+
+  async function run(tok){
+    try{ while(!over){ await playHand(tok); } }
+    catch(e){ if(e !== "abort") throw e; }
+  }
+
+  async function playHand(tok){
+    const deck = newDeck();
+    players.forEach((p, i) => { p.hand = sortHand(deck.slice(i * 13, i * 13 + 13)); p.taken = []; p.handPts = 0; });
+    trick = []; broken = false; first = true; seen = new Set(); turn = -1;
+    dir = settings.pass === "on" ? ["left","right","across","hold"][handNo % 4] : "hold";
+    handNo++;
+    FX.sound("card"); render();
+    addLog(`Hand ${handNo}${dir === "hold" ? " — no passing" : " — pass " + dir}.`);
+    if(dir !== "hold"){
+      const off = { left:1, right:3, across:2 }[dir];
+      ui.mode = "pass"; ui.sel = new Set(); setMsg(`Pick 3 cards to pass ${dir}.`); render();
+      const mine = await ask();
+      const out = [mine, ...[1,2,3].map(i => botPass(players[i].hand, settings.diff))];
+      out.forEach((cards, i) => { players[i].hand = players[i].hand.filter(c => !cards.some(x => x.id === c.id)); });
+      out.forEach((cards, i) => { const to = (i + off) % 4; players[to].hand.push(...cards); });
+      players.forEach(p => sortHand(p.hand));
+      ui.mode = "idle"; FX.sound("push");
+      const got = out[(0 - off + 4) % 4];
+      addLog(`You passed ${mine.map(cname).join(" ")} and received ${got.map(cname).join(" ")}.`);
+      ui.fresh = new Set(got.map(c => c.id)); render(); await wait(700, tok); ui.fresh = null;
+    }
+    leader = players.findIndex(p => p.hand.some(is2C));
+    for(let t = 0; t < 13; t++){
+      trick = [];
+      for(let k = 0; k < 4; k++){
+        turn = (leader + k) % 4; setMsg(turn === 0 ? "Your turn." : `${players[turn].name} is thinking…`); render();
+        let card;
+        if(turn === 0){
+          ui.mode = "play"; render(); card = await ask(); ui.mode = "idle";
+        } else {
+          await wait(550, tok);
+          card = botPlay({ hand:players[turn].hand, trick, broken, first, level:settings.diff });
+        }
+        players[turn].hand = players[turn].hand.filter(c => c.id !== card.id);
+        trick.push({ seat:turn, card }); seen.add(card.id);
+        if(card.s === 1 && !broken){ broken = true; addLog(`${players[turn].name} broke hearts.`); }
+        FX.sound(card.s === 1 || pts(card) ? "tick" : "card"); render();
+      }
+      turn = -1;
+      const w = trickWinner(trick), got = trick.reduce((a, x) => a + pts(x.card), 0);
+      render(w.seat); setMsg(`${players[w.seat].name} take${w.seat === 0 ? "" : "s"} the trick${got ? ` (${got} pt${got > 1 ? "s" : ""})` : ""}.`);
+      if(got){ FX.sound(trick.some(x => x.card.s === 0 && x.card.r === 12) ? "lose" : "push"); }
+      await wait(1000, tok);
+      players[w.seat].taken.push(...trick.map(x => x.card)); players[w.seat].handPts += got;
+      leader = w.seat; first = false; trick = []; render();
+    }
+    await finishHand(tok);
+  }
+
+  async function finishHand(tok){
+    const raw = players.map(p => p.handPts);
+    const shooter = raw.findIndex(v => v === 26);
+    let add = raw.slice(), moon = -1;
+    if(shooter >= 0){
+      moon = shooter;
+      add = settings.moon === "others" ? raw.map((_, i) => i === shooter ? 0 : 26) : raw.map((_, i) => i === shooter ? -26 : 0);
+      addLog(`${players[shooter].name} shot the moon!`); FX.sound(shooter === 0 ? "bigwin" : "lose");
+      if(shooter === 0) FX.confetti({ count:200 });
+    }
+    add.forEach((v, i) => scores[i] += v);
+    history.push({ add, moon });
+    addLog(`Hand ${handNo} points: ` + players.map((p, i) => `${p.name} ${add[i] >= 0 ? "+" : ""}${add[i]}`).join(" · "));
+    const ended = scores.some(s => s >= settings.target);
+    const low = Math.min(...scores), winners = scores.map((s, i) => s === low ? i : -1).filter(i => i >= 0);
+    if(ended && winners.length === 1){
+      over = true; const w = winners[0]; render();
+      setMsg(w === 0 ? "🏆 You win the game!" : `${players[w].name} wins the game.`);
+      stats.games++;
+      if(w === 0){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 });
+        rgReport("hearts", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Lowest winning score", scores[0], { unit:"pts", better:"low", detail:`${handNo} hands` }); }
+      else FX.sound("lose");
+      store("hearts_stats", stats);
+      $("actions").innerHTML = `<button class="primary big" id="againBtn">Play again</button>`; render(); return;
+    }
+    if(ended) addLog("Tied for the lowest score — one more hand.");
+    ui.mode = "between"; setMsg(`Hand over.`); $("actions").innerHTML = `<button class="primary big" id="nextBtn">Next hand <kbd>Enter</kbd></button>`; render();
+    await ask(); ui.mode = "idle"; $("actions").innerHTML = "";
+  }
+
+  // ===== rendering =====
+  const cardHtml = (c, cls = "", extra = "") => `<div class="card ${isRed(c) ? "red" : ""} ${cls}" ${extra}><i class="tl">${rn(c.r)}<br>${SU[c.s]}</i><b class="mid">${SU[c.s]}</b></div>`;
+  function render(winSeat){
+    const me = you();
+    $("wins").textContent = stats.wins;
+    $("opps").innerHTML = [1,2,3].map(i => { const p = players[i];
+      return `<div class="seat ${turn === i ? "active" : ""}"><div class="nm">${p.name} <span style="font-weight:500;color:var(--muted);font-size:11px">${SEAT_LABEL[i]}</span></div><div class="fan">${Array.from({ length:Math.min(p.hand.length, 13) }, () => "<i></i>").join("")}</div><div class="ct"><b>${p.hand.length}</b> cards · this hand <b>${p.handPts}</b> · total <b>${scores[i]}</b></div></div>`; }).join("");
+    const slots = [0,1,2,3].map(s => { const t = trick.find(x => x.seat === s); const w = trick.length && winSeat === undefined ? trickWinner(trick).seat : winSeat;
+      return `<div class="tslot ${t ? "" : "empty"} ${w === s && t ? "winning" : ""}">${t ? cardHtml(t.card) : `<div class="card"></div>`}<span>${players[s] ? players[s].name : ""}</span></div>`; });
+    $("trick").innerHTML = slots.join("");
+    // hand
+    const legal = ui.mode === "play" ? legalMoves(me.hand, trick, broken, first) : [];
+    $("hand").classList.toggle("locked", ui.mode !== "play" && ui.mode !== "pass");
+    $("hand").innerHTML = me.hand.map(c => cardHtml(c, [ui.sel.has(c.id) && ui.mode === "pass" ? "sel" : "", ui.mode === "play" && !legal.some(l => l.id === c.id) ? "dim" : "", ui.fresh && ui.fresh.has(c.id) ? "fresh" : ""].join(" "), `data-id="${c.id}"`)).join("");
+    $("handLabel").innerHTML = `Your hand — <b>${me.hand.length}</b> cards · you've taken <b>${me.handPts}</b> pts this hand`;
+    $("selInfo").textContent = ui.mode === "pass" ? `Selected ${ui.sel.size}/3` : (ui.mode === "play" ? (first && !trick.length ? "Lead the 2♣" : "Click a card to play it") : "");
+    if(ui.mode === "pass") $("actions").innerHTML = `<button class="primary big" id="passBtn" ${ui.sel.size === 3 ? "" : "disabled"}>Pass ${dir} <kbd>Enter</kbd></button>`;
+    else if(ui.mode === "play" || ui.mode === "idle") { if(!over && ($("actions").querySelector("#passBtn"))) $("actions").innerHTML = ""; }
+    $("info").textContent = ui.mode === "play" ? (broken ? "Hearts are broken." : "Hearts not broken yet.") : "";
+    // scoreboard
+    $("score").innerHTML = `<table><tr><th>Hand</th>${NAMES.map(n => `<th>${n}</th>`).join("")}</tr>` +
+      history.map((h, i) => `<tr><td>${i + 1}</td>${h.add.map((v, k) => `<td class="${h.moon === k ? "moon" : ""}">${v}${h.moon === k ? " 🌙" : ""}</td>`).join("")}</tr>`).join("") +
+      `<tr class="tot"><td>Total</td>${scores.map(s => `<td class="${s === Math.min(...scores) ? "low" : ""}">${s}</td>`).join("")}</tr></table>`;
+    ["target","diff","pass","moon"].forEach(k => { const el = $(k === "target" ? "targetSeg" : k === "diff" ? "diffSeg" : k === "pass" ? "passSeg" : "moonSeg"); [...el.children].forEach(b => b.classList.toggle("on", b.dataset.v === String(settings[k]))); });
+  }
+
+  // ===== input =====
+  $("hand").addEventListener("click", e => {
+    const el = e.target.closest(".card[data-id]"); if(!el) return;
+    const c = you().hand.find(x => x.id === Number(el.dataset.id)); if(!c) return;
+    if(ui.mode === "pass"){
+      if(ui.sel.has(c.id)) ui.sel.delete(c.id); else if(ui.sel.size < 3) ui.sel.add(c.id); else { FX.sound("error"); return; }
+      FX.sound("tick"); render();
+    } else if(ui.mode === "play" && pending){
+      const legal = legalMoves(you().hand, trick, broken, first);
+      if(!legal.some(l => l.id === c.id)){ FX.sound("error"); setMsg(explainIllegal(c)); return; }
+      const r = pending; pending = null; r(c);
+    }
+  });
+  function explainIllegal(c){
+    if(!trick.length){ if(first) return "The hand opens with the 2♣."; return "Hearts haven't been broken yet."; }
+    const led = SU[trick[0].card.s];
+    if(you().hand.some(x => x.s === trick[0].card.s)) return `You must follow suit (${led}).`;
+    return "No points on the first trick unless you have nothing else.";
+  }
+  function submitPass(){ if(ui.mode !== "pass" || ui.sel.size !== 3 || !pending) return; const cards = you().hand.filter(c => ui.sel.has(c.id)); const r = pending; pending = null; r(cards); }
+  $("actions").addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    if(b.id === "passBtn") submitPass();
+    else if(b.id === "nextBtn" && pending){ const r = pending; pending = null; r(); }
+    else if(b.id === "againBtn") newGame();
+  });
+  document.addEventListener("keydown", e => {
+    if($("rulesBox").classList.contains("show")){ if(e.key === "Escape" || e.key === "Enter") closeRules(); return; }
+    if(e.key === "Enter"){ if(ui.mode === "pass") { e.preventDefault(); submitPass(); } else if(ui.mode === "between" && pending){ e.preventDefault(); const r = pending; pending = null; r(); } }
+    else if(e.key === "Escape" && ui.mode === "pass"){ ui.sel.clear(); render(); }
+  });
+
+  const confirmNew = m => window.RGDialog ? window.RGDialog.confirm(m) : Promise.resolve(true);
+  async function setSetting(k, v){
+    if(String(settings[k]) === String(v)) return;
+    if(!over && players.length && (scores.some(s => s) || handNo > 1 || ui.mode === "play") && !(await confirmNew("Change this setting and start a new game? The current game will be lost."))) return;
+    settings[k] = k === "target" ? Number(v) : v; saveSettings(); FX.sound("click"); newGame();
+  }
+  [["targetSeg","target"],["diffSeg","diff"],["passSeg","pass"],["moonSeg","moon"]].forEach(([id, k]) => $(id).addEventListener("click", e => { const b = e.target.closest("button"); if(b) setSetting(k, b.dataset.v); }));
+  $("newBtn").addEventListener("click", async () => {
+    if(!over && !(await confirmNew("Start a new game? The current game will be lost."))) return;
+    FX.sound("click"); newGame();
+  });
+  const closeRules = () => $("rulesBox").classList.remove("show");
+  $("rulesBtn").addEventListener("click", () => $("rulesBox").classList.add("show"));
+  $("rulesOk").addEventListener("click", closeRules);
+  $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) closeRules(); });
+
+  window.__hearts = { legalMoves, trickWinner, botPlay, botPass, newDeck };   // for testing
+  load(); newGame();
+})();
+</script>
+</body>
+</html>

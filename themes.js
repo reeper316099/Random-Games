@@ -223,6 +223,13 @@
         "@ .board{background:" + p.bgC + " !important;}";
     }
   };
+  // card games that share the BS table layout, and the second chess game
+  GAME.hearts = GAME.spades = GAME.bs;
+  GAME["video-poker"] = function (p) {
+    return "@ .table{background:" + feltBg(p, "50% 30%") + " !important;box-shadow:" + rail(p, 10, 12, 13, 26, 80) + " !important;}" +
+      faceCss(p, ".card:not(.down)", ".card.red:not(.down)") + "@ .card.down{background:" + p.back + " !important;}";
+  };
+  GAME["remorse-chess"] = GAME.chess;
   var COMMON = function (p) {
     return "@{--gold:" + p.g1 + ";--gold2:" + p.g2 + ";--accent:" + p.g2 + ";}" +
       "@ body{background:radial-gradient(1100px 600px at 50% -10%," + p.bgA + " 0%," + p.bgB + " 45%," + p.bgC + " 85%) fixed !important;}";

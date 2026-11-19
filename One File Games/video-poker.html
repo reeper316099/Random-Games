@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Video Poker</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --cw:clamp(52px, 12vw, 104px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 50% -10%, #1b3a6b 0%, #0f1d3a 45%, var(--bg) 85%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    padding:44px 16px 24px;
+  }
+  .wrap{ width:min(900px,100%); display:grid; gap:14px; align-content:start; }
+  .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .title h1{ margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+    background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+  .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+  button{ border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s; }
+  button:hover:not(:disabled){ filter:brightness(1.2); }
+  button:active:not(:disabled){ transform:scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.55); }
+  button.gold{ background:linear-gradient(180deg, rgba(255,211,106,.5), rgba(240,160,32,.22)); border-color:rgba(255,211,106,.7); }
+  button.big{ padding:14px 30px; font-size:17px; }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  kbd{ font:600 10px ui-monospace, monospace; padding:1px 5px; border-radius:5px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.25); margin-left:6px; opacity:.8; }
+
+  .table{ position:relative; margin:6px 10px; border-radius:30px; padding:18px 16px 20px;
+    background:radial-gradient(ellipse at 50% 30%, #1f5fb0 0%, #123d7a 55%, #0a2146 100%);
+    box-shadow:0 0 0 10px #3a2a14, 0 0 0 12px #1b1208, 0 0 0 13px rgba(255,211,106,.35), 0 26px 60px rgba(0,0,0,.6), inset 0 0 80px rgba(0,0,0,.5);
+    display:grid; gap:14px; }
+  .pay{ width:100%; border-collapse:collapse; font-size:13px; }
+  .pay td{ padding:3px 10px; border-bottom:1px solid rgba(255,255,255,.1); }
+  .pay td:first-child{ color:#d6e6ff; } .pay td:not(:first-child){ text-align:right; font-variant-numeric:tabular-nums; color:#fff; }
+  .pay tr.hit td{ background:rgba(255,211,106,.28); color:#fff; font-weight:800; }
+  .pay th{ font-size:11px; color:#a9c8f5; font-weight:700; text-align:right; padding:2px 10px; } .pay th:first-child{ text-align:left; }
+  .pay td.cur, .pay th.cur{ background:rgba(255,211,106,.14); }
+  .hand{ display:flex; gap:clamp(6px,1.6vw,16px); justify-content:center; padding-top:10px; }
+  .slot{ display:grid; gap:6px; justify-items:center; }
+  .held{ height:20px; font-size:12px; font-weight:900; letter-spacing:1px; color:var(--gold); opacity:0; }
+  .held.on{ opacity:1; }
+  .card{ position:relative; width:var(--cw); height:calc(var(--cw) * 1.4); border-radius:8%/6%; flex:none; user-select:none; cursor:pointer; font-weight:800;
+    background:linear-gradient(160deg,#fff,#eef0f7); color:#1b1c23; border:1px solid rgba(0,0,0,.35); box-shadow:0 3px 8px rgba(0,0,0,.45); transition:transform .12s, box-shadow .12s; }
+  .card.red{ color:#c92a3e; }
+  .card .tl{ position:absolute; left:8%; top:5%; font-style:normal; font-size:calc(var(--cw) * .27); line-height:1.05; text-align:center; }
+  .card .mid{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw) * .55); font-weight:400; }
+  .card.down{ background:repeating-linear-gradient(45deg,#3b4a9a 0 6px,#2a3578 6px 12px); border:2px solid #fff; }
+  .card.down .tl, .card.down .mid{ display:none; }
+  .card.hold{ transform:translateY(-8px); box-shadow:0 0 0 3px var(--gold), 0 0 18px rgba(255,211,106,.8), 0 8px 12px rgba(0,0,0,.5); }
+  .card.win{ box-shadow:0 0 0 3px var(--ok), 0 0 16px rgba(106,255,182,.7), 0 3px 8px rgba(0,0,0,.45); }
+  .card.flip{ animation:flip .35s ease; }
+  @keyframes flip{ from{ transform:rotateY(90deg); } to{ transform:none; } }
+  .locked .card{ cursor:default; }
+  .msg{ text-align:center; min-height:26px; font-size:17px; font-weight:800; }
+  .msg.win{ color:var(--gold); } .msg.lose{ color:#f1b0b0; }
+  .controls{ display:flex; gap:14px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .bet{ display:inline-flex; align-items:center; gap:6px; }
+  .bet button{ padding:8px 12px; }
+  .stats{ text-align:center; font-size:12px; color:var(--muted); }
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(440px,100%); padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+  @media (max-width:560px){ .table{ margin:6px 0; padding:14px 10px 16px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+<script src="../themes.js"></script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>🂡 Video Poker</h1>
+      <div class="sub">Jacks or Better — hold the cards you want, draw once, get paid</div>
+    </div>
+    <div class="row">
+      <span class="pill">Credits <b id="bank">0</b></span>
+      <span class="pill">Best <b id="best">0</b></span>
+      <button id="rulesBtn">How to play</button>
+      <button id="resetBtn">Reset credits</button>
+      <span data-season-slot></span>
+    </div>
+  </div>
+
+  <div class="table">
+    <table class="pay" id="pay"></table>
+    <div class="msg" id="msg"></div>
+    <div class="hand" id="hand" aria-label="Your hand"></div>
+    <div class="controls">
+      <span class="bet">Bet <button id="betDn" aria-label="Lower bet">−</button><b id="betNum" style="min-width:24px;text-align:center">1</b><button id="betUp" aria-label="Raise bet">+</button><button id="betMax">Max</button></span>
+      <button id="dealBtn" class="gold big">Deal <kbd>Enter</kbd></button>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="How to play">
+  <h2>How to play</h2>
+  <p>Pick a bet (1–5 credits per hand) and press <b>Deal</b>. You get five cards. Click the cards you want to <b>hold</b> (keys <b>1–5</b>), then press <b>Draw</b> to replace the rest — once.</p>
+  <p>Your final hand is paid by the table above (Jacks or Better 9/6: a pair of Jacks or higher is the lowest paying hand). Betting the maximum 5 credits pays 4000 for a Royal Flush instead of 800 × bet.</p>
+  <p>After a win you can try to <b>double</b> it: guess whether the next card is higher or lower than the dealer's card. Ties push.</p>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+
+  // ===== VIDEO POKER ENGINE (pure logic) =====
+  const RN = ["","A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const SU = ["♠","♥","♦","♣"];
+  const isRed = c => c.s === 1 || c.s === 2;
+  // 9/6 Jacks or Better pay table (per credit); Royal pays 4000 on a 5-credit bet.
+  const HANDS = [
+    ["Royal Flush", 250], ["Straight Flush", 50], ["Four of a Kind", 25], ["Full House", 9],
+    ["Flush", 6], ["Straight", 4], ["Three of a Kind", 3], ["Two Pair", 2], ["Jacks or Better", 1]
+  ];
+  function deck(){ const d = []; for(let s=0;s<4;s++) for(let r=1;r<=13;r++) d.push({ r, s }); for(let i=d.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]] = [d[j],d[i]]; } return d; }
+  // returns { name, mult, idx, cards:[indexes that make the hand] }
+  function evaluate(h){
+    const counts = {}; h.forEach(c => counts[c.r] = (counts[c.r] || 0) + 1);
+    const flush = h.every(c => c.s === h[0].s);
+    const ranks = h.map(c => c.r).sort((a, b) => a - b);
+    const uniq = new Set(ranks).size === 5;
+    const straight = uniq && (ranks[4] - ranks[0] === 4 || (ranks.join() === "1,10,11,12,13"));
+    const groups = Object.entries(counts).map(([r, n]) => ({ r:Number(r), n })).sort((a, b) => b.n - a.n || b.r - a.r);
+    const all = [0,1,2,3,4];
+    const idxOf = rs => h.map((c, i) => rs.includes(c.r) ? i : -1).filter(i => i >= 0);
+    let idx = -1, cards = all;
+    if(straight && flush){ idx = ranks.join() === "1,10,11,12,13" ? 0 : 1; }
+    else if(groups[0].n === 4){ idx = 2; cards = idxOf([groups[0].r]); }
+    else if(groups[0].n === 3 && groups[1].n === 2) idx = 3;
+    else if(flush) idx = 4;
+    else if(straight) idx = 5;
+    else if(groups[0].n === 3){ idx = 6; cards = idxOf([groups[0].r]); }
+    else if(groups[0].n === 2 && groups[1].n === 2){ idx = 7; cards = idxOf([groups[0].r, groups[1].r]); }
+    else if(groups[0].n === 2 && (groups[0].r >= 11 || groups[0].r === 1)){ idx = 8; cards = idxOf([groups[0].r]); }
+    if(idx < 0) return { name:"", mult:0, idx:-1, cards:[] };
+    return { name:HANDS[idx][0], mult:HANDS[idx][1], idx, cards };
+  }
+  const payout = (ev, bet) => ev.idx < 0 ? 0 : (ev.idx === 0 && bet === 5 ? 4000 : ev.mult * bet);
+  // Simple strategy hint: returns the set of indexes to hold (good-enough Jacks-or-Better heuristics).
+  function bestHold(h){
+    const ev = evaluate(h);
+    if([0,1,3,4,5].includes(ev.idx)) return [0,1,2,3,4];
+    if(ev.idx === 2) return ev.cards;
+    if(ev.idx === 6 || ev.idx === 7 || ev.idx === 8) return ev.cards;
+    // four to a flush / straight flush / royal draw
+    for(let s=0;s<4;s++){ const m = h.map((c,i)=>c.s===s?i:-1).filter(i=>i>=0); if(m.length === 4) return m; }
+    const rs = h.map(c => c.r);
+    for(let i=0;i<5;i++){ const rest = rs.filter((_, j) => j !== i); const sorted = [...new Set(rest)].sort((a,b)=>a-b); if(sorted.length === 4 && sorted[3]-sorted[0] === 3) return [0,1,2,3,4].filter(j=>j!==i); }
+    const pair = [...new Set(rs.filter((r, i) => rs.indexOf(r) !== i))];
+    if(pair.length) return h.map((c,i)=>pair.includes(c.r)?i:-1).filter(i=>i>=0);
+    const hi = h.map((c,i)=>(c.r >= 11 || c.r === 1) ? i : -1).filter(i => i>=0);
+    if(hi.length) return hi.slice(0, 2);
+    return [];
+  }
+
+  // ===== state =====
+  const START = 200;
+  let bank = START, bet = 1, best = 0, phase = "bet";      // bet | hold | gamble
+  let dk = [], hand = [], held = new Set(), lastEv = null, win = 0, gambleCard = null, handsPlayed = 0, wins = 0, busy = false;
+  const store = (k, v) => { try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } };
+  function load(){ const s = store("vp_state"); if(s){ bank = s.bank > 0 ? s.bank : START; best = s.best || 0; bet = Math.min(5, s.bet || 1); handsPlayed = s.hands || 0; wins = s.wins || 0; } }
+  const save = () => store("vp_state", { bank, best, bet, hands:handsPlayed, wins });
+  const wait = ms => new Promise(r => setTimeout(r, FX.reducedMotion ? 0 : ms));
+
+  function cardHtml(c, i, cls = ""){
+    if(!c) return `<div class="card down ${cls}"></div>`;
+    return `<div class="card ${isRed(c) ? "red" : ""} ${cls}" data-i="${i}"><i class="tl">${RN[c.r]}<br>${SU[c.s]}</i><b class="mid">${SU[c.s]}</b></div>`;
+  }
+  function renderPay(hitIdx){
+    $("pay").innerHTML = `<tr><th>Hand</th>${[1,2,3,4,5].map(b => `<th class="${b === bet ? "cur" : ""}">${b}</th>`).join("")}</tr>` +
+      HANDS.map((h, i) => `<tr class="${i === hitIdx ? "hit" : ""}"><td>${h[0]}</td>${[1,2,3,4,5].map(b => `<td class="${b === bet ? "cur" : ""}">${i === 0 && b === 5 ? 4000 : h[1] * b}</td>`).join("")}</tr>`).join("");
+  }
+  function render(opts = {}){
+    $("bank").textContent = FX.fmt(bank); $("best").textContent = FX.fmt(best); $("betNum").textContent = bet;
+    renderPay(lastEv && phase !== "hold" && lastEv.idx >= 0 ? lastEv.idx : -1);
+    const hh = $("hand"); hh.classList.toggle("locked", phase !== "hold");
+    if(!hand.length) hh.innerHTML = Array.from({ length:5 }, () => `<div class="slot"><div class="held"></div>${cardHtml(null)}</div>`).join("");
+    else hh.innerHTML = hand.map((c, i) => {
+      const isHeld = held.has(i);
+      const cls = (phase === "hold" && isHeld ? "hold " : "") + (phase !== "hold" && lastEv && lastEv.cards.includes(i) ? "win " : "") + (opts.flip && opts.flip.includes(i) ? "flip" : "");
+      return `<div class="slot"><div class="held ${phase === "hold" && isHeld ? "on" : ""}">HELD</div>${cardHtml(c, i, cls)}</div>`;
+    }).join("");
+    const db = $("dealBtn");
+    const betBtns = ["betDn","betUp","betMax"]; betBtns.forEach(id => $(id).disabled = phase !== "bet" || busy);
+    if(phase === "hold"){ db.innerHTML = `Draw <kbd>Enter</kbd>`; db.disabled = busy; }
+    else if(phase === "gamble"){ db.innerHTML = `Collect <kbd>Enter</kbd>`; db.disabled = busy; }
+    else { db.innerHTML = `Deal <kbd>Enter</kbd>`; db.disabled = busy || bank < bet; }
+    $("stats").textContent = `Hands played ${handsPlayed} · Winning hands ${wins}`;
+  }
+  const setMsg = (t, cls = "") => { const m = $("msg"); m.textContent = t; m.className = "msg " + cls; };
+  function gambleUI(){
+    // shown in the controls area via message + extra buttons
+    let g = $("gamble"); if(!g){ g = document.createElement("div"); g.id = "gamble"; g.className = "controls"; $("dealBtn").parentNode.parentNode.insertBefore(g, $("dealBtn").parentNode); }
+    if(phase !== "gamble"){ g.innerHTML = ""; return; }
+    g.innerHTML = `<span class="pill">Win <b>${win}</b></span><span class="pill">Dealer ${gambleCard ? `<b style="color:${isRed(gambleCard) ? "#ff8a99" : "#fff"}">${RN[gambleCard.r]}${SU[gambleCard.s]}</b>` : "?"}</span>
+      <button id="hiBtn" class="primary" ${busy ? "disabled" : ""}>Higher <kbd>H</kbd></button><button id="loBtn" class="primary" ${busy ? "disabled" : ""}>Lower <kbd>L</kbd></button>`;
+  }
+
+  // ===== flow =====
+  function deal(){
+    if(phase !== "bet" || bank < bet || busy) return;
+    bank -= bet; dk = deck(); hand = dk.splice(0, 5); held = new Set(); lastEv = null; win = 0; phase = "hold";
+    FX.sound("card"); setMsg("Choose cards to hold, then draw."); render({ flip:[0,1,2,3,4] }); gambleUI(); save();
+    const ev = evaluate(hand); if(ev.idx >= 0) setMsg(`You have ${ev.name}. Hold and draw.`);
+  }
+  async function draw(){
+    if(phase !== "hold" || busy) return; busy = true;
+    const flip = []; hand = hand.map((c, i) => { if(held.has(i)) return c; flip.push(i); return dk.shift(); });
+    FX.sound("card"); phase = "result"; lastEv = evaluate(hand); handsPlayed++;
+    render({ flip }); await wait(250);
+    const pay = payout(lastEv, bet);
+    if(pay > 0){
+      wins++; win = pay; FX.sound(lastEv.idx <= 3 ? "bigwin" : "win");
+      if(lastEv.idx <= 2) FX.confetti({ count:lastEv.idx === 0 ? 260 : 150 });
+      setMsg(`${lastEv.name}! +${pay}`, "win");
+      FX.countTo($("bank"), bank, bank + pay, 600); bank += pay; best = Math.max(best, pay);
+      rgReport("video-poker", "Jacks or Better", "Biggest hand win", pay, { unit:"credits", better:"high", detail:lastEv.name });
+      phase = "gamble";
+    } else { setMsg("No win. Better luck next hand.", "lose"); FX.sound("lose"); phase = "bet"; }
+    busy = false; save(); render(); gambleUI();
+    if(phase === "bet" && bank < bet){ if(bank <= 0){ setMsg("Out of credits — reset to keep playing.", "lose"); } else { bet = bank; render(); } }
+  }
+  function collect(){
+    if(phase !== "gamble" || busy) return;
+    phase = "bet"; save(); gambleUI(); render();
+    setMsg(`Collected ${win}. Deal again?`, "win");
+  }
+  async function gamble(higher){
+    if(phase !== "gamble" || busy) return;
+    busy = true; bank -= win;      // stake the win
+    const dealer = dk.length ? dk.shift() : deck().shift();
+    gambleCard = dealer; render(); gambleUI(); await wait(350);
+    const next = dk.length ? dk.shift() : deck().shift();
+    const rank = c => c.r === 1 ? 14 : c.r;
+    gambleCard = next; FX.sound("card"); gambleUI();
+    const a = rank(dealer), b = rank(next);
+    if(a === b){ bank += win; setMsg(`Push — ${RN[next.r]}${SU[next.s]} matches. Your win stays.`); FX.sound("push"); }
+    else if((b > a) === higher){ win *= 2; bank += win; best = Math.max(best, win); setMsg(`Correct! Doubled to ${win}.`, "win"); FX.sound("win"); if(win >= 1000) FX.confetti({ count:120 }); rgReport("video-poker", "Jacks or Better", "Biggest hand win", win, { unit:"credits", better:"high", detail:"doubled" }); }
+    else { setMsg(`Wrong — ${RN[next.r]}${SU[next.s]}. You lost the ${win}.`, "lose"); FX.sound("lose"); win = 0; phase = "bet"; }
+    await wait(700); busy = false; if(phase === "gamble"){ gambleCard = null; } save(); render(); gambleUI();
+    if(phase === "bet") gambleCard = null, gambleUI();
+  }
+
+  // ===== input =====
+  $("hand").addEventListener("click", e => {
+    if(phase !== "hold" || busy) return;
+    const c = e.target.closest(".card[data-i]"); if(!c) return;
+    const i = Number(c.dataset.i); held.has(i) ? held.delete(i) : held.add(i); FX.sound("tick"); render();
+  });
+  $("dealBtn").addEventListener("click", () => { phase === "hold" ? draw() : phase === "gamble" ? collect() : deal(); });
+  $("betUp").addEventListener("click", () => { bet = Math.min(5, bank, bet + 1); FX.sound("click"); save(); render(); });
+  $("betDn").addEventListener("click", () => { bet = Math.max(1, bet - 1); FX.sound("click"); save(); render(); });
+  $("betMax").addEventListener("click", () => { bet = Math.min(5, Math.max(1, bank)); FX.sound("click"); save(); render(); });
+  document.addEventListener("click", e => { if(e.target.id === "hiBtn") gamble(true); else if(e.target.id === "loBtn") gamble(false); });
+  $("resetBtn").addEventListener("click", async () => {
+    const ok = window.RGDialog ? await window.RGDialog.confirm("Reset your credits back to " + START + "?") : true;
+    if(!ok) return; bank = START; bet = 1; phase = "bet"; hand = []; lastEv = null; win = 0; busy = false; setMsg("Credits reset."); save(); render(); gambleUI();
+  });
+  const closeRules = () => $("rulesBox").classList.remove("show");
+  $("rulesBtn").addEventListener("click", () => $("rulesBox").classList.add("show"));
+  $("rulesOk").addEventListener("click", closeRules);
+  $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) closeRules(); });
+  document.addEventListener("keydown", e => {
+    if($("rulesBox").classList.contains("show")){ if(e.key === "Escape" || e.key === "Enter") closeRules(); return; }
+    if(e.key === "Enter"){ e.preventDefault(); $("dealBtn").click(); }
+    else if(phase === "hold" && "12345".includes(e.key) && e.key){ const i = Number(e.key) - 1; held.has(i) ? held.delete(i) : held.add(i); FX.sound("tick"); render(); }
+    else if(phase === "gamble" && (e.key === "h" || e.key === "H")) gamble(true);
+    else if(phase === "gamble" && (e.key === "l" || e.key === "L")) gamble(false);
+  });
+
+  window.__vp = { evaluate, payout, bestHold };     // exposed for testing
+  load(); setMsg(bank > 0 ? "Press Deal to start." : "Out of credits — reset to keep playing."); render(); gambleUI();
+})();
+</script>
+</body>
+</html>

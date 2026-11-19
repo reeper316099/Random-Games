@@ -6,6 +6,10 @@ A small collection of browser games, including both single-file games and multi-
 
 ### One File Games
 - `One File Games/bs.html` — BS (Cheat): bluff your cards away against 1–4 bots and call out their lies
+- `One File Games/video-poker.html` — Video Poker (Jacks or Better 9/6): hold/draw, pay table, max-bet royal flush, double-up gamble
+- `One File Games/hearts.html` — Hearts vs 3 bots: card passing, hearts breaking, shooting the moon, target score 50/100
+- `One File Games/spades.html` — Spades: partnership bidding (you + Max vs 2 bots), Nil bids, bags, scoring to 250/500
+- `One File Games/remorse-chess.html` — Remorse Chess: chess where pieces react to captures (guilt, devastation, psychopaths, vengeance, absolution by bishops); every rule is a setting, with Orthodox / Full / Lite presets
 - `One File Games/blackjack.html` — Blackjack (play-money chips, animated dealing, strategy hints)
 - `One File Games/checkers.html` — Checkers vs the computer (three skill levels) or a friend
 - `One File Games/chess.html` — Chess vs the computer (three skill levels, with a choice of the built-in engine or bundled Stockfish) or a friend; drag-and-drop, promotion choice, hints, undo, save and replay
