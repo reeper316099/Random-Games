@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cribbage</title>
+<style>
+  :root{
+    --bg:#0b0f17; --line:rgba(255,255,255,.14); --text:#e7eefc; --muted:#a9b6d3;
+    --accent:#6aa6ff; --danger:#ff6a6a; --ok:#6affb6; --warn:#ffd36a; --gold:#ffd36a; --gold2:#f0a020;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --cw:clamp(44px, 9vw, 66px);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; justify-content:center;
+    background:radial-gradient(1100px 600px at 50% -10%, #3d2a14 0%, #21160a 45%, var(--bg) 85%) fixed;
+    color:var(--text); font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    padding:44px 16px 24px;
+  }
+  .wrap{ width:min(980px,100%); display:grid; gap:14px; align-content:start; }
+  .topbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .title h1{ margin:0; font-size:22px; letter-spacing:.5px; font-weight:900;
+    background:linear-gradient(180deg,#fff3c4,var(--gold) 45%,var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .title .sub{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .pill{ display:inline-flex; gap:8px; align-items:center; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,.3); font-size:13px; }
+  .pill b{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--gold); }
+  button{ border:1px solid var(--line); background:rgba(255,255,255,.07); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; transition:filter .12s, transform .12s; font-family:inherit; }
+  button:hover:not(:disabled){ filter:brightness(1.2); }
+  button:active:not(:disabled){ transform:scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background:linear-gradient(180deg, rgba(106,166,255,.4), rgba(106,166,255,.18)); border-color:rgba(106,166,255,.55); }
+  button.big{ padding:13px 26px; font-size:16px; }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .bar{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:center; padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .bar .lab{ font-size:12px; color:var(--muted); margin-right:6px; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25); }
+  .seg button{ border:0; border-radius:0; background:transparent; padding:8px 12px; font-size:13px; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(180deg, rgba(106,166,255,.42), rgba(106,166,255,.16)); color:#fff; }
+
+  .board{ border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; display:grid; gap:10px;
+    background:linear-gradient(180deg,#8a5a2b,#6b4220 50%,#55340f); box-shadow:inset 0 2px 0 rgba(255,255,255,.2), inset 0 -8px 24px rgba(0,0,0,.35), var(--shadow); }
+  .lane{ display:grid; grid-template-columns:90px 1fr 64px; gap:10px; align-items:center; }
+  .lane .who{ font-weight:900; font-size:14px; text-shadow:0 1px 2px rgba(0,0,0,.6); } .lane .who small{ display:block; font-weight:600; font-size:11px; color:#ffe9b8; }
+  .track{ position:relative; height:22px; border-radius:11px; background:linear-gradient(180deg,#2b1707,#3b200a); box-shadow:inset 0 3px 6px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.25); }
+  .holes{ position:absolute; inset:0; background:repeating-linear-gradient(90deg, rgba(0,0,0,.55) 0 3px, transparent 3px calc(100% / 24)); opacity:.7; border-radius:11px; }
+  .mark{ position:absolute; top:0; bottom:0; width:2px; background:rgba(255,211,106,.55); } .mark small{ position:absolute; top:-15px; left:-10px; font-size:9px; color:#ffe9b8; }
+  .peg{ position:absolute; top:50%; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; transition:left .6s ease; box-shadow:0 2px 4px rgba(0,0,0,.7), inset 0 -2px 3px rgba(0,0,0,.35); }
+  .peg.back{ opacity:.55; transform:scale(.8); }
+  .lane.you .peg{ background:#ff5a6e; } .lane.bot .peg{ background:#4f8cff; }
+  .lane .num{ font-size:24px; font-weight:900; text-align:right; color:#fff3c4; font-variant-numeric:tabular-nums; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+
+  .table{ position:relative; margin:4px 10px; border-radius:36px; padding:18px 16px 20px;
+    background:radial-gradient(ellipse at 50% 30%, #1f7a4a 0%, #14563a 55%, #0a3324 100%);
+    box-shadow:0 0 0 10px #5b3516, 0 0 0 12px #2b1707, 0 0 0 13px rgba(255,211,106,.35), 0 26px 60px rgba(0,0,0,.6), inset 0 0 80px rgba(0,0,0,.5);
+    display:grid; gap:12px; min-height:360px; overflow:hidden; }
+  .oppRow{ display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  .fan{ display:flex; justify-content:center; height:34px; } .fan i{ width:22px; height:32px; border-radius:4px; margin-left:-13px; border:1px solid rgba(255,255,255,.55); background:repeating-linear-gradient(45deg,#3b4a9a 0 4px,#2a3578 4px 8px); box-shadow:0 1px 2px rgba(0,0,0,.5); } .fan i:first-child{ margin-left:0; }
+  .tag{ font-size:12px; color:#d9f3e4; }
+  .mid{ display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; }
+  .pile{ display:grid; gap:4px; justify-items:center; font-size:12px; color:#d9f3e4; min-width:calc(var(--cw) + 8px); }
+  .play{ display:grid; gap:8px; justify-items:center; text-align:center; min-height:calc(var(--cw) * 1.4 + 40px); align-content:center; }
+  .count{ font-size:15px; font-weight:800; } .count b{ color:var(--gold); font-size:24px; }
+  .seq{ display:flex; justify-content:center; min-height:calc(var(--cw) * 1.4); padding-left:calc(var(--cw) * .5); flex-wrap:wrap; }
+  .seq .card{ margin-left:calc(var(--cw) * -.5); }
+  .msg{ min-height:22px; font-size:15px; font-weight:700; text-align:center; } .info{ font-size:12px; color:#d9f3e4; min-height:16px; text-align:center; }
+  .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; min-height:46px; }
+  .show{ display:grid; gap:8px; justify-items:center; width:100%; }
+  .show .cs{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+  .show .cs .card.starter{ box-shadow:0 0 0 3px var(--gold), 0 3px 8px rgba(0,0,0,.45); }
+  .items{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; font-size:12px; }
+  .items span{ padding:3px 9px; border-radius:999px; background:rgba(0,0,0,.35); border:1px solid var(--line); } .items b{ color:var(--gold); }
+  .shtot{ font-size:18px; font-weight:900; color:var(--gold); }
+
+  .card{ position:relative; width:var(--cw); height:calc(var(--cw) * 1.4); border-radius:8%/6%; flex:none; user-select:none;
+    background:linear-gradient(160deg,#fff,#eef0f7); color:#1b1c23; border:1px solid rgba(0,0,0,.35); box-shadow:0 3px 8px rgba(0,0,0,.45); font-weight:800; display:block; }
+  .card.red{ color:#c92a3e; }
+  .card .tl{ position:absolute; left:8%; top:5%; font-style:normal; font-size:calc(var(--cw) * .27); line-height:1.05; text-align:center; }
+  .card .md{ position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw) * .52); font-weight:400; }
+  .card.down{ background:repeating-linear-gradient(45deg,#3b4a9a 0 6px,#2a3578 6px 12px); border:2px solid #fff; } .card.down .tl, .card.down .md{ display:none; }
+  .hand{ display:flex; flex-wrap:wrap; justify-content:center; padding:20px 6px 6px; min-height:calc(var(--cw) * 1.4 + 30px); }
+  .hand .card{ margin:0 calc(var(--cw) * -.08) 6px; cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .hand .card:hover{ transform:translateY(-6px); }
+  .hand .card.sel{ transform:translateY(-18px); box-shadow:0 0 0 3px var(--gold), 0 0 18px rgba(255,211,106,.8), 0 8px 12px rgba(0,0,0,.5); z-index:2; }
+  .hand .card.hint{ box-shadow:0 0 0 3px var(--ok), 0 0 16px rgba(106,255,182,.6), 0 3px 8px rgba(0,0,0,.45); }
+  .hand .card.dim{ filter:brightness(.55); cursor:not-allowed; } .hand .card.dim:hover{ transform:none; }
+  .hand.locked .card{ cursor:default; } .hand.locked .card:hover{ transform:none; }
+  .handBox{ padding:6px 8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.22); }
+  .handHead{ display:flex; justify-content:space-between; gap:10px; padding:6px 10px 0; font-size:13px; color:var(--muted); flex-wrap:wrap; } .handHead b{ color:var(--gold); }
+  .log{ font-size:12px; color:var(--muted); display:grid; gap:2px; padding:6px 14px; border:1px solid var(--line); border-radius:var(--radius); background:rgba(0,0,0,.18); min-height:40px; }
+  .log div:last-child{ color:var(--text); }
+  .overlay{ position:fixed; inset:0; z-index:50; display:none; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+  .overlay.show{ display:grid; }
+  .overlay .box{ width:min(500px,100%); max-height:90vh; overflow:auto; padding:20px; border-radius:20px; background:#141a2a; border:1px solid var(--line); box-shadow:var(--shadow); display:grid; gap:12px; }
+  .overlay h2{ margin:0; font-size:20px; } .overlay p, .overlay li{ margin:0; color:var(--muted); font-size:14px; line-height:1.5; } .overlay ul{ margin:0; padding-left:18px; }
+  @media (max-width:560px){ .table{ margin:4px 0; padding:14px 10px 16px; } .lane{ grid-template-columns:64px 1fr 48px; } .mid{ grid-template-columns:1fr; justify-items:center; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+<script src="../themes.js"></script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title"><h1>Cribbage</h1><div class="sub">Six-card cribbage against a bot — peg your way round the board</div></div>
+    <div class="row">
+      <span class="pill">Wins <b id="wins">0</b></span>
+      <button id="rulesBtn">How to play</button>
+      <button id="newBtn" class="primary">New game</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span><span class="lab">Play to</span><span class="seg" id="targetSeg"><button data-v="61">61</button><button data-v="121">121</button></span></span>
+    <span><span class="lab">Bot</span><span class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="medium">Medium</button><button data-v="hard">Hard</button></span></span>
+    <span><span class="lab">First crib</span><span class="seg" id="firstSeg"><button data-v="you">Yours</button><button data-v="bot">Bot's</button><button data-v="random">Random</button></span></span>
+    <span data-season-slot></span>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="table">
+    <div class="oppRow"><span class="tag" id="botTag">Bot</span><div class="fan" id="botFan"></div></div>
+    <div class="mid">
+      <div class="pile" id="cribPile"></div>
+      <div class="play" id="play"></div>
+      <div class="pile" id="starterPile"></div>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="actions" id="actions"></div>
+    <div class="info" id="info"></div>
+  </div>
+
+  <div class="handBox">
+    <div class="handHead"><span id="handLabel">Your hand</span><span id="selInfo"></span></div>
+    <div class="hand" id="hand" aria-label="Your hand"></div>
+  </div>
+  <div class="log" id="log" aria-live="polite"></div>
+</div>
+
+<div class="overlay" id="rulesBox"><div class="box" role="dialog" aria-modal="true" aria-label="How to play">
+  <h2>How to play Cribbage</h2>
+  <ul>
+    <li>Each hand: both players get <b>6 cards</b> and throw <b>2</b> into the <b>crib</b>, which belongs to the dealer. A starter card is cut (a Jack gives the dealer <b>2</b>, "his heels").</li>
+    <li><b>The play:</b> starting with the non-dealer, take turns laying cards and calling the running count (face cards 10, Ace 1). It can't go over <b>31</b>. You score for a count of <b>15</b> or <b>31</b> (2 each), <b>pairs</b> (2 / 6 / 12), <b>runs</b> of 3 or more (1 per card), <b>Go</b> and the <b>last card</b> (1 each).</li>
+    <li><b>The show:</b> each player scores their 4-card hand plus the starter: <b>fifteens</b> (2 each), <b>pairs</b> (2), <b>runs</b> (1 per card), a <b>flush</b> (4, or 5 with the starter; the crib needs all 5) and <b>nobs</b> (a Jack matching the starter's suit, 1). The non-dealer counts first, then the dealer's hand, then the crib.</li>
+    <li>First to the target (121 or 61) wins. The board scores everything for you, and the breakdown is shown.</li>
+  </ul>
+  <button class="primary" id="rulesOk">Got it</button>
+</div></div>
+
+<script src="../scores.js"></script>
+<script src="../fx.js"></script>
+<script>
+(() => {
+  const rgReport = (...a) => { try{ window.RGScores && window.RGScores.report(...a); }catch(e){} };
+  const FX = window.RGFx || { sound(){}, confetti(){}, countTo(el,f,t){ if(el) el.textContent = t; }, floatText(){}, fmt:n => String(Math.round(n)), reducedMotion:false };
+  const $ = id => document.getElementById(id);
+
+  // ===== ENGINE =====
+  // suit: 0 ♠  1 ♥  2 ♦  3 ♣     rank: 2..14 (14 = Ace)
+  const RN = {11:"J",12:"Q",13:"K",14:"A"}, rn = r => RN[r] || String(r);
+  const SU = ["♠","♥","♦","♣"], isRed = c => c.s === 1 || c.s === 2;
+  const crank = c => c.r === 14 ? 1 : c.r;                    // ace low for runs and ordering
+  const pv = c => Math.min(crank(c), 10);                      // pip value for counting
+  const cname = c => rn(c.r) + SU[c.s];
+  const sortHand = h => h.sort((a, b) => crank(a) - crank(b) || a.s - b.s);
+  function newDeck(){ const d = []; for(let s=0;s<4;s++) for(let r=2;r<=14;r++) d.push({ id:s*13 + r, r, s }); for(let i=d.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]] = [d[j],d[i]]; } return d; }
+  const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+
+  // score a 4-card hand with the starter. crib = true needs a 5-card flush. Returns { total, items:[[label, pts]] }
+  function scoreHand(hand, starter, crib){
+    const five = hand.concat([starter]), items = [];
+    // fifteens
+    for(let m = 1; m < 32; m++){ const sel = []; let sum = 0; for(let i = 0; i < 5; i++) if(m & (1 << i)){ sel.push(five[i]); sum += pv(five[i]); } if(sum === 15) items.push(["Fifteen " + sel.map(cname).join(" "), 2]); }
+    // pairs
+    for(let i = 0; i < 5; i++) for(let j = i + 1; j < 5; j++) if(five[i].r === five[j].r) items.push(["Pair of " + rn(five[i].r) + "s", 2]);
+    // runs: the longest length that exists, every distinct combination of cards counts
+    for(let L = 5; L >= 3; L--){
+      const runs = [];
+      for(let m = 1; m < 32; m++){ let k = 0; const sel = []; for(let i = 0; i < 5; i++) if(m & (1 << i)){ k++; sel.push(five[i]); } if(k !== L) continue;
+        const rs = sel.map(crank).sort((a, b) => a - b); if(rs.every((x, i) => i === 0 || x === rs[i - 1] + 1)) runs.push(sel); }
+      if(runs.length){ runs.forEach(r => items.push([`Run of ${L} ` + sortHand(r.slice()).map(cname).join(" "), L])); break; }
+    }
+    // flush
+    if(hand.every(c => c.s === hand[0].s)){ if(starter.s === hand[0].s) items.push(["Flush of 5", 5]); else if(!crib) items.push(["Flush of 4", 4]); }
+    // nobs
+    const nob = hand.find(c => c.r === 11 && c.s === starter.s); if(nob) items.push(["Nobs (" + cname(nob) + ")", 1]);
+    return { total: items.reduce((a, [, p]) => a + p, 0), items };
+  }
+  // points for the card just played; seq = cards of the current count in order
+  function pegScore(seq){
+    const items = [], count = seq.reduce((a, c) => a + pv(c), 0);
+    if(count === 15) items.push(["Fifteen", 2]); if(count === 31) items.push(["Thirty-one", 2]);
+    let same = 1; while(same < seq.length && seq[seq.length - 1 - same].r === seq[seq.length - 1].r) same++;
+    if(same >= 2) items.push([same === 2 ? "Pair" : same === 3 ? "Pair royal" : "Double pair royal", same === 2 ? 2 : same === 3 ? 6 : 12]);
+    for(let L = Math.min(seq.length, 7); L >= 3; L--){
+      const rs = seq.slice(-L).map(crank).sort((a, b) => a - b);
+      if(rs.every((x, i) => i === 0 || x === rs[i - 1] + 1)){ items.push([`Run of ${L}`, L]); break; }
+    }
+    return { count, items, total: items.reduce((a, [, p]) => a + p, 0) };
+  }
+  // ----- bot: which two cards to throw -----
+  function cribValue(a, b){
+    let v = 0; if(a.r === b.r) v += 2; if(pv(a) + pv(b) === 15) v += 2; if(Math.abs(crank(a) - crank(b)) === 1) v += 1; if(crank(a) === 5 || crank(b) === 5) v += 1.2; if(a.s === b.s) v += .3;
+    return v;
+  }
+  function bestDiscard(hand, diff, isDealer){
+    const unseen = newDeck().filter(c => !hand.some(h => h.id === c.id));
+    const cand = [];
+    for(let i = 0; i < 6; i++) for(let j = i + 1; j < 6; j++){
+      const kept = hand.filter((_, k) => k !== i && k !== j), toss = [hand[i], hand[j]];
+      let sum = 0; for(const s of unseen) sum += scoreHand(kept, s, false).total;
+      let v = sum / unseen.length;
+      if(diff !== "easy"){ const cv = cribValue(toss[0], toss[1]); v += isDealer ? cv : -cv * (diff === "hard" ? 1 : .5); }
+      cand.push({ toss, v });
+    }
+    cand.sort((a, b) => b.v - a.v);
+    if(diff === "easy") return cand[Math.min(cand.length - 1, Math.floor(Math.random() * 4))].toss;
+    return cand[0].toss;
+  }
+  // ----- bot: which card to peg -----
+  function chooseLay(rem, seq, count, diff, oppLeft){
+    const ok = rem.filter(c => count + pv(c) <= 31); if(!ok.length) return null;
+    if(diff === "easy") return ok[Math.floor(Math.random() * ok.length)];
+    let best = null, bv = -Infinity;
+    for(const c of ok){
+      const nseq = seq.concat([c]), r = pegScore(nseq), nc = count + pv(c);
+      let v = r.total * 3;
+      if(nc === 5 || nc === 21) v -= 2.2;                      // leaves a ten-card for 15 / 31
+      if(nc === 10 && diff === "hard") v -= .8;
+      if(seq.length === 0){ if(crank(c) === 5) v -= 1.5; if(pv(c) <= 4) v += .8; if(diff === "hard" && crank(c) === 4) v += .6; }
+      if(nc > 21 && nc < 31) v += .5;                          // makes it harder for them to play
+      if(diff === "hard" && ok.length > 1) v -= pv(c) * .02;
+      if(v > bv){ bv = v; best = c; }
+    }
+    return best;
+  }
+
+  // ===== STATE =====
+  const DEF = { target:"121", diff:"medium", first:"you" };
+  let settings = { ...DEF }, stats = { wins:0, games:0 };
+  const store = (k, v) => { try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } };
+  { const s = store("crib_settings"); if(s) settings = { ...DEF, ...s }; const st = store("crib_stats"); if(st) stats = { ...stats, ...st }; }
+  const NAMES = ["You","Bot"];
+  let scores = [0,0], prev = [0,0], dealer = 0, hands = [[],[]], rem = [[],[]], crib = [], starter = null, seq = [], count = 0;
+  let ui = { mode:"idle", sel:new Set(), hint:null, show:null, cribShown:false }, pending = null, runTok = 0, over = false, handNo = 0, g = null;
+  const wait = (ms, tok) => new Promise((res, rej) => setTimeout(() => tok === runTok ? res() : rej("abort"), FX.reducedMotion ? 0 : ms));
+  const ask = () => new Promise(res => { pending = v => { pending = null; res(v); }; });
+  const addLog = t => { const l = $("log"); const d = document.createElement("div"); d.textContent = t; l.appendChild(d); while(l.children.length > 6) l.firstChild.remove(); };
+  const setMsg = t => $("msg").textContent = t;
+  const target = () => +settings.target;
+  class End{}
+
+  function addPoints(p, n, why){
+    if(n <= 0) return;
+    prev[p] = scores[p]; scores[p] = Math.min(target(), scores[p] + n); FX.sound(p === 0 ? "win" : "tick");
+    addLog(`${NAMES[p]} ${p === 0 ? "score" : "scores"} ${n}${why ? " — " + why : ""}.`);
+    if(p === 0) g.pegged += (ui.mode === "peg" || seq.length || why === "go" || why === "last card") && !ui.show ? n : 0;
+    render();
+    if(scores[p] >= target()){ over = true; throw new End(); }
+  }
+
+  function newGame(){
+    runTok++; pending = null; over = false; scores = [0,0]; prev = [0,0]; handNo = 0; $("log").innerHTML = ""; $("actions").innerHTML = "";
+    g = { pegged:0, bestHand:0, bestHandText:"", fifteens:0, hands:0, cribBest:0 };
+    dealer = settings.first === "you" ? 0 : settings.first === "bot" ? 1 : (Math.random() < .5 ? 0 : 1);
+    ui = { mode:"idle", sel:new Set(), hint:null, show:null, cribShown:false }; hands = [[],[]]; rem = [[],[]]; crib = []; starter = null; seq = []; count = 0;
+    setMsg(""); render(); run(runTok);
+  }
+  async function run(tok){
+    try{ while(!over){ await playHand(tok); dealer = 1 - dealer; } }
+    catch(e){ if(e instanceof End){ await finish(); } else if(e !== "abort") throw e; }
+  }
+
+  async function playHand(tok){
+    handNo++; g.hands = handNo;
+    const deck = newDeck(); hands = [sortHand(deck.splice(0, 6)), sortHand(deck.splice(0, 6))]; crib = []; starter = null; seq = []; count = 0; rem = [[],[]];
+    ui = { mode:"idle", sel:new Set(), hint:null, show:null, cribShown:false };
+    addLog(`Hand ${handNo}: ${dealer === 0 ? "you" : "the bot"} deal${dealer === 0 ? "" : "s"} — ${dealer === 0 ? "the crib is yours" : "the crib is the bot's"}.`);
+    render();
+    // 1. throw to the crib
+    const botToss = bestDiscard(hands[1], settings.diff, dealer === 1);
+    ui.mode = "discard"; setMsg(`Choose 2 cards for ${dealer === 0 ? "your" : "the bot's"} crib.`); render();
+    let mine;
+    while(true){ mine = await ask(); if(mine.length === 2) break; }
+    ui.mode = "idle"; ui.sel = new Set(); ui.hint = null;
+    crib = mine.concat(botToss); hands[0] = hands[0].filter(c => !mine.includes(c)); hands[1] = hands[1].filter(c => !botToss.includes(c));
+    FX.sound("card"); render(); await wait(400, tok);
+    // 2. cut the starter
+    starter = deck.pop(); FX.sound("card"); addLog(`Starter card: ${cname(starter)}.`); render(); await wait(600, tok);
+    if(starter.r === 11){ setMsg("His heels! The dealer scores 2."); addPoints(dealer, 2, "his heels"); await wait(700, tok); }
+    // 3. the play
+    await pegging(tok);
+    // 4. the show
+    await showAll(tok);
+    ui.show = null; render();
+  }
+
+  async function pegging(tok){
+    rem = [hands[0].slice(), hands[1].slice()]; seq = []; count = 0; let lastP = -1, turn = 1 - dealer; const said = [false, false];
+    const reset = () => { seq = []; count = 0; said[0] = said[1] = false; };
+    while(rem[0].length || rem[1].length){
+      const p = turn, o = 1 - p, ok = rem[p].filter(c => count + pv(c) <= 31);
+      ui.mode = "peg"; render();
+      if(!ok.length){
+        if(rem[o].some(c => count + pv(c) <= 31)){
+          if(rem[p].length && !said[p]){ said[p] = true; addLog(`${NAMES[p]}: Go.`); setMsg(p === 0 ? "You say Go." : "Bot says Go."); await wait(650, tok); }
+          turn = o; continue;
+        }
+        if(seq.length){ setMsg("Go — the last player to lay scores 1."); addPoints(lastP, 1, "go"); await wait(700, tok); }
+        reset(); turn = rem[1 - lastP].length ? 1 - lastP : lastP; if(!rem[turn].length) break; continue;
+      }
+      let card;
+      if(p === 0){ setMsg(`Your play — the count is ${count}.`); card = await ask(); }
+      else { setMsg("Bot's play…"); await wait(850, tok); card = chooseLay(rem[1], seq, count, settings.diff, rem[0].length); }
+      rem[p].splice(rem[p].indexOf(card), 1); seq.push(card); FX.sound("card"); lastP = p;
+      const r = pegScore(seq); count = r.count;
+      addLog(`${NAMES[p]} played ${cname(card)} for ${count}.`); render();
+      if(r.total){ if(p === 0 && r.items.some(([l]) => l === "Fifteen")) g.fifteens++; setMsg(`${NAMES[p]}: ${r.items.map(([l, x]) => l + " " + x).join(", ")}`); addPoints(p, r.total, r.items.map(([l]) => l).join(" + ")); await wait(800, tok); }
+      if(count === 31){ await wait(500, tok); reset(); render(); }
+      turn = rem[o].length ? o : p;
+    }
+    if(seq.length){ setMsg("Last card — 1 point."); addPoints(lastP, 1, "last card"); await wait(700, tok); }
+    reset(); ui.mode = "idle"; render();
+  }
+
+  async function showAll(tok){
+    const pone = 1 - dealer;
+    const steps = [[pone, hands[pone], false, `${NAMES[pone]}${pone === 0 ? "r" : "'s"} hand`], [dealer, hands[dealer], false, `${NAMES[dealer]}${dealer === 0 ? "r" : "'s"} hand (dealer)`], [dealer, crib, true, `${dealer === 0 ? "Your" : "The bot's"} crib`]];
+    for(const [p, cards, isCrib, label] of steps){
+      const r = scoreHand(cards, starter, isCrib);
+      ui.mode = "show"; ui.show = { p, cards, label, r, isCrib }; ui.cribShown = ui.cribShown || isCrib; render();
+      setMsg(`${label}: ${r.total}`); FX.sound("card");
+      if(p === 0 && !isCrib && r.total > g.bestHand){ g.bestHand = r.total; g.bestHandText = cards.map(cname).join(" ") + " + " + cname(starter); }
+      if(p === 0 && isCrib && r.total > g.cribBest) g.cribBest = r.total;
+      await wait(500, tok);
+      if(r.total){ try{ addPoints(p, r.total, label); } catch(e){ await wait(1200, tok); throw e; } }
+      $("actions").innerHTML = `<button class="primary big" id="contBtn">Continue</button>`; $("contBtn").onclick = () => pending && pending();
+      await ask(); $("actions").innerHTML = "";
+    }
+    ui.mode = "idle";
+  }
+
+  async function finish(){
+    ui.mode = "done"; ui.show = null;
+    const won = scores[0] >= target(), margin = scores[0] - scores[1], loser = won ? scores[1] : scores[0];
+    const skunk = loser <= (target() === 121 ? 90 : 45) ? (loser <= (target() === 121 ? 60 : 30) ? "double skunk" : "skunk") : "";
+    stats.games++; if(won) stats.wins++; store("crib_stats", stats);
+    setMsg(won ? `🏆 You win ${scores[0]}–${scores[1]}${skunk ? " — " + skunk + "!" : "!"}` : `The bot wins ${scores[1]}–${scores[0]}${skunk ? " — " + skunk + "." : "."}`);
+    if(won){ FX.sound("bigwin"); FX.confetti({ count:200 }); } else FX.sound("lose");
+    const lvl = settings.diff[0].toUpperCase() + settings.diff.slice(1);
+    rgReport("cribbage", `to ${target()} · ${lvl}`, "Best margin", margin, { unit:"pts", better:"high", detail:`${won ? "won" : "lost"} ${scores[0]}–${scores[1]} in ${handNo} hand${handNo > 1 ? "s" : ""}${skunk ? " (" + skunk + ")" : ""}`, info:[
+      ["Game"], ["Play to", String(target())], ["Bot", lvl], ["First crib", settings.first],
+      ["Result"], ["You", String(scores[0])], ["Bot", String(scores[1])], ["Hands played", String(handNo)], ...(skunk ? [["Skunk", skunk]] : []),
+      ["Your game"], ["Points pegged in the play", String(g.pegged)], ["Fifteens made in the play", String(g.fifteens)], ["Best hand", g.bestHand ? `${g.bestHand} (${g.bestHandText})` : "—"], ["Best crib", String(g.cribBest)] ] });
+    $("actions").innerHTML = `<button class="primary big" id="againBtn">Play again</button>`; $("againBtn").onclick = newGame; render();
+  }
+
+  // ===== RENDER =====
+  const cardHtml = (c, cls = "", extra = "") => `<div class="card ${isRed(c) ? "red" : ""} ${cls}" ${extra}><i class="tl">${rn(c.r)}<br>${SU[c.s]}</i><b class="md">${SU[c.s]}</b></div>`;
+  const back = (cls = "") => `<div class="card down ${cls}"></div>`;
+  function render(){
+    $("wins").textContent = stats.wins;
+    for(const k of ["target","diff","first"]) $(k + "Seg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === settings[k]));
+    // pegboard
+    const T = target(), pct = v => Math.min(100, v / T * 100);
+    $("board").innerHTML = [0, 1].map(p => `<div class="lane ${p === 0 ? "you" : "bot"}"><div class="who">${NAMES[p]}<small>${dealer === p ? "dealer · crib" : "pone"}</small></div>
+      <div class="track"><div class="holes"></div>${[0.25, 0.5, 0.75].map(f => `<span class="mark" style="left:${f * 100}%"></span>`).join("")}<span class="peg back" style="left:${pct(prev[p])}%"></span><span class="peg" style="left:${pct(scores[p])}%"></span></div>
+      <div class="num">${scores[p]}</div></div>`).join("");
+    // opponent
+    const botCards = ui.mode === "discard" ? 6 : ui.mode === "peg" || ui.mode === "show" && false ? rem[1].length : (hands[1] || []).length;
+    $("botFan").innerHTML = ui.show ? "" : "<i></i>".repeat(ui.mode === "peg" ? rem[1].length : botCards);
+    $("botTag").textContent = ui.show ? "" : `Bot · ${ui.mode === "peg" ? rem[1].length : botCards} cards`;
+    // crib & starter piles
+    $("cribPile").innerHTML = `${crib.length || ui.mode === "discard" ? back() : ""}<span>${dealer === 0 ? "Your" : "Bot's"} crib${crib.length ? " · " + crib.length : ""}</span>`;
+    $("starterPile").innerHTML = starter ? `${cardHtml(starter)}<span>Starter</span>` : "<span>&nbsp;</span>";
+    // centre
+    const play = $("play");
+    if(ui.show){
+      const s = ui.show;
+      play.innerHTML = `<div class="show"><div class="tag">${s.label}</div><div class="cs">${s.cards.map(c => cardHtml(c)).join("")}${cardHtml(starter, "starter")}</div>
+        <div class="items">${s.r.items.length ? s.r.items.map(([l, pt]) => `<span>${l} <b>+${pt}</b></span>`).join("") : `<span>No points (19 hand)</span>`}</div><div class="shtot">${s.r.total} points</div></div>`;
+    } else if(ui.mode === "peg" || seq.length){
+      play.innerHTML = `<div class="count">Count <b>${count}</b></div><div class="seq">${seq.map(c => cardHtml(c)).join("")}</div>`;
+    } else play.innerHTML = ui.mode === "discard" ? `<div class="tag">Pick two cards to throw away.</div>` : "";
+    // your hand
+    const mineTurn = ui.mode === "peg" && pending && !over;
+    const hd = $("hand"); hd.className = "hand" + (ui.mode === "discard" || mineTurn ? "" : " locked");
+    const cards = ui.mode === "peg" ? rem[0] : (ui.mode === "show" || ui.mode === "done" ? hands[0] : hands[0]);
+    hd.innerHTML = (cards || []).map(c => {
+      let cls = ""; if(ui.mode === "discard"){ cls = ui.sel.has(c) ? "sel" : ui.hint && ui.hint.includes(c) ? "hint" : ""; } else if(ui.mode === "peg"){ cls = count + pv(c) > 31 ? "dim" : ""; }
+      return cardHtml(c, cls, `data-id="${c.id}"`);
+    }).join("");
+    hd.querySelectorAll(".card").forEach(el => el.onclick = () => onCard(+el.dataset.id));
+    $("handLabel").innerHTML = `Your hand${ui.mode === "peg" ? ` · <b>${rem[0].length}</b> left to play` : ""}`;
+    $("selInfo").textContent = ui.mode === "discard" ? `${ui.sel.size}/2 selected` : "";
+    const a = $("actions");
+    if(ui.mode === "discard") a.innerHTML = `<button class="primary" id="throwBtn" ${ui.sel.size === 2 ? "" : "disabled"}>Throw to crib</button><button id="hintBtn">Hint</button>`;
+    else if(ui.mode === "peg" && !a.querySelector("button")) a.innerHTML = "";
+    const tb = $("throwBtn"); if(tb) tb.onclick = () => { if(ui.sel.size === 2 && pending) pending([...ui.sel]); };
+    const hb = $("hintBtn"); if(hb) hb.onclick = () => { ui.hint = bestDiscard(hands[0], "hard", dealer === 0); render(); $("info").textContent = "Green cards are the suggested discards."; };
+    if(ui.mode !== "discard" && ui.mode !== "show" && ui.mode !== "done" && !a.querySelector("#contBtn")) { if(a.querySelector("#throwBtn")) a.innerHTML = ""; }
+    if(ui.mode !== "discard") $("info").textContent = "";
+  }
+  function onCard(id){
+    if(over || !pending) return;
+    const c = (ui.mode === "peg" ? rem[0] : hands[0]).find(x => x.id === id); if(!c) return;
+    if(ui.mode === "discard"){ if(ui.sel.has(c)) ui.sel.delete(c); else if(ui.sel.size < 2) ui.sel.add(c); FX.sound("tick"); render(); }
+    else if(ui.mode === "peg"){ if(count + pv(c) > 31){ FX.sound("lose"); return; } pending(c); }
+  }
+
+  // ===== UI =====
+  for(const k of ["target","diff","first"]) $(k + "Seg").onclick = async e => {
+    const v = e.target.dataset && e.target.dataset.v; if(!v || settings[k] === v) return;
+    if(!over && handNo > 0 && (scores[0] || scores[1]) && window.RGDialog && !(await window.RGDialog.confirm("Change this and start a new game?"))) return;
+    settings[k] = v; store("crib_settings", settings); newGame();
+  };
+  $("newBtn").onclick = async () => { if(!over && (scores[0] || scores[1]) && window.RGDialog && !(await window.RGDialog.confirm("Abandon this game and start a new one?"))) return; newGame(); };
+  $("rulesBtn").onclick = () => $("rulesBox").classList.add("show"); $("rulesOk").onclick = () => $("rulesBox").classList.remove("show");
+  $("rulesBox").onclick = e => { if(e.target === $("rulesBox")) $("rulesBox").classList.remove("show"); };
+  document.addEventListener("keydown", e => { if(e.key === "Escape") $("rulesBox").classList.remove("show"); else if(e.key === "Enter"){ const b = $("contBtn") || $("againBtn"); if(b) b.click(); } });
+  window.__crib = { scoreHand, pegScore, bestDiscard, chooseLay, cname, get scores(){ return scores; } };
+  newGame();
+})();
+</script>
+</body>
+</html>

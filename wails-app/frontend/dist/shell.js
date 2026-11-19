@@ -8,6 +8,9 @@
   const GAMES = {
     blackjack:   { name: "Blackjack",               icon: "🃏" },
     bs:          { name: "BS (Cheat)",              icon: "🤥" },
+    "crazy-eights": { name: "Crazy Eights",         icon: "8️⃣" },
+    cribbage:    { name: "Cribbage",                icon: "📌" },
+    baccarat:    { name: "Baccarat",                icon: "🎴" },
     mancala:     { name: "Mancala",                icon: "🪨" },
     hearts:      { name: "Hearts",                  icon: "♥️" },
     spades:      { name: "Spades",                  icon: "♠️" },

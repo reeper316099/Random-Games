@@ -224,7 +224,8 @@
     }
   };
   // card games that share the BS table layout, and the second chess game
-  GAME.hearts = GAME.spades = GAME.bs;
+  GAME.hearts = GAME.spades = GAME["crazy-eights"] = GAME.cribbage = GAME.bs;
+  GAME.baccarat = GAME.blackjack;
   GAME["video-poker"] = function (p) {
     return "@ .table{background:" + feltBg(p, "50% 30%") + " !important;box-shadow:" + rail(p, 10, 12, 13, 26, 80) + " !important;}" +
       faceCss(p, ".card:not(.down)", ".card.red:not(.down)") + "@ .card.down{background:" + p.back + " !important;}";

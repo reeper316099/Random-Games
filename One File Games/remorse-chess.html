@@ -129,6 +129,7 @@
       <span class="seg" id="sideSeg"><button data-v="w">White</button><button data-v="b">Black</button></span>
       <button id="rulesBtn">Rules</button>
       <button id="setBtn">⚙ Rule settings</button>
+      <button id="undoBtn" title="Take back your last move (Ctrl/Cmd+Z)">↩ Undo</button>
       <button id="newBtn" class="primary">New game</button>
       <span data-season-slot></span>
     </div>
@@ -317,7 +318,8 @@
     });
   }
   const neighbours = sq => { const [r, f] = rc(sq), o = []; for(const [dr, df] of KG){ const j = at(r + dr, f + df); if(j >= 0) o.push(j); } return o; };
-  const d6 = () => 1 + Math.floor(Math.random() * 6);
+  let rollQueue = [];     // dice from undone moves are served again first, so a takeback can't be used to re-roll
+  const d6 = () => rollQueue.length ? rollQueue.shift() : 1 + Math.floor(Math.random() * 6);
   const NICE = { dev:"devastated 😭", guilt:"guilt-ridden 😔", none:"unaffected 🙂", psycho:"a psychopath 😈", venge:"vengeful ⚪" };
   const nm = p => (p.c === "w" ? "White " : "Black ") + { K:"king", Q:"queen", R:"rook", B:"bishop", N:"knight", P:"pawn" }[p.t];
 
@@ -462,6 +464,7 @@
   let st = newState(), sel = -1, lastMove = null, over = false, busy = false, runId = 0, pendingPromo = null, sinceStart = 0;
   let legalNow = [];
   const cloneS = x => ({ ...x, capTable:x.capTable.slice(), witTable:x.witTable.slice() });
+  let undoStack = [], undoCount = 0;
   let userS = cloneS(S), moveLog = [], replay = null, liveStash = null, scoreOK = true;
   const myColor = () => prefs.mode === "two" ? null : prefs.side;
   const isHuman = c => prefs.mode === "two" || c === prefs.side;
@@ -471,7 +474,7 @@
 
   function newGame(){
     runId++; if(replay){ stopAuto(); replay = null; liveStash = null; renderReplayBar(); }
-    S = cloneS(userS); scoreOK = true; moveLog = [];
+    S = cloneS(userS); scoreOK = true; moveLog = []; undoStack = []; undoCount = 0; rollQueue = [];
     st = newState(); sel = -1; lastMove = null; over = false; busy = false; pendingPromo = null; legalNow = [];
     $("feed").innerHTML = ""; $("over").classList.remove("show"); $("actions").innerHTML = ""; $("dice").textContent = "🎲"; $("diceTxt").textContent = "No rolls yet.";
     log(S.captureRolls || S.witness ? "Remorse rules are on. Good luck." : "Orthodox chess (all remorse rules off).");
@@ -513,7 +516,7 @@
     const alive = st.board.filter(Boolean), react = c => alive.filter(p => p.c === c && p.react);
     return [
       ["Game"], ["Rule set", ruleLabel()], ["Opponent", prefs.diff[0].toUpperCase() + prefs.diff.slice(1) + " computer"], ["You played", prefs.side === "w" ? "White" : "Black"],
-      ["Result"], ["Your moves", String(Math.ceil(st.moves / 2))], ["Won by", o.end === "mate" ? "checkmate" : "king capture"], ["Pieces with a reaction at the end", String(alive.filter(p => p.react).length)],
+      ["Result"], ["Your moves", String(Math.ceil(st.moves / 2))], ["Takebacks used", String(undoCount)], ["Won by", o.end === "mate" ? "checkmate" : "king capture"], ["Pieces with a reaction at the end", String(alive.filter(p => p.react).length)],
       ["Capture reactions"], ["Reaction rolls", yn(S.captureRolls)], ["Roll table (1–6)", S.capTable.map(r => CAPNAME[r]).join(" · ")], ["Reaction is permanent", yn(S.permanent)],
       ["Devastated: turns to absolve", String(S.devTurns)], ["Devastated self-captures", yn(S.devSelfCapture)], ["Bishops roll for their captures", yn(S.bishopRolls)], ["Kings can react", yn(S.kingReacts)],
       ["Psychopath"], ["Extra move after a capture", yn(S.psychoExtra)], ["Captures for bloodlust", S.bloodlustAt ? String(S.bloodlustAt) : "never"], ["Bloodlust takes friendly pieces", yn(S.bloodlustFriendly)],
@@ -528,8 +531,9 @@
     const mover = st.board[mv.from], victimBefore = mv.cap ? st.board[mv.ep ? mv.epSq : mv.to] : null;
     const rolls = [];
     const base = sanBase(st, mv, legal(st, st.turn)), wasExtra = st.extraNow;
+    const snap = { st:cloneState(st), len:moveLog.length, last:lastMove, dice:[] };
     const ev = applyMove(st, mv, d6); lastMove = mv; sel = -1;
-    moveLog.push(makeEntry(base, mv, ev, st, mover.c, wasExtra));
+    const entry = makeEntry(base, mv, ev, st, mover.c, wasExtra); moveLog.push(entry); snap.dice = diceIn(entry.spice); undoStack.push(snap);
     FX.sound(mv.cap ? "stop" : "card");
     // narrate
     ev.forEach(e => {
@@ -594,6 +598,7 @@
     else if(sel >= 0 && targets.size && [...targets.values()].some(m => m.absolve)) a.innerHTML = `<button data-absolve="1" class="primary">🙏 Absolve self</button>`;
     else a.innerHTML = "";
     [["modeSeg","mode"],["diffSeg","diff"],["sideSeg","side"]].forEach(([id, k]) => [...$(id).children].forEach(b => b.classList.toggle("on", b.dataset.v === prefs[k])));
+    $("undoBtn").disabled = !!replay || !undoStack.length;
     $("diffSeg").style.display = prefs.mode === "bot" ? "" : "none"; $("sideSeg").style.display = prefs.mode === "bot" ? "" : "none";
   }
 
@@ -638,6 +643,7 @@
   $("setApply").addEventListener("click", () => { S = readSettings(); userS = cloneS(S); store("rchess_rules", S); show("setBox", false); FX.sound("click"); newGame(); });
   $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) show("rulesBox", false); });
   document.addEventListener("keydown", e => {
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || "")){ e.preventDefault(); undo(); return; }
     if(replay && !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || "")){ if(e.key === "ArrowLeft"){ showPly(replay.idx - 1); return; } if(e.key === "ArrowRight"){ showPly(replay.idx + 1); return; } }
     if(e.key === "Escape"){ show("rulesBox", false); show("setBox", false); sel = -1; pendingPromo = null; render(); } });
 
@@ -807,6 +813,23 @@
     box.innerHTML = h;
     const cur = box.querySelector(".cur"); if(cur) cur.scrollIntoView({ block:"nearest" }); else box.scrollTop = box.scrollHeight;
   }
+
+
+  // ----- undo -----
+  // Takes back to the last point where it was a human's turn (both sides' moves against the computer, one move with two players).
+  function undo(){
+    if(replay || !undoStack.length) return;
+    let i = undoStack.length - 1;
+    if(prefs.mode === "bot"){ while(i >= 0 && undoStack[i].st.turn !== prefs.side) i--; if(i < 0) return; }
+    const popped = undoStack.splice(i);
+    const snap = popped[0];
+    rollQueue = popped.flatMap(x => x.dice).concat(rollQueue);
+    st = cloneState(snap.st); moveLog.length = snap.len; lastMove = snap.last; over = false; sel = -1; pendingPromo = null; busy = false; runId++; undoCount++;
+    $("over").classList.remove("show"); FX.sound("click");
+    log(`↩ Took back ${popped.length} move${popped.length > 1 ? "s" : ""}. (Dice repeat the same numbers.)`);
+    refresh(); maybeBot();
+  }
+  $("undoBtn").addEventListener("click", undo);
 
   // ----- save / load -----
   const LOCAL_KEY = "rchess_saves";
