@@ -324,11 +324,10 @@
       over = true; const w = winners[0]; render();
       setMsg(w === 0 ? "🏆 You win the game!" : `${players[w].name} wins the game.`);
       stats.games++;
-      if(w === 0){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 });
-        rgReport("hearts", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Lowest winning score", scores[0], { unit:"pts", better:"low", detail:`${handNo} hands`, info:[
+      if(w === 0){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 }); } else FX.sound("lose");
+      { rgReport("hearts", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Lowest final score", scores[0], { unit:"pts", better:"low", detail:`${w === 0 ? "won" : "lost"} · ${handNo} hands`, info:[
           ["Game"], ["Play to", String(settings.target)], ["Bots", settings.diff[0].toUpperCase() + settings.diff.slice(1)], ["Card passing", settings.pass === "on" ? "3 cards" : "off"], ["Shooting the moon", settings.moon === "others" ? "others +26" : "shooter −26"],
-          ["Final scores"], ...players.map((p, i) => [p.name, String(scores[i])]), ["Hands played", String(handNo)], ["Moons shot", String(history.filter(h => h.moon >= 0).length) + (history.some(h => h.moon === 0) ? " (you shot one!)" : "")] ] }); }
-      else FX.sound("lose");
+          ["Final scores"], ...players.map((p, i) => [p.name, String(scores[i])]), ["Hands played", String(handNo)], ["Moons shot", String(history.filter(h => h.moon >= 0).length) + (history.some(h => h.moon === 0) ? " (you shot one!)" : "")], ["Result", w === 0 ? "Won" : players[w].name + " won"] ] }); }
       store("hearts_stats", stats);
       $("actions").innerHTML = `<button class="primary big" id="againBtn">Play again</button>`; render(); return;
     }

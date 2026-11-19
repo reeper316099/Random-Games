@@ -333,12 +333,11 @@
       over = true; const won = tot[0] > tot[1]; render();
       setMsg(won ? "🏆 You and Max win the game!" : "Ava and Zoe win the game.");
       stats.games++;
-      if(won){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 });
-        rgReport("spades", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Winning margin", tot[0] - tot[1], { unit:"pts", better:"high", detail:`${tot[0]}–${tot[1]} in ${handNo} hands`, info:[
+      if(won){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 }); } else FX.sound("lose");
+      { rgReport("spades", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Best margin", tot[0] - tot[1], { unit:"pts", better:"high", detail:`${won ? "won" : "lost"} ${tot[0]}–${tot[1]} in ${handNo} hands`, info:[
           ["Game"], ["Play to", String(settings.target)], ["Bots", settings.diff[0].toUpperCase() + settings.diff.slice(1)], ["Nil bids", settings.nil === "on" ? "allowed" : "off"],
           ["Final score"], ["You & Max", `${tot[0]} (${bagsTot[0]} bags)`], ["Ava & Zoe", `${tot[1]} (${bagsTot[1]} bags)`], ["Hands played", String(handNo)],
           ["Hand by hand"], ...history.map((h, i) => ["Hand " + (i + 1), `${h[0]} – ${h[1]}`]) ] }); }
-      else FX.sound("lose");
       store("spades_stats", stats);
       $("actions").innerHTML = `<button class="primary big" id="againBtn">Play again</button>`; render(); return;
     }
