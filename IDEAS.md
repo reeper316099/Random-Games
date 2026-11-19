@@ -22,7 +22,7 @@ Standard chess (setup, moves, checkmate wins) plus a "reaction" system. Pieces a
 | 4–5 | Unaffected | Plays as an orthodox piece. |
 | 6 | Psychopath | Gets one extra move after a capture (doesn't stack if it captures twice in one turn). After 3 total captures it gains **bloodlust**: it only moves when it can capture, and may capture friendly pieces. |
 
-**Absolution.** A bishop moves to a square adjacent to a guilt-ridden (or devastated) piece. This takes that turn, and the piece returns to orthodox. Bishops are not special: a bishop that captures rolls the reaction D6 like any other piece, and if it comes up devastated or guilt-ridden the bishop has to absolve *itself*, which takes one turn (for a devastated bishop, within the 3-turn limit). Another bishop can absolve it instead. If a player has no bishops left, they cannot absolve anyone until a pawn promotes to a bishop.
+**Absolution.** A bishop moves to a square adjacent to a guilt-ridden (or devastated) piece. This takes that turn, and the piece returns to orthodox. It works both ways: a guilty piece that steps up next to a friendly bishop is absolved too (setting `walkUpAbsolve`, on by default). Bishops are not special: a bishop that captures rolls the reaction D6 like any other piece, and if it comes up devastated or guilt-ridden the bishop has to absolve *itself*, which takes one turn (for a devastated bishop, within the 3-turn limit). Another bishop can absolve it instead. If a player has no bishops left, they cannot absolve anyone until a pawn promotes to a bishop.
 
 **Witness rolls (adjacent captures).** When a piece is captured, every *opposing-side-to-the-capturer* piece adjacent to the capture square (the victim's surviving neighbours) rolls a D6:
 

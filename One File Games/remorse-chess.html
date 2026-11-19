@@ -189,7 +189,7 @@
     <li><b>4–5 – Unaffected:</b> plays normally.</li>
     <li><b>6 – Psychopath 😈:</b> gets an extra move after a capture (no stacking). After 3 captures: bloodlust 🩸 — only moves to capture, even friendly pieces.</li>
   </ul>
-  <p><b>Absolution:</b> move a bishop to a square next to a guilty/devastated friendly piece to clear it (this is your turn). A guilty bishop can absolve itself — select it and press “Absolve self”. Bishops roll too.</p>
+  <p><b>Absolution:</b> move a bishop to a square next to a guilty/devastated friendly piece to clear it (this is your turn). A guilty piece that steps up next to your bishop is absolved as well. Optionally (in the settings) a capturer or witness that rolls guilt right next to a bishop is absolved instantly. A guilty bishop can absolve itself — select it and press “Absolve self”. Bishops roll too.</p>
   <p><b>Witnesses:</b> when a piece is captured, each surviving neighbour of the victim rolls: 1–2 temporary guilt (already guilty → devastated), 3–4 nothing, 5–6 vengeance ⚪ — one guilt-free capture of the same type of piece that made the kill.</p>
   <p>Everything is adjustable in <b>⚙ Rule settings</b> (presets: Orthodox chess, Full Remorse, Lite).</p>
   <button class="primary" id="rulesOk">Got it</button>
@@ -216,7 +216,7 @@
     captureRolls:true, capTable:["dev","guilt","guilt","none","none","psycho"],
     permanent:true, devTurns:3, devSelfCapture:true,
     psychoExtra:true, bloodlustAt:3, bloodlustFriendly:true,
-    bishopsAbsolve:true, selfAbsolve:true, bishopRolls:true, kingReacts:false,
+    bishopsAbsolve:true, walkUpAbsolve:true, instantAbsolve:"off", selfAbsolve:true, bishopRolls:true, kingReacts:false,
     witness:true, witnessWho:"victim", witTable:["guilt","guilt","none","none","venge","venge"], doubling:true, psychoImmune:true,
     vengeance:true, vengeCharges:1, vengeSameType:true
   };
@@ -325,8 +325,9 @@
 
   // Apply a move, mutate st, return events. roll(): d6 value, or null during search (no dice).
   function applyMove(st, mv, roll){
-    const b = st.board, ev = [], p = b[mv.from], color = p.c, ply = ++st.ply;
+    const b = st.board, ev = [], p = b[mv.from], color = p.c, ply = ++st.ply, wasGuilty = p.guilty;
     let victim = null, capSq = -1;
+    const touched = [];       // pieces whose reaction was just rolled this move (for instant absolution)
     if(mv.absolve){ p.guilty = false; p.dev = 0; ev.push({ k:"absolve", piece:p, self:true, sq:mv.from }); }
     else {
       if(mv.cap){ capSq = mv.ep ? mv.epSq : mv.to; victim = b[capSq]; b[capSq] = null; }
@@ -343,6 +344,7 @@
           let res = null;
           if(p.react && S.permanent) res = p.react;
           else { const r = roll(); if(r != null){ res = S.capTable[r - 1]; p.react = res; ev.push({ k:"roll", piece:p, r, res, sq:mv.to, why:"capture" }); } }
+          touched.push({ q:p, sq:mv.to });
           if(res === "dev"){ p.dev = S.devTurns; p.devAt = ply; }
           else if(res === "guilt") p.guilty = true;
           if(res && p.react === res && S.permanent && !ev.some(e => e.k === "roll")) ev.push({ k:"again", piece:p, res, sq:mv.to });
@@ -356,11 +358,22 @@
             if(S.psychoImmune && w.react === "psycho") continue;
             const r = roll(); if(r == null) continue;
             const res = S.witTable[r - 1];
-            ev.push({ k:"roll", piece:w, r, res, sq:n, why:"witness" });
+            ev.push({ k:"roll", piece:w, r, res, sq:n, why:"witness" }); touched.push({ q:w, sq:n });
             if(res === "guilt"){ if(w.guilty && S.doubling){ w.dev = S.devTurns; w.devAt = ply; ev.push({ k:"double", piece:w, sq:n }); } else w.guilty = true; }
             else if(res === "venge" && S.vengeance && !w.venge) w.venge = { t:p.t, n:S.vengeCharges };
           }
         }
+      }
+      // optional: a piece that ends up guilty/devastated with a friendly bishop already beside it is absolved on the spot
+      if(S.bishopsAbsolve && S.instantAbsolve !== "off") for(const { q, sq } of touched){
+        if(!(q.guilty || (S.instantAbsolve === "both" && q.dev)) || (q.dev && S.instantAbsolve !== "both")) continue;
+        const bi = neighbours(sq).map(i => b[i]).find(x => x && x !== q && x.c === q.c && x.t === "B" && !x.dev);
+        if(bi){ q.guilty = false; if(S.instantAbsolve === "both") q.dev = 0; ev.push({ k:"absolve", piece:q, by:bi, sq, instant:true }); }
+      }
+      // a guilty piece that steps up next to a friendly bishop is absolved too (the bishop doesn't have to be the one moving)
+      if(S.bishopsAbsolve && S.walkUpAbsolve && wasGuilty && p.guilty){
+        const bi = neighbours(mv.to).map(n => b[n]).find(q => q && q !== p && q.c === color && q.t === "B");
+        if(bi){ p.guilty = false; p.dev = 0; ev.push({ k:"absolve", piece:p, by:bi, sq:mv.to }); }
       }
       if(p.t === "B" && S.bishopsAbsolve) for(const n of neighbours(mv.to)){ const q = b[n]; if(q && q.c === color && (q.guilty || q.dev)){ q.guilty = false; q.dev = 0; ev.push({ k:"absolve", piece:q, by:p, sq:n }); } }
     }
@@ -446,7 +459,8 @@
       chk("permanent", "Reaction is permanent per piece", "Off: re-roll on every capture") + num("devTurns", "Devastated: turns to absolve", 1, 9) + chk("devSelfCapture", "Devastated piece self-captures when time runs out") +
       chk("bishopRolls", "Bishops roll for their own captures") + chk("kingReacts", "Kings can react / be affected") +
       `<h4>Psychopath</h4>` + chk("psychoExtra", "Extra move after a capture") + num("bloodlustAt", "Captures needed for bloodlust", 0, 15, "0 = never") + chk("bloodlustFriendly", "Bloodlust may capture friendly pieces") +
-      `<h4>Absolution</h4>` + chk("bishopsAbsolve", "Bishops can absolve (move next to the piece)") + chk("selfAbsolve", "Guilty bishops can absolve themselves") +
+      `<h4>Absolution</h4>` + chk("bishopsAbsolve", "Bishops can absolve (move next to the piece)") + chk("walkUpAbsolve", "A guilty piece stepping next to a bishop is absolved too", "Off: only the bishop moving absolves") +
+      `<label><span>Instant absolution<small>A capturer or witness that becomes guilty with a friendly bishop already beside it</small></span><select data-k="instantAbsolve"><option value="off" ${S.instantAbsolve === "off" ? "selected" : ""}>Off — needs a later turn</option><option value="guilt" ${S.instantAbsolve === "guilt" ? "selected" : ""}>Guilt only</option><option value="both" ${S.instantAbsolve === "both" ? "selected" : ""}>Guilt and devastated</option></select></label>` + chk("selfAbsolve", "Guilty bishops can absolve themselves") +
       `<h4>Witness rolls</h4>` + chk("witness", "Neighbours of a captured piece roll") +
       `<label><span>Who rolls</span><select data-k="witnessWho"><option value="victim" ${S.witnessWho === "victim" ? "selected" : ""}>Victim's side</option><option value="all" ${S.witnessWho === "all" ? "selected" : ""}>Everyone adjacent</option></select></label>` +
       `<span style="font-size:12px;color:var(--muted)">Roll → witness table:</span>` + tbl("witTable", WIT_OPT) +
@@ -520,7 +534,7 @@
       ["Capture reactions"], ["Reaction rolls", yn(S.captureRolls)], ["Roll table (1–6)", S.capTable.map(r => CAPNAME[r]).join(" · ")], ["Reaction is permanent", yn(S.permanent)],
       ["Devastated: turns to absolve", String(S.devTurns)], ["Devastated self-captures", yn(S.devSelfCapture)], ["Bishops roll for their captures", yn(S.bishopRolls)], ["Kings can react", yn(S.kingReacts)],
       ["Psychopath"], ["Extra move after a capture", yn(S.psychoExtra)], ["Captures for bloodlust", S.bloodlustAt ? String(S.bloodlustAt) : "never"], ["Bloodlust takes friendly pieces", yn(S.bloodlustFriendly)],
-      ["Absolution"], ["Bishops absolve", yn(S.bishopsAbsolve)], ["Bishops can absolve themselves", yn(S.selfAbsolve)],
+      ["Absolution"], ["Bishops absolve", yn(S.bishopsAbsolve)], ["Guilty piece walking up to a bishop is absolved", yn(S.walkUpAbsolve)], ["Instant absolution beside a bishop", { off:"off", guilt:"guilt only", both:"guilt and devastated" }[S.instantAbsolve] || "off"], ["Bishops can absolve themselves", yn(S.selfAbsolve)],
       ["Witness rolls"], ["Witness rolls", yn(S.witness)], ["Who rolls", S.witnessWho === "victim" ? "victim's side" : "everyone adjacent"], ["Roll table (1–6)", S.witTable.map(r => WITNAME[r]).join(" · ")],
       ["Guilty witness becomes devastated", yn(S.doubling)], ["Psychopaths immune", yn(S.psychoImmune)],
       ["Vengeance"], ["Vengeance", yn(S.vengeance)], ["Guilt-free captures", String(S.vengeCharges)], ["Only against the same piece type", yn(S.vengeSameType)]
@@ -699,12 +713,13 @@
   const diceIn = t => { const out = []; String(t || "").replace(/🎲(\d)|👁[a-h][1-8]=(\d)/gu, (_, a, b) => { out.push(Number(a || b)); return ""; }); return out; };
 
   // ----- save format: PGN with a Remorse header, feelings and dice in comments -----
-  function rulesHeader(Sx){ const d = {}; Object.keys(DEFAULTS).forEach(k => { if(JSON.stringify(Sx[k]) !== JSON.stringify(DEFAULTS[k])) d[k] = Sx[k]; }); return encodeURIComponent(JSON.stringify(d)); }
+  function rulesHeader(Sx){ const d = {}; Object.keys(DEFAULTS).forEach(k => { if(JSON.stringify(Sx[k]) !== JSON.stringify(DEFAULTS[k])) d[k] = Sx[k]; }); d.walkUpAbsolve = !!Sx.walkUpAbsolve; /* always written: older saves lack it and mean off */ return encodeURIComponent(JSON.stringify(d)); }
   function rulesFromHeader(v){
     const base = cloneS(DEFAULTS);
     if(v == null) return Object.assign(base, PRESETS.orthodox);       // a normal chess PGN → plain chess
     try{
       const d = JSON.parse(decodeURIComponent(v));
+      if(!("walkUpAbsolve" in d)) d.walkUpAbsolve = false;
       Object.keys(DEFAULTS).forEach(k => { if(k in d && typeof d[k] === typeof DEFAULTS[k] && (!Array.isArray(DEFAULTS[k]) || (Array.isArray(d[k]) && d[k].length === DEFAULTS[k].length))) base[k] = Array.isArray(d[k]) ? d[k].slice() : d[k]; });
     }catch(e){}
     return base;
