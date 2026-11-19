@@ -395,7 +395,9 @@
       stats.wins++; saveStats();
       addLog("You got rid of all your cards — you win! 🎉");
       FX.sound("bigwin"); FX.confetti({ count:180 });
-      rgReport("bs", `${settings.opp} bot${settings.opp > 1 ? "s" : ""} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Fewest turns to win", humanTurns, { unit:"turns", better:"low", detail:`${settings.rule === "seq" ? "sequential ranks" : "starter's choice"}` });
+      rgReport("bs", `${settings.opp} bot${settings.opp > 1 ? "s" : ""} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Fewest turns to win", humanTurns, { unit:"turns", better:"low", detail:`${settings.rule === "seq" ? "sequential ranks" : "starter's choice"}`, info:[
+        ["Game"], ["Opponents", `${settings.opp} bot${settings.opp > 1 ? "s" : ""}`], ["Bot skill", settings.diff[0].toUpperCase() + settings.diff.slice(1)], ["Rank rule", settings.rule === "seq" ? "sequential (A, 2, 3 …)" : "starter's choice"],
+        ["Result"], ["Your turns to go out", String(humanTurns)] ] });
     } else { addLog(`${p.name} is out of cards and wins.`); FX.sound("lose"); }
     render();
   }

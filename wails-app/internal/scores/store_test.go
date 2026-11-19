@@ -140,3 +140,25 @@ func TestReset(t *testing.T) {
 		t.Fatal("reset all failed")
 	}
 }
+
+func TestInfoIsStoredAndCleaned(t *testing.T) {
+	s, _ := Open("")
+	long := strings.Repeat("x", 500)
+	in := []InfoLine{{Label: " Bet ", Value: " 25 "}, {Label: "", Value: "dropped"}, {Label: "Long", Value: long}}
+	for i := 0; i < 100; i++ {
+		in = append(in, InfoLine{Label: "L", Value: "v"})
+	}
+	if _, err := s.Submit(Entry{Game: "g", Metric: "m", Value: 1, Info: in}); err != nil {
+		t.Fatal(err)
+	}
+	got := s.All()[0].Entries[0].Info
+	if len(got) != maxInfoLines {
+		t.Fatalf("want %d lines, got %d", maxInfoLines, len(got))
+	}
+	if got[0].Label != "Bet" || got[0].Value != "25" {
+		t.Fatalf("not trimmed: %+v", got[0])
+	}
+	if n := len([]rune(got[1].Value)); n != maxInfoText {
+		t.Fatalf("long value not capped: %d", n)
+	}
+}

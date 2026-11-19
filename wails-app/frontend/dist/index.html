@@ -36,6 +36,15 @@
     </section>
   </main>
 
+  <div id="detailBox" class="modal" hidden>
+    <div class="modalBox" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <button class="modalClose" id="detailClose" aria-label="Close">✕</button>
+      <h2 id="detailTitle"></h2>
+      <div class="detailBig" id="detailBig"></div>
+      <div id="detailRows" class="detailRows"></div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="shell.js"></script>
 </body>

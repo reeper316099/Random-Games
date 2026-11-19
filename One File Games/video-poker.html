@@ -176,7 +176,7 @@
   // ===== state =====
   const START = 200;
   let bank = START, bet = 1, best = 0, phase = "bet";      // bet | hold | gamble
-  let dk = [], hand = [], held = new Set(), lastEv = null, win = 0, gambleCard = null, handsPlayed = 0, wins = 0, busy = false;
+  let initHand = [], dk = [], hand = [], held = new Set(), lastEv = null, win = 0, gambleCard = null, handsPlayed = 0, wins = 0, busy = false;
   const store = (k, v) => { try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } };
   function load(){ const s = store("vp_state"); if(s){ bank = s.bank > 0 ? s.bank : START; best = s.best || 0; bet = Math.min(5, s.bet || 1); handsPlayed = s.hands || 0; wins = s.wins || 0; } }
   const save = () => store("vp_state", { bank, best, bet, hands:handsPlayed, wins });
@@ -219,7 +219,7 @@
   // ===== flow =====
   function deal(){
     if(phase !== "bet" || bank < bet || busy) return;
-    bank -= bet; dk = deck(); hand = dk.splice(0, 5); held = new Set(); lastEv = null; win = 0; phase = "hold";
+    bank -= bet; dk = deck(); hand = dk.splice(0, 5); initHand = hand.slice(); held = new Set(); lastEv = null; win = 0; phase = "hold";
     FX.sound("card"); setMsg("Choose cards to hold, then draw."); render({ flip:[0,1,2,3,4] }); gambleUI(); save();
     const ev = evaluate(hand); if(ev.idx >= 0) setMsg(`You have ${ev.name}. Hold and draw.`);
   }
@@ -234,7 +234,10 @@
       if(lastEv.idx <= 2) FX.confetti({ count:lastEv.idx === 0 ? 260 : 150 });
       setMsg(`${lastEv.name}! +${pay}`, "win");
       FX.countTo($("bank"), bank, bank + pay, 600); bank += pay; best = Math.max(best, pay);
-      rgReport("video-poker", "Jacks or Better", "Biggest hand win", pay, { unit:"credits", better:"high", detail:lastEv.name });
+      const ct = c => RN[c.r] + SU[c.s];
+      rgReport("video-poker", "Jacks or Better", "Biggest hand win", pay, { unit:"credits", better:"high", detail:lastEv.name, info:[
+        ["The hand"], ["Dealt", initHand.map(ct).join(" ")], ["Held", [...held].sort().map(i => ct(initHand[i])).join(" ") || "nothing (drew all five)"], ["Final hand", hand.map(ct).join(" ")], ["Hand", lastEv.name],
+        ["Payout"], ["Bet", bet + " credit" + (bet > 1 ? "s" : "")], ["Paid", pay + (lastEv.idx === 0 && bet === 5 ? " (max-bet royal bonus)" : "")], ["Credits after", FX.fmt(bank)], ["Pay table", "Jacks or Better 9/6"] ] });
       phase = "gamble";
     } else { setMsg("No win. Better luck next hand.", "lose"); FX.sound("lose"); phase = "bet"; }
     busy = false; save(); render(); gambleUI();
@@ -255,7 +258,7 @@
     gambleCard = next; FX.sound("card"); gambleUI();
     const a = rank(dealer), b = rank(next);
     if(a === b){ bank += win; setMsg(`Push — ${RN[next.r]}${SU[next.s]} matches. Your win stays.`); FX.sound("push"); }
-    else if((b > a) === higher){ win *= 2; bank += win; best = Math.max(best, win); setMsg(`Correct! Doubled to ${win}.`, "win"); FX.sound("win"); if(win >= 1000) FX.confetti({ count:120 }); rgReport("video-poker", "Jacks or Better", "Biggest hand win", win, { unit:"credits", better:"high", detail:"doubled" }); }
+    else if((b > a) === higher){ win *= 2; bank += win; best = Math.max(best, win); setMsg(`Correct! Doubled to ${win}.`, "win"); FX.sound("win"); if(win >= 1000) FX.confetti({ count:120 }); rgReport("video-poker", "Jacks or Better", "Biggest hand win", win, { unit:"credits", better:"high", detail:"doubled", info:[["Double-up"], ["Dealer's card", RN[dealer.r] + SU[dealer.s]], ["Next card", RN[next.r] + SU[next.s]], ["You guessed", higher ? "higher" : "lower"], ["Win doubled to", String(win)], ["Original hand", lastEv ? lastEv.name : ""], ["Credits after", FX.fmt(bank)]] }); }
     else { setMsg(`Wrong — ${RN[next.r]}${SU[next.s]}. You lost the ${win}.`, "lose"); FX.sound("lose"); win = 0; phase = "bet"; }
     await wait(700); busy = false; if(phase === "gamble"){ gambleCard = null; } save(); render(); gambleUI();
     if(phase === "bet") gambleCard = null, gambleUI();

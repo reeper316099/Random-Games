@@ -445,11 +445,34 @@
     else { title = "Draw"; sub = "100 moves without a capture or pawn move."; }
     const humanWin = o.winner && prefs.mode === "bot" && o.winner === prefs.side;
     if(humanWin){ FX.sound("bigwin"); FX.confetti({ count:200 }); title = "You win!"; sub = o.end === "mate" ? "Checkmate." : sub;
-      rgReport("remorse-chess", `vs ${prefs.diff[0].toUpperCase() + prefs.diff.slice(1)}`, "Fewest moves to win", Math.ceil(st.moves / 2), { unit:"moves", better:"low", detail:S.captureRolls ? "remorse rules" : "orthodox" }); }
+      rgReport("remorse-chess", `vs ${prefs.diff[0].toUpperCase() + prefs.diff.slice(1)}`, "Fewest moves to win", Math.ceil(st.moves / 2), { unit:"moves", better:"low", detail:ruleLabel(), info:remorseInfo(o) }); }
     else FX.sound(o.winner && prefs.mode === "bot" ? "lose" : "win");
     setStatus(title + " — " + sub); $("ot").textContent = title; $("os").textContent = sub; $("over").classList.add("show");
   }
 
+  // names the rule set so scores from different settings can be told apart
+  function ruleLabel(){
+    const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+    const pick = o => { const r = {}; Object.keys(DEFAULTS).forEach(k => r[k] = k in o ? o[k] : DEFAULTS[k]); return r; };
+    for(const [name, p] of [["Orthodox chess", PRESETS.orthodox], ["Full Remorse", PRESETS.full], ["Lite Remorse", PRESETS.lite]]) if(same(S, pick(p))) return name;
+    return "Custom Remorse rules";
+  }
+  const CAPNAME = { dev:"Devastated", guilt:"Guilt-ridden", none:"Unaffected", psycho:"Psychopath" }, WITNAME = { guilt:"Guilt", none:"Nothing", venge:"Vengeance" };
+  const yn = v => v ? "on" : "off";
+  function remorseInfo(o){
+    const alive = st.board.filter(Boolean), react = c => alive.filter(p => p.c === c && p.react);
+    return [
+      ["Game"], ["Rule set", ruleLabel()], ["Opponent", prefs.diff[0].toUpperCase() + prefs.diff.slice(1) + " computer"], ["You played", prefs.side === "w" ? "White" : "Black"],
+      ["Result"], ["Your moves", String(Math.ceil(st.moves / 2))], ["Won by", o.end === "mate" ? "checkmate" : "king capture"], ["Pieces with a reaction at the end", String(alive.filter(p => p.react).length)],
+      ["Capture reactions"], ["Reaction rolls", yn(S.captureRolls)], ["Roll table (1–6)", S.capTable.map(r => CAPNAME[r]).join(" · ")], ["Reaction is permanent", yn(S.permanent)],
+      ["Devastated: turns to absolve", String(S.devTurns)], ["Devastated self-captures", yn(S.devSelfCapture)], ["Bishops roll for their captures", yn(S.bishopRolls)], ["Kings can react", yn(S.kingReacts)],
+      ["Psychopath"], ["Extra move after a capture", yn(S.psychoExtra)], ["Captures for bloodlust", S.bloodlustAt ? String(S.bloodlustAt) : "never"], ["Bloodlust takes friendly pieces", yn(S.bloodlustFriendly)],
+      ["Absolution"], ["Bishops absolve", yn(S.bishopsAbsolve)], ["Bishops can absolve themselves", yn(S.selfAbsolve)],
+      ["Witness rolls"], ["Witness rolls", yn(S.witness)], ["Who rolls", S.witnessWho === "victim" ? "victim's side" : "everyone adjacent"], ["Roll table (1–6)", S.witTable.map(r => WITNAME[r]).join(" · ")],
+      ["Guilty witness becomes devastated", yn(S.doubling)], ["Psychopaths immune", yn(S.psychoImmune)],
+      ["Vengeance"], ["Vengeance", yn(S.vengeance)], ["Guilt-free captures", String(S.vengeCharges)], ["Only against the same piece type", yn(S.vengeSameType)]
+    ];
+  }
   async function play(mv){
     if(busy || over) return; busy = true; const id = runId;
     const mover = st.board[mv.from], victimBefore = mv.cap ? st.board[mv.ep ? mv.epSq : mv.to] : null;
@@ -564,7 +587,7 @@
   $("rulesBox").addEventListener("click", e => { if(e.target === $("rulesBox")) show("rulesBox", false); });
   document.addEventListener("keydown", e => { if(e.key === "Escape"){ show("rulesBox", false); show("setBox", false); sel = -1; pendingPromo = null; render(); } });
 
-  window.__rc = { get st(){ return st; }, set st(v){ st = v; }, S:() => S, setS:v => { S = { ...S, ...v }; }, legal, applyMove, outcome, newState, cloneState, mk, botMove, play, refresh };   // for testing
+  window.__rc = { get st(){ return st; }, set st(v){ st = v; }, S:() => S, setS:v => { S = { ...S, ...v }; }, legal, applyMove, outcome, info:() => remorseInfo({ end:"mate" }), label:() => ruleLabel(), newState, cloneState, mk, botMove, play, refresh };   // for testing
   newGame();
 })();
 </script>

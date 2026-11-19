@@ -308,8 +308,8 @@
     const gameCat = `vs ${settings.bots} bot${settings.bots > 1 ? "s" : ""}`;
     if(players[0].out || alive().length === 1){
       if(handNo > 0 && !over){
-        if(players[0].out) rgReport("poker", gameCat, "Hands survived", handNo, { unit:"hands", better:"high", detail:`${settings.stack} starting chips` });
-        else rgReport("poker", gameCat, "Fastest table win", handNo, { unit:"hands", better:"low", detail:`${settings.stack} starting chips` });
+        if(players[0].out) rgReport("poker", gameCat, "Hands survived", handNo, { unit:"hands", better:"high", detail:`${settings.stack} starting chips`, info:[["Outcome", "You ran out of chips"], ["Hands played", String(handNo)], ["Bots", String(settings.bots)], ["Starting chips", FX.fmt(settings.stack)], ["Blinds", `${settings.sb}/${settings.sb * 2}${settings.every ? ", rising every " + settings.every + " hands" : ""}`]] });
+        else rgReport("poker", gameCat, "Fastest table win", handNo, { unit:"hands", better:"low", detail:`${settings.stack} starting chips`, info:[["Outcome", "You won every chip at the table"], ["Hands played", String(handNo)], ["Final stack", FX.fmt(players[0].stack)], ["Bots", String(settings.bots)], ["Starting chips", FX.fmt(settings.stack)], ["Blinds", `${settings.sb}/${settings.sb * 2}${settings.every ? ", rising every " + settings.every + " hands" : ""}`]] });
       }
     }
     if(players[0].out){ over = true; awaitingNext = false; setMsg("You're out of chips. Game over."); FX.sound("lose"); render(); renderActions(); return; }
@@ -420,8 +420,14 @@
     if(p.human) reportPot(amt);
     endHand(`${p.human ? "You win" : p.name + " wins"} ${amt}.`);
   }
-  function reportPot(amt){
-    rgReport("poker", `vs ${settings.bots} bot${settings.bots > 1 ? "s" : ""}`, "Biggest pot won", amt, { unit:"chips", better:"high", detail:`hand ${handNo}` });
+  function reportPot(amt, shown){
+    const me = players[0], rows = [["The hand"], ["Hand number", String(handNo)], ["Your hole cards", me.hole.map(cardText).join(" ")], ["Board", board.length ? board.map(cardText).join(" ") : "(none — everyone else folded before the flop)"]];
+    if(shown){
+      rows.push(["Your best hand", describe(me.result.score)]);
+      players.filter(q => q !== me && !q.folded).forEach(q => rows.push([q.name + " showed", `${q.hole.map(cardText).join(" ")} — ${describe(q.result.score)}`]));
+    } else rows.push(["How it ended", "everyone else folded"]);
+    rows.push(["Result"], ["Pot won", FX.fmt(amt)], ["Your stack now", FX.fmt(me.stack)], ["Table"], ["Bots", String(settings.bots)], ["Blinds", `${settings.sb}/${settings.sb * 2}${settings.every ? ", rising every " + settings.every + " hands" : ""}`], ["Starting chips", FX.fmt(settings.stack)]);
+    rgReport("poker", `vs ${settings.bots} bot${settings.bots > 1 ? "s" : ""}`, "Biggest pot won", amt, { unit:"chips", better:"high", detail:`hand ${handNo}`, info:rows });
   }
   function showdown(){
     street = "showdown";
@@ -449,7 +455,7 @@
     players.forEach(q => q.total = 0);
     payouts = won;
     const me = players[0];
-    if(won.has(me)) reportPot(won.get(me));
+    if(won.has(me)) reportPot(won.get(me), true);
     endHand(won.has(me) ? `You win ${won.get(me)} with ${describe(me.result.score)}!` :
       `${[...won.keys()].map(w => w.name).join(" & ")} win${won.size===1?"s":""}.`);
   }

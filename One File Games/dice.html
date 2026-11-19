@@ -428,12 +428,13 @@
 
     const t = d1 + d2, wasPoint = point;
     let paid = 0, staked = 0, profit = 0;
-    const lines = [];
+    const lines = [], betRows = [];
     for(const id of Object.keys(bets)){
       const stake = bets[id], r = settle(id, d1, d2, point);
       if(r === null) continue;
       const el = document.querySelector(`.spot[data-id="${id}"]`);
       staked += stake; delete bets[id];
+      betRows.push([BET[id].name, `${FX.fmt(stake)} → ${r > 0 ? "won +" + FX.fmt(stake * r) : r === 0 ? "push" : "lost"}`]);
       if(r > 0){ const w = stake * r; paid += stake + w; profit += w; el.classList.add("win"); FX.floatText(el, "+" + FX.fmt(w), "#6affb6"); lines.push(`${BET[id].name} +${FX.fmt(w)}`); }
       else if(r === 0){ paid += stake; lines.push(`${BET[id].name} push`); }
       else { profit -= stake; el.classList.add("lose"); }
@@ -450,7 +451,9 @@
     else if(wasPoint !== null && point === null) head += t === 7 ? " Seven out!" : ` Point ${wasPoint} made!`;
     setMsg(staked === 0 ? head + " Your bets stay up." : profit > 0 ? `${head} You won ${FX.fmt(profit)}! (${lines.join(", ")})` : profit < 0 ? `${head} You lost ${FX.fmt(-profit)}.` : `${head} Even — bets returned.`);
     if(profit > 0){
-      rgReport("dice", "", "Biggest single win", profit, { unit:"chips", better:"high", detail:`rolled ${d1}+${d2}` });
+      rgReport("dice", "", "Biggest single win", profit, { unit:"chips", better:"high", detail:`rolled ${d1}+${d2}`, info:[
+        ["The roll"], ["Dice", `${d1} + ${d2} = ${t}`], ["Point before the roll", wasPoint === null ? "none (come-out roll)" : String(wasPoint)], ["Point after", point === null ? "none" : String(point)],
+        ["Bets on the table"], ...betRows, ["Totals"], ["Staked", FX.fmt(staked)], ["Paid back", FX.fmt(paid)], ["Profit", "+" + FX.fmt(profit)], ["Chip balance after", FX.fmt(bank)], ["Rolls this session", String(stats.rolls)] ] });
       FX.sound(profit >= staked * 5 ? "bigwin" : "win");
       if(profit >= Math.max(200, staked * 10)) FX.confetti();
     } else if(profit < 0) FX.sound("lose");

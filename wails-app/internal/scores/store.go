@@ -20,18 +20,29 @@ const (
 	// maxTables stops a misbehaving page from creating unlimited tables.
 	maxTables = 500
 	maxText   = 80
+	// Limits for the optional "more details" shown when a score is clicked.
+	maxInfoLines = 60
+	maxInfoText  = 200
 )
+
+// InfoLine is one row of the extra detail a game can attach to a score. A line with an empty
+// Value is shown as a section heading.
+type InfoLine struct {
+	Label string `json:"label"`
+	Value string `json:"value,omitempty"`
+}
 
 // Entry is one result reported by a game.
 type Entry struct {
-	Game     string  `json:"game"`     // e.g. "minesweeper"
-	Category string  `json:"category"` // e.g. "Easy" (may be empty)
-	Metric   string  `json:"metric"`   // e.g. "Best time"
-	Value    float64 `json:"value"`
-	Unit     string  `json:"unit"`   // "s", "moves", "chips", "hands" ...
-	Better   string  `json:"better"` // "low" (smaller wins) or "high"
-	Detail   string  `json:"detail,omitempty"`
-	When     string  `json:"when"` // RFC 3339, filled in on submit
+	Game     string     `json:"game"`     // e.g. "minesweeper"
+	Category string     `json:"category"` // e.g. "Easy" (may be empty)
+	Metric   string     `json:"metric"`   // e.g. "Best time"
+	Value    float64    `json:"value"`
+	Unit     string     `json:"unit"`   // "s", "moves", "chips", "hands" ...
+	Better   string     `json:"better"` // "low" (smaller wins) or "high"
+	Detail   string     `json:"detail,omitempty"`
+	Info     []InfoLine `json:"info,omitempty"` // optional extra detail (bets, rolls, rule settings ...)
+	When     string     `json:"when"`           // RFC 3339, filled in on submit
 }
 
 // Board is one table of results: a single game + category + metric.
@@ -97,10 +108,35 @@ func clean(s string) string {
 	return s
 }
 
+func cleanInfoText(s string) string {
+	s = strings.TrimSpace(s)
+	if r := []rune(s); len(r) > maxInfoText {
+		s = string(r[:maxInfoText])
+	}
+	return s
+}
+
+// cleanInfo trims text, drops empty lines and caps how much a page can store.
+func cleanInfo(in []InfoLine) []InfoLine {
+	var out []InfoLine
+	for _, l := range in {
+		l.Label, l.Value = cleanInfoText(l.Label), cleanInfoText(l.Value)
+		if l.Label == "" {
+			continue
+		}
+		out = append(out, l)
+		if len(out) >= maxInfoLines {
+			break
+		}
+	}
+	return out
+}
+
 // Submit records an entry and returns where it landed.
 func (s *Store) Submit(e Entry) (Result, error) {
 	e.Game, e.Category, e.Metric = clean(e.Game), clean(e.Category), clean(e.Metric)
 	e.Unit, e.Detail = clean(e.Unit), clean(e.Detail)
+	e.Info = cleanInfo(e.Info)
 	if e.Game == "" || e.Metric == "" {
 		return Result{}, errors.New("game and metric are required")
 	}

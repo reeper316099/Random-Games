@@ -5,9 +5,23 @@
  * shell, so results are kept in localStorage instead and nothing else happens.
  *
  *   RGScores.report("minesweeper", "Easy", "Best time", 42.5, { unit: "s", better: "low", detail: "9x9, 10 mines" });
+ *
+ * Optional `info` gives the extra detail shown when a score is clicked in High Scores: a list of
+ * [label, value] pairs. A pair with no value (just ["Rules"]) is shown as a section heading.
+ *   info: [["Bet", "25 chips"], ["Dice", "4 + 3"], ["Rules"], ["Forced jumps", "On"]]
  */
 (function () {
   "use strict";
+  function cleanInfo(info) {
+    if (!Array.isArray(info)) return [];
+    var out = [];
+    info.forEach(function (row) {
+      var label = Array.isArray(row) ? row[0] : row && row.label, value = Array.isArray(row) ? row[1] : row && row.value;
+      if (label === undefined || label === null || String(label).trim() === "") return;
+      out.push({ label: String(label).slice(0, 200), value: value === undefined || value === null ? "" : String(value).slice(0, 200) });
+    });
+    return out.slice(0, 60);
+  }
   function report(game, category, metric, value, opts) {
     opts = opts || {};
     var entry = {
@@ -15,6 +29,8 @@
       value: Number(value), unit: opts.unit || "", better: opts.better === "low" ? "low" : "high",
       detail: opts.detail || ""
     };
+    var info = cleanInfo(opts.info);
+    if (info.length) entry.info = info;
     if (!isFinite(entry.value)) return;
     try {
       if (window.parent && window.parent !== window) {

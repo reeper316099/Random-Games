@@ -325,7 +325,9 @@
       setMsg(w === 0 ? "🏆 You win the game!" : `${players[w].name} wins the game.`);
       stats.games++;
       if(w === 0){ stats.wins++; FX.sound("bigwin"); FX.confetti({ count:200 });
-        rgReport("hearts", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Lowest winning score", scores[0], { unit:"pts", better:"low", detail:`${handNo} hands` }); }
+        rgReport("hearts", `to ${settings.target} · ${settings.diff[0].toUpperCase() + settings.diff.slice(1)}`, "Lowest winning score", scores[0], { unit:"pts", better:"low", detail:`${handNo} hands`, info:[
+          ["Game"], ["Play to", String(settings.target)], ["Bots", settings.diff[0].toUpperCase() + settings.diff.slice(1)], ["Card passing", settings.pass === "on" ? "3 cards" : "off"], ["Shooting the moon", settings.moon === "others" ? "others +26" : "shooter −26"],
+          ["Final scores"], ...players.map((p, i) => [p.name, String(scores[i])]), ["Hands played", String(handNo)], ["Moons shot", String(history.filter(h => h.moon >= 0).length) + (history.some(h => h.moon === 0) ? " (you shot one!)" : "")] ] }); }
       else FX.sound("lose");
       store("hearts_stats", stats);
       $("actions").innerHTML = `<button class="primary big" id="againBtn">Play again</button>`; render(); return;

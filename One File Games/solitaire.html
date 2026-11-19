@@ -403,8 +403,10 @@
     if(st.bestMoves === null || moves < st.bestMoves) st.bestMoves = moves;
     saveJSON("sol_stats", stats);
     const cat = NAMES[V] + (V === "spider" ? ` · ${settings.suits} suit${settings.suits > 1 ? "s" : ""}` : V === "klondike" ? ` · Draw ${settings.draw}` : "");
-    rgReport("solitaire", cat, "Fastest win", seconds, { unit:"s", better:"low", detail:`${moves} moves` });
-    rgReport("solitaire", cat, "Fewest moves", moves, { unit:"moves", better:"low", detail:fmt(seconds) });
+    const info = [["Game"], ["Variant", NAMES[V]], ...(V === "klondike" ? [["Draw", settings.draw + " card" + (settings.draw > 1 ? "s" : "")], ["Stock passes", settings.passes ? String(settings.passes) : "unlimited"]] : []),
+      ...(V === "spider" ? [["Suits", String(settings.suits)]] : []), ["Timer", settings.timer ? "on" : "off"], ["Result"], ["Moves", String(moves)], ["Time", fmt(seconds)]];
+    rgReport("solitaire", cat, "Fastest win", seconds, { unit:"s", better:"low", detail:`${moves} moves`, info });
+    rgReport("solitaire", cat, "Fewest moves", moves, { unit:"moves", better:"low", detail:fmt(seconds), info });
     $("bannerText").textContent = `${NAMES[V]} cleared in ${moves} moves${settings.timer ? " in " + fmt(seconds) : ""}.`;
     $("banner").classList.add("show");
     FX.sound("bigwin"); FX.confetti({ count:240 });

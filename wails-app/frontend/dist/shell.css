@@ -68,3 +68,18 @@ button.danger:hover{ background:rgba(255,106,106,.18); }
 }
 .toast.show{ opacity:1; transform:none; }
 @media (prefers-reduced-motion:reduce){ .toast{ transition:none; } }
+
+/* click a score for details */
+.board li.clickable{ cursor:pointer; border-radius:6px; transition:background .12s; }
+.board li.clickable:hover, .board li.clickable:focus-visible{ background:rgba(255,255,255,.07); outline:none; }
+.board li .more{ color:var(--muted); font-size:11px; margin-left:6px; }
+.modal{ position:fixed; inset:0; z-index:100; display:grid; place-items:center; background:rgba(5,8,14,.7); padding:20px; }
+.modal[hidden]{ display:none; }
+.modalBox{ position:relative; width:min(520px,100%); max-height:86vh; overflow:auto; padding:20px 22px; border-radius:18px; background:#141a2a; border:1px solid rgba(255,255,255,.14); box-shadow:0 20px 60px rgba(0,0,0,.6); }
+.modalBox h2{ margin:0 36px 4px 0; font-size:18px; }
+.modalClose{ position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:50%; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:inherit; cursor:pointer; font-size:14px; }
+.detailBig{ font-size:30px; font-weight:900; color:var(--gold); margin:4px 0 12px; font-variant-numeric:tabular-nums; }
+.detailRows{ display:grid; gap:0; }
+.detailRows .row{ display:grid; grid-template-columns:minmax(110px,40%) 1fr; gap:12px; padding:6px 0; border-top:1px solid rgba(255,255,255,.07); font-size:13px; }
+.detailRows .row .k{ color:var(--muted); } .detailRows .row .v{ font-weight:600; overflow-wrap:anywhere; }
+.detailRows .head{ margin-top:12px; padding:6px 0 2px; font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--gold); border-top:1px solid rgba(255,255,255,.14); }

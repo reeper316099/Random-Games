@@ -579,7 +579,15 @@
     stats.streak = tot > 0 ? stats.streak + 1 : tot < 0 ? 0 : stats.streak;
     stats.bestStreak = Math.max(stats.bestStreak, stats.streak);
     saveBank(); saveStats();
-    if(net + insNet > 0) rgReport("blackjack", "", "Biggest single win", net + insNet, { unit:"chips", better:"high", detail:`${hands.length} hand${hands.length>1?"s":""}` });
+    if(net + insNet > 0){
+      const cs = cards => cards.map(c => c.r + c.s).join(" ");
+      rgReport("blackjack", "", "Biggest single win", net + insNet, { unit:"chips", better:"high", detail:`${hands.length} hand${hands.length>1?"s":""}`, info:[
+        ["Dealer"], ["Dealer's hand", `${cs(dealer)} (${dealerBJ ? "blackjack" : total(dealer).t > 21 ? "bust " : ""}${total(dealer).t})`],
+        ["Your hands"], ...hands.map((h, i) => [hands.length > 1 ? "Hand " + (i + 1) : "Your hand", `${cs(h.cards)} (${total(h.cards).t}) · bet ${FX.fmt(h.bet)}${h.doubled ? " (doubled)" : ""} · ${results[i].text}`]),
+        ...(insBet ? [["Insurance", `${FX.fmt(insBet)} → ${insNet > 0 ? "paid +" + FX.fmt(insNet) : "lost"}`]] : []),
+        ["Totals"], ["Net result", "+" + FX.fmt(net + insNet)], ["Chip balance after", FX.fmt(bank)],
+        ["Table rules"], ["Decks", String(settings.decks)], ["Blackjack pays", payoutLabel[String(settings.payout)] || String(settings.payout)], ["Dealer on soft 17", settings.h17 ? "hits" : "stands"], ["Starting chips", FX.fmt(settings.start)] ] });
+    }
     runPeak = Math.max(runPeak, bank); saveRunPeak();
     if(bank <= 0) endRun();
     phase = "over"; busy = false;

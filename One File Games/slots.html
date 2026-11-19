@@ -449,7 +449,13 @@
     const ratio = win / bet;
     let pause = turbo ? 250 : 500;
     if(win > 0){
-      rgReport("slots", "", "Biggest single win", win, { unit:"credits", better:"high", detail:`on a ${bet} bet${isFree ? " (free spin)" : ""}` });
+      const sg = s => SYMS[s].id === "seven" ? "7" : SYMS[s].g;
+      const gridRows = Array.from({ length:ROWS }, (_, y) => ["Row " + (y + 1), g.map(col => sg(col[y])).join("  ")]);
+      rgReport("slots", "", "Biggest single win", win, { unit:"credits", better:"high", detail:`on a ${bet} bet${isFree ? " (free spin)" : ""}`, info:[
+        ["The spin"], ["Total bet", FX.fmt(bet) + (isFree ? " (free spin — no stake)" : "")], ["Free spin", isFree ? `yes (×${FREE_MULT} multiplier)` : "no"], ...gridRows,
+        ["Winning lines"], ...ev.lines.map(l => ["Line " + (l.line + 1), `${l.count}× ${sg(l.sym)} = ${FX.fmt(Math.round(l.pay * lineBet * (isFree ? FREE_MULT : 1)))}`]),
+        ...(ev.scatterPay ? [["Bonus symbols", `${ev.scatters.length} = ${FX.fmt(Math.round(ev.scatterPay * bet))}`]] : []), ...(ev.freeSpins ? [["Free spins awarded", String(ev.freeSpins)]] : []),
+        ["Total win", FX.fmt(win)], ["Win / bet", (win / bet).toFixed(1) + "×"], ["Balance after", FX.fmt(bank)] ] });
       $("wins").textContent = ev.lines.map(l => `Line ${l.line + 1}: ${l.count}× ${SYMS[l.sym].id === "seven" ? "7" : SYMS[l.sym].g} = ${FX.fmt(l.pay * lineBet * (isFree ? FREE_MULT : 1))}`)
         .concat(ev.scatterPay ? [`Bonus ×${ev.scatters.length} = ${FX.fmt(ev.scatterPay * bet)}`] : []).join("  •  ");
       setMsg(`You won ${FX.fmt(win)} credits!`);

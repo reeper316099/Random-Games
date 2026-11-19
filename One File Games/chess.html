@@ -269,6 +269,7 @@
   let result = "*", lastMove = null;
   let replay = null, liveStash = null; // replay mode: {sans,states,lasts,caps,idx,name,timer}
   let hist = [], halfmove = 0, posKeys = [], endReason = "";   // undo history, fifty-move clock, repetition tracking
+  let hintsUsed = 0, takebacksUsed = 0;
   let thinking = false, flipped = false, hintMove = null, aiToken = 0, drag = null, promoPending = false;
   let settings = { mode:"cpu", diff:"medium", side:"w", theme:"classic", engine:"builtin", elo:1800 };
 
@@ -900,6 +901,7 @@
   }
 
   function newGame(){
+    hintsUsed = 0; takebacksUsed = 0;
     aiToken++; thinking = false;
     if(replay){ stopAuto(); replay = null; liveStash = null; }
     board = initPosition(); turn = "w"; selected = null; legalMoves = []; gameOver = false;
@@ -1011,18 +1013,30 @@
     render(animate ? lastMove : null);
     if(!gameOver) maybeAI();
   }
+  function chessInfo(human){
+    const sf = settings.engine === "stockfish" && !SF.failed, lv = AI_LEVELS[settings.diff];
+    return [
+      ["Opponent"], ["Engine", sf ? "Stockfish 19 (lite NNUE, in your browser)" : "Built-in engine" + (settings.engine === "stockfish" ? " (Stockfish couldn't start, so this was used)" : "")],
+      ...(sf ? [["Strength", settings.elo >= 3200 ? "full strength (no Elo limit)" : "limited to about " + settings.elo + " Elo"], ["Move time", Math.round(300 + (Math.min(settings.elo, 3200) - 1320) / 1880 * 1400) + " ms per move"]]
+             : [["Level", cap1(settings.diff)], ["Search depth", lv.depth + " plies, up to " + lv.ms + " ms per move"], ["Randomness", "±" + lv.noise + " centipawns" + (lv.blunder ? ", " + Math.round(lv.blunder * 100) + "% blunder chance" : "")]]),
+      ["Game"], ["You played", human === "w" ? "White" : "Black"], ["Board theme", settings.theme],
+      ["Result"], ["Your moves", String(Math.ceil(moveList.length / 2))], ["Final move", moveList[moveList.length - 1] || ""], ["Ended by", result === "1-0" || result === "0-1" ? (endReason || "checkmate") : ""],
+      ["Hints used", String(hintsUsed)], ["Takebacks used", String(takebacksUsed)]
+    ];
+  }
   function finishGame(){
     const human = settings.mode === "cpu" ? settings.side : null;
     if(result === "1/2-1/2"){ setTimeout(() => FX.sound("push"), 150); return; }
     const winner = result === "1-0" ? "w" : "b";
     if(!human || winner === human){
       setTimeout(() => { FX.sound("bigwin"); FX.confetti({ count:180 }); }, 150);
-      if(human) rgReport("chess", levelName(), "Fewest moves to win", Math.ceil(moveList.length / 2), { unit:"moves", better:"low", detail:`vs the computer, as ${human === "w" ? "White" : "Black"}` });
+      if(human) rgReport("chess", levelName(), "Fewest moves to win", Math.ceil(moveList.length / 2), { unit:"moves", better:"low", detail:`vs the computer, as ${human === "w" ? "White" : "Black"}`, info:chessInfo(human) });
     } else setTimeout(() => FX.sound("lose"), 150);
   }
 
   function undo(){
     if(replay || thinking || !hist.length) return;
+    takebacksUsed++;
     aiToken++;
     const pop = () => { const h = hist.pop(); restore(h.state); moveList.pop(); lastMove = h.prevLast; halfmove = h.prevHalf; posKeys = h.prevKeys; };
     pop();
@@ -1033,6 +1047,7 @@
   }
   function hint(){
     if(!humanTurn()) return;
+    hintsUsed++;
     setMsg("Thinking…");
     const tok = aiToken;
     setTimeout(async () => {

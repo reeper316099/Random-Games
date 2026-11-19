@@ -177,6 +177,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 <div class="overlay" id="ov"><div class="ovcard" id="ovCard"></div></div>
 
+<script src="../scores.js"></script>
 <script>
 /* ============ Constants ============ */
 const G={k:'\u265A',q:'\u265B',r:'\u265C',b:'\u265D',n:'\u265E',p:'\u265F'};
@@ -257,7 +258,7 @@ function startGame(mode,side){
   S={board:newBoard(),turn:'w',ep:null,mode,human:side,dk:{w:null,b:null},
      phase:'pick',picker:mode==='ai'?side:'w',pickSel:null,over:false,winner:null,
      log:[],cap:{w:[],b:[]},last:null,hist:[],sel:null,moves:[],peek:false,busy:false,
-     flip:(mode==='ai'&&side==='b')};
+     flip:(mode==='ai'&&side==='b'),undos:0};
   $('peekWrap').style.display=mode==='2p'?'block':'none';
   closeModal(); render();
   if(mode==='2p') secretOverlay('w','pick');
@@ -270,11 +271,11 @@ function secretOverlay(c,why){
 }
 function lockPick(){
   if(S.phase!=='pick'||S.pickSel==null) return;
-  const p=S.board[S.pickSel]; p.dk=true; S.dk[S.picker]=p.id; S.pickSel=null;
+  const p=S.board[S.pickSel]; p.dk=true; S.dk[S.picker]=p.id; if(S.mode==='ai') S.myKingStart=sqName(S.pickSel); S.pickSel=null;
   if(S.mode==='ai'){
     const ai=S.human==='w'?'b':'w';
     const pawns=S.board.filter(x=>x&&x.c===ai&&x.t==='p');
-    pawns[Math.floor(Math.random()*pawns.length)].dk=true;
+    const aiK=pawns[Math.floor(Math.random()*pawns.length)]; aiK.dk=true; S.aiKingStart=sqName(S.board.indexOf(aiK));
     S.dk[ai]=1; startPlay();
   } else if(S.picker==='w'){
     S.picker='b'; render(); secretOverlay('b','pick');
@@ -327,8 +328,18 @@ function play(m,pt){
   if(genMoves(S.board,S.turn,S.ep).length===0){ endGame(null); return; }
   maybeAI();
 }
+function reportWin(winner,sq){
+  if(typeof RGScores==='undefined'||S.mode!=='ai'||winner!==S.human) return;
+  const mine=S.human==='w'?Math.ceil(S.log.length/2):Math.floor(S.log.length/2), loser=winner==='w'?'b':'w';
+  const n=x=>String(x);
+  RGScores.report('disguised-king-chess','vs the computer','Fewest moves to win',mine,{unit:'moves',better:'low',detail:'as '+NAME[S.human],info:[
+    ['Game'],['You played',NAME[S.human]],['Opponent','Computer (1-ply scoring bot)'],
+    ['Secret kings'],['Your disguised king started on',S.myKingStart||'?'],['Computer\'s disguised king started on',S.aiKingStart||'?'],['Captured on',sq||'?'],
+    ['Result'],['Your moves',n(mine)],['Pieces you captured',n(S.cap[winner].length)],['Pieces you lost',n(S.cap[loser].length)],['Takebacks used',n(S.undos||0)]]});
+}
 function endGame(winner,sq){
   S.over=true; S.winner=winner; S.busy=false; render();
+  reportWin(winner,sq);
   if(winner){
     const loser=winner==='w'?'b':'w';
     modal(`<h2>👑 ${NAME[winner]} wins!</h2>
@@ -344,6 +355,7 @@ function endGame(winner,sq){
 }
 function undo(){
   if(!S||S.busy||S.phase!=='play'||!S.hist.length) return;
+  S.undos=(S.undos||0)+1;
   const restore=()=>{const h=S.hist.pop(); S.board=h.board;S.turn=h.turn;S.ep=h.ep;S.log=h.log;S.cap=h.cap;S.last=h.last;};
   restore();
   if(S.mode==='ai') while(S.turn!==S.human&&S.hist.length) restore();

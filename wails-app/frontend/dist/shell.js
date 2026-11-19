@@ -123,6 +123,13 @@
           li.appendChild(el("span", "", ""));
           const meta = [e.detail, formatDate(e.when)].filter(Boolean).join(" · ");
           if (meta) li.appendChild(el("span", "meta", meta));
+          // click (or Enter) for the full details of this result
+          li.className = "clickable"; li.tabIndex = 0; li.setAttribute("role", "button");
+          li.setAttribute("aria-label", "Show details for rank " + (i + 1));
+          if (e.info && e.info.length) { const m = li.querySelector(".meta"); if (m) m.appendChild(el("span", "more", "· details ›")); else li.appendChild(el("span", "meta", "details ›")); }
+          const open = () => showDetail(b, e, i + 1);
+          li.addEventListener("click", open);
+          li.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } });
           ol.appendChild(li);
         });
         card.appendChild(ol);
@@ -133,6 +140,26 @@
     });
   }
   $("gameFilter").addEventListener("change", renderScores);
+
+  // ---------- score detail dialog ----------
+  let detailReturn = null;
+  function showDetail(b, e, rank) {
+    $("detailTitle").textContent = gameName(b.game) + (b.category ? " — " + b.category : "");
+    $("detailBig").textContent = b.metric + ": " + formatValue(e.value, e.unit);
+    const rows = $("detailRows"); rows.innerHTML = "";
+    const add = (k, v) => { const r = el("div", "row"); r.appendChild(el("span", "k", k)); r.appendChild(el("span", "v", v)); rows.appendChild(r); };
+    add("Rank", "#" + rank + " of " + b.entries.length);
+    if (e.when) { const d = new Date(e.when); if (!isNaN(d)) add("When", d.toLocaleString()); }
+    if (e.detail) add("Summary", e.detail);
+    (e.info || []).forEach(l => { if (l.value) add(l.label, l.value); else rows.appendChild(el("div", "head", l.label)); });
+    if (!e.info || !e.info.length) rows.appendChild(el("div", "head", "No extra details were saved for this result"));
+    detailReturn = document.activeElement;
+    $("detailBox").hidden = false; $("detailClose").focus();
+  }
+  function closeDetail() { $("detailBox").hidden = true; if (detailReturn && detailReturn.focus) try { detailReturn.focus(); } catch (e) {} }
+  $("detailClose").addEventListener("click", closeDetail);
+  $("detailBox").addEventListener("click", ev => { if (ev.target === $("detailBox")) closeDetail(); });
+  document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("detailBox").hidden) closeDetail(); });
   // Two-step reset (no native confirm dialog, which not every desktop webview supports).
   let resetArmed = null;
   $("resetBtn").addEventListener("click", async () => {

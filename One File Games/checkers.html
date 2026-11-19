@@ -452,7 +452,9 @@
       if(draw) s.d++; else if(winner === human()) s.w++; else s.l++;
       save("checkers_stats", stats);
       if(!draw && winner === human()){
-        rgReport("checkers", LEVELS[settings.level].label, "Fastest win", myMoves, { unit:"moves", better:"low", detail:settings.forced ? "standard rules" : "optional jumps" });
+        rgReport("checkers", LEVELS[settings.level].label, "Fastest win", myMoves, { unit:"moves", better:"low", detail:settings.forced ? "standard rules" : "optional jumps", info:[
+          ["Game"], ["Opponent", LEVELS[settings.level].label + " computer"], ["You played", settings.color === "red" ? "Red" : "Black"], ["Moved first", settings.first === "black" ? "Black" : "Red"],
+          ["Rules"], ["Jumps", settings.forced ? "mandatory (standard)" : "optional"], ["Move hints", settings.show ? "shown" : "hidden"], ["Result"], ["Your moves", String(myMoves)] ] });
         FX.sound("bigwin"); FX.confetti();
       } else if(!draw) FX.sound("lose");
     } else if(!draw){ FX.sound("win"); FX.confetti(); }

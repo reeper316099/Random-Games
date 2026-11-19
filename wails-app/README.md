@@ -2,7 +2,7 @@
 
 A [Wails](https://wails.io) (Go + native webview) wrapper around the games in this repo. It adds:
 
-- **High Scores tab** — a table for every game, saved to a file on your computer
+- **High Scores tab** — a table for every game, saved to a file on your computer; click any score for its full details (bets and rolls, rule settings, engine strength …)
 - **Saved chess games** — saved as standard algebraic notation (PGN) and replayable move by move
 
 The games themselves are the same HTML files used on GitHub Pages; the app copies them in at build time.

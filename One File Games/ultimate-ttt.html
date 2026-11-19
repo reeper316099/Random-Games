@@ -424,7 +424,7 @@
       else FX.sound("lose");
       if(youWon){
         const mine = Math.ceil(hist.length / 2);
-        rgReport("ultimate-ttt", settings.diff[0].toUpperCase() + settings.diff.slice(1), "Fewest moves to win", mine, { unit:"moves", better:"low", detail:"vs the computer" });
+        rgReport("ultimate-ttt", settings.diff[0].toUpperCase() + settings.diff.slice(1), "Fewest moves to win", mine, { unit:"moves", better:"low", detail:"vs the computer", info:[["Game"], ["Opponent", settings.diff[0].toUpperCase() + settings.diff.slice(1) + " computer"], ["You played", settings.side === 1 ? "X (first)" : "O (second)"], ["Result"], ["Your moves", String(mine)], ["Total moves", String(hist.length)] ] });
       }
     }
     save("uttt_score", score);

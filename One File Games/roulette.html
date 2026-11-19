@@ -511,7 +511,10 @@
       stats.hits++;
       if(net > 0){
         stats.biggest = Math.max(stats.biggest, net);
-        rgReport("roulette", "", "Biggest single win", net, { unit:"chips", better:"high", detail:`${n} came up on a ${FX.fmt(total)} bet` });
+        const zname = z => z.kind === "straight" ? `Straight up ${z.label}` : z.kind === "dozen" || z.kind === "column" || z.kind === "even" ? z.label + (z.kind === "column" ? " (column)" : "") : `${z.label} (${z.nums.join("-")})`;
+        const betRows = [...bets].map(([k, amt]) => { const z = ZMAP.get(k); return [z ? zname(z) : k, `${FX.fmt(amt)} → ${res.hits.includes(k) ? "won " + FX.fmt(amt * z.pay) + " (pays " + z.pay + ":1)" : "lost"}`]; });
+        rgReport("roulette", "", "Biggest single win", net, { unit:"chips", better:"high", detail:`${n} came up on a ${FX.fmt(total)} bet`, info:[
+          ["The spin"], ["Number", `${n} (${colorOf(n)})`], ["Bets placed"], ...betRows, ["Totals"], ["Total staked", FX.fmt(total)], ["Returned", FX.fmt(res.returned)], ["Net win", "+" + FX.fmt(net)], ["Balance after", FX.fmt(bank)], ["Spins this session", String(stats.spins)] ] });
         setMsg(`🎉 ${n} ${cname(n)}! You won ${FX.fmt(net)} chips.`);
         FX.floatText($("bank"), "+" + FX.fmt(net), "#6affb6");
         if(res.returned >= total * 12){ FX.sound("bigwin"); FX.confetti({ count: 200 }); pause += 800; } else FX.sound("win");

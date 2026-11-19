@@ -307,7 +307,9 @@
     const improved = prev === null || t < prev;
     if(improved) store.set(bestKey(), String(t));
     if(diffKey !== "custom" && hints === 0){
-      rgReport("minesweeper", diffKey[0].toUpperCase() + diffKey.slice(1), "Fastest win", t, { unit:"s", better:"low", detail:`${rows}x${cols}, ${mines} mines` });
+      rgReport("minesweeper", diffKey[0].toUpperCase() + diffKey.slice(1), "Fastest win", t, { unit:"s", better:"low", detail:`${rows}x${cols}, ${mines} mines`, info:[
+        ["Board"], ["Difficulty", diffKey[0].toUpperCase() + diffKey.slice(1)], ["Size", `${cols} × ${rows}`], ["Mines", `${mines} (${(mines / (rows * cols) * 100).toFixed(1)}% of squares)`],
+        ["Result"], ["Time", t.toFixed(1) + " s"], ["Hints used", "0"], ["Previous best", prev === null ? "none" : prev.toFixed(1) + " s"] ] });
     }
     setMsg(`🎉 Cleared in ${t.toFixed(1)}s!` + (improved ? "  New best time! 🏆" : prev !== null ? `  (best ${prev.toFixed(1)}s)` : "") + (hints ? `\n(${hints} hint${hints > 1 ? "s" : ""} used — not added to the high-score table.)` : ""));
     FX.sound("bigwin"); FX.confetti({ count: 190 });
