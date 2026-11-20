@@ -13,7 +13,8 @@ No build step, no installs, no internet needed once you have it.
 
 ## ✨ Highlights
 
-- **21 games** in one launcher, most of them a single self-contained HTML file
+- **A searchable launcher**: search by name or idea, filter by category or by how you want to play (vs computer, hot-seat, solo, play-money), sort A–Z, newest, recently or most played, star favorites, grid or list view, light and dark, `/` to search, `R` for a random game
+- **21 games**, each a self-contained page
 - **Play-money casino** with chips and credits (nothing real is ever at stake)
 - **Bots at three skill levels** for the board and card games, or play a friend
 - **High scores** for every game, with click-through details: bets, dice rolls, rule settings, engine strength
@@ -73,7 +74,7 @@ No build step, no installs, no internet needed once you have it.
 
 1. Clone or download this repository.
 2. Open `index.html` in your browser.
-3. Click any game. Each one has a **← Games** link back to the launcher.
+3. Search, filter or browse, then click any game. Each one has a **← Games** link back to the launcher.
 
 > **Tip:** some browsers apply stricter security rules to `file://` pages. If a game doesn't load properly, run a local server and open the address it prints:
 >

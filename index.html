@@ -1,256 +1,414 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A collection of browser games: chess, minesweeper, ultimate tic-tac-toe, and more." />
-    <meta name="theme-color" content="#0f172a" />
-    <title>Random Games Launcher</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎮%3C/text%3E%3C/svg%3E"
-    />
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="A pocket arcade of browser games: chess variants, card games, a play-money casino, puzzles and more." />
+<meta name="theme-color" content="#0b1020" />
+<title>Random Games</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎮%3C/text%3E%3C/svg%3E" />
+<style>
+/* Inter is bundled in vendor/fonts so the launcher works fully offline. */
+@font-face { font-family:"Inter"; font-style:normal; font-weight:400; font-display:swap; src:url("vendor/fonts/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family:"Inter"; font-style:normal; font-weight:600; font-display:swap; src:url("vendor/fonts/inter-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family:"Inter"; font-style:normal; font-weight:700; font-display:swap; src:url("vendor/fonts/inter-latin-700-normal.woff2") format("woff2"); }
 
-    <style>
-      /* Inter is bundled in vendor/fonts so the launcher works fully offline. */
-      @font-face { font-family:"Inter"; font-style:normal; font-weight:400; font-display:swap; src:url("vendor/fonts/inter-latin-400-normal.woff2") format("woff2"); }
-      @font-face { font-family:"Inter"; font-style:normal; font-weight:600; font-display:swap; src:url("vendor/fonts/inter-latin-600-normal.woff2") format("woff2"); }
-      @font-face { font-family:"Inter"; font-style:normal; font-weight:700; font-display:swap; src:url("vendor/fonts/inter-latin-700-normal.woff2") format("woff2"); }
-      :root {
-        --bg1: #0f172a;
-        --bg2: #1e293b;
-        --card: rgba(255, 255, 255, 0.08);
-        --border: rgba(255, 255, 255, 0.15);
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --accent: #60a5fa;
-      }
+:root{
+  --bg:#0b1020; --bg2:#141b34; --panel:rgba(255,255,255,.06); --panel2:rgba(255,255,255,.1);
+  --line:rgba(255,255,255,.12); --text:#e8ecf6; --muted:#9aa6c4; --accent:#7aa2ff; --accent2:#b18cff;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --c-board:#f5a524; --c-cards:#ef4f6a; --c-casino:#22c55e; --c-puzzle:#38bdf8; --c-strategy:#a78bfa;
+}
+:root[data-theme="light"]{
+  --bg:#f3f5fb; --bg2:#e4e9f7; --panel:rgba(255,255,255,.85); --panel2:#fff;
+  --line:rgba(20,30,70,.14); --text:#161b2e; --muted:#5a6685; --accent:#3b63e0; --accent2:#7a4ee0;
+  --shadow:0 8px 24px rgba(30,40,90,.14);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; min-height:100vh; font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text);
+  background:radial-gradient(1200px 600px at 15% -10%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 60%),
+             radial-gradient(900px 500px at 95% 0%,color-mix(in srgb,var(--accent2) 18%,transparent),transparent 60%),
+             linear-gradient(var(--bg2),var(--bg)) fixed;
+  background-color:var(--bg);
+}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:1.5rem 1.1rem 3rem}
 
-      * {
-        box-sizing: border-box;
-      }
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.brand{display:flex;align-items:center;gap:.7rem}
+.logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:26px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:var(--shadow)}
+h1{margin:0;font-size:1.45rem;letter-spacing:-.4px;line-height:1.1}
+.tag{margin:.15rem 0 0;color:var(--muted);font-size:.88rem}
+.top-actions{display:flex;gap:.5rem}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.5rem .8rem;cursor:pointer;
+  font-weight:600;font-size:.88rem;transition:background .15s,border-color .15s,transform .15s}
+.btn:hover{background:var(--panel2);border-color:var(--accent)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff}
+.btn.primary:hover{filter:brightness(1.1)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Inter", system-ui, sans-serif;
-        background: radial-gradient(circle at top, var(--bg2), var(--bg1)) fixed;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem 1rem;
-      }
+/* toolbar */
+.toolbar{position:sticky;top:0;z-index:5;margin:0 -1.1rem 1.1rem;padding:.7rem 1.1rem;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line)}
+.row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.search{position:relative;flex:1 1 280px;min-width:200px}
+.search input{width:100%;padding:.65rem 2.4rem .65rem 2.4rem;border-radius:12px;border:1px solid var(--line);background:var(--panel);outline:none}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.search .ico{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);opacity:.6;pointer-events:none}
+.search kbd{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);font-size:.72rem;color:var(--muted);
+  border:1px solid var(--line);border-radius:6px;padding:.05rem .4rem;pointer-events:none}
+.search.has-text kbd{display:none}
+.clear{position:absolute;right:.4rem;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;
+  color:var(--muted);font-size:1.1rem;padding:.3rem .5rem;display:none}
+.search.has-text .clear{display:block}
+select{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.55rem .7rem;cursor:pointer;color:var(--text)}
+select option{background:#1b2340;color:#e8ecf6}
+:root[data-theme="light"] select option{background:#fff;color:#161b2e}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:.5rem .7rem;cursor:pointer;color:var(--muted);font-size:.95rem}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
 
-      .container {
-        width: 100%;
-        max-width: 900px;
-        background: var(--card);
-        -webkit-backdrop-filter: blur(14px);
-        backdrop-filter: blur(14px);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 2rem 2.5rem 2.5rem;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-      }
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem;align-items:center}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:.32rem .75rem;font-size:.82rem;
+  cursor:pointer;display:inline-flex;gap:.4rem;align-items:center;font-weight:600;color:var(--muted);transition:all .15s}
+.chip:hover{color:var(--text);border-color:var(--accent)}
+.chip[aria-pressed="true"]{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
+.chip .n{font-size:.72rem;opacity:.75;font-weight:600}
+.divider{width:1px;height:20px;background:var(--line);margin:0 .25rem}
+.chip.filter[aria-pressed="true"]{background:var(--panel2);color:var(--text);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 
-      h1 {
-        margin: 0;
-        font-size: clamp(1.6rem, 5vw, 2.2rem);
-        letter-spacing: -0.5px;
-      }
+/* sections */
+.status{display:flex;justify-content:space-between;align-items:center;margin:.2rem 0 .8rem;color:var(--muted);font-size:.85rem;gap:1rem;flex-wrap:wrap}
+.status button{background:none;border:0;color:var(--accent);cursor:pointer;font-weight:600;padding:0}
+h2.sec{font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:1.6rem 0 .7rem;display:flex;align-items:center;gap:.6rem}
+h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+h2.sec:first-child{margin-top:.2rem}
 
-      .subtitle {
-        color: var(--muted);
-        margin: 0.25rem 0 1.5rem;
-      }
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.85rem}
+.list .grid{grid-template-columns:1fr;gap:.5rem}
 
-      h2 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 1.75rem 0 0.75rem;
-        color: var(--accent);
-      }
+.card{position:relative;display:flex;flex-direction:column;gap:.55rem;padding:1rem;border-radius:16px;text-decoration:none;color:inherit;
+  background:var(--panel);border:1px solid var(--line);overflow:hidden;isolation:isolate;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s}
+.card::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.55;
+  background:radial-gradient(260px 120px at 0% 0%,color-mix(in srgb,var(--c) 28%,transparent),transparent 70%)}
+.card:hover,.card:focus-visible{transform:translateY(-3px);border-color:var(--c);box-shadow:var(--shadow);background:var(--panel2)}
+.card .head{display:flex;gap:.8rem;align-items:center}
+.tile{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:28px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--c) 38%,transparent),color-mix(in srgb,var(--c) 12%,transparent));
+  border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.card h3{margin:0;font-size:1rem;letter-spacing:-.2px;line-height:1.2}
+.cat{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.desc{margin:0;color:var(--muted);font-size:.86rem;line-height:1.4;flex:1}
+.meta{display:flex;gap:.35rem;flex-wrap:wrap}
+.pill{font-size:.7rem;font-weight:600;padding:.12rem .5rem;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+.pill.money{color:#4ade80;border-color:color-mix(in srgb,#4ade80 40%,transparent)}
+:root[data-theme="light"] .pill.money{color:#15803d}
+.new{position:absolute;top:.7rem;right:2.7rem;font-size:.66rem;font-weight:700;letter-spacing:.06em;color:#fff;
+  background:linear-gradient(135deg,#f59e0b,#ef4444);padding:.12rem .45rem;border-radius:999px}
+.plays{font-size:.72rem;color:var(--muted);margin-left:auto;align-self:center}
+.fav{position:absolute;top:.55rem;right:.55rem;border:0;background:transparent;cursor:pointer;font-size:1.15rem;line-height:1;
+  padding:.3rem;border-radius:8px;color:var(--muted);opacity:.55;transition:all .15s}
+.card:hover .fav,.fav[aria-pressed="true"],.fav:focus-visible{opacity:1}
+.fav[aria-pressed="true"]{color:#fbbf24}
+.fav:hover{transform:scale(1.2)}
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 0.75rem;
-      }
+/* list view */
+.list .card{flex-direction:row;align-items:center;padding:.65rem .9rem;gap:1rem;border-radius:12px}
+.list .card .head{flex:0 0 280px}
+.list .tile{width:40px;height:40px;font-size:22px;border-radius:11px}
+.list .desc{flex:1}
+.list .meta{flex:0 0 auto;justify-content:flex-end}
+.list .new{position:static}
+.list .fav{position:static;flex:none}
+.list .card:hover{transform:translateX(3px)}
+@media (max-width:760px){
+  .list .card{flex-wrap:wrap}
+  .list .card .head{flex:1 1 100%}
+  .list .desc{flex:1 1 100%;order:3}
+}
 
-      .game {
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-        padding: 0.9rem 1rem;
-        border-radius: 10px;
-        text-decoration: none;
-        color: var(--text);
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: transform 0.2s ease, border-color 0.2s ease,
-          background 0.2s ease, box-shadow 0.2s ease;
-      }
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty .big{font-size:3rem;margin-bottom:.4rem}
+.empty h3{color:var(--text);margin:.2rem 0}
+footer{margin-top:2.5rem;text-align:center;color:var(--muted);font-size:.82rem}
+footer a{color:var(--accent);text-decoration:none}
+[hidden]{display:none!important}
+@media (max-width:560px){
+  .wrap{padding:1rem .8rem 2.5rem}.toolbar{margin:0 -.8rem 1rem;padding:.6rem .8rem}
+  .grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.card:hover{transform:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🎮</div>
+      <div><h1>Random Games</h1><p class="tag" id="tagline">A pocket arcade of browser games</p></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" id="random" title="Open a random game (R)">🎲 Surprise me</button>
+      <button class="btn" id="theme" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌓</button>
+    </div>
+  </header>
 
-      .game strong {
-        font-weight: 600;
-      }
+  <div class="toolbar">
+    <div class="row">
+      <label class="search">
+        <span class="ico">🔍</span>
+        <input id="q" type="search" placeholder="Search games, e.g. chess, cards, bluff, casino…" autocomplete="off" spellcheck="false" aria-label="Search games" />
+        <kbd>/</kbd>
+        <button type="button" class="clear" id="clear" aria-label="Clear search">✕</button>
+      </label>
+      <select id="sort" aria-label="Sort games"></select>
+      <div class="seg" role="group" aria-label="Layout">
+        <button id="vGrid" aria-pressed="true" title="Grid view" aria-label="Grid view">▦</button>
+        <button id="vList" aria-pressed="false" title="List view" aria-label="List view">☰</button>
+      </div>
+    </div>
+    <div class="chips" id="cats" role="group" aria-label="Category"></div>
+    <div class="chips" id="filters" role="group" aria-label="Filters"></div>
+  </div>
 
-      .game span {
-        font-size: 0.85rem;
-        color: var(--muted);
-      }
+  <div class="status"><span id="count"></span><button id="reset" hidden>Reset filters</button></div>
+  <main id="out"></main>
 
-      .game:hover,
-      .game:focus-visible {
-        transform: translateY(-2px);
-        border-color: var(--accent);
-        background: rgba(96, 165, 250, 0.15);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-      }
+  <footer>Everything runs in your browser and works offline · money in the casino games is play money · <a href="https://github.com/reeper316099/Random-Games">GitHub</a></footer>
+</div>
 
-      .game:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
+<script>
+(() => {
+"use strict";
+const F = "One%20File%20Games/";
+// n = release order (higher is newer). Keep `desc` short.
+const GAMES = [
+  { id:"chess", n:1, name:"Chess", icon:"♟️", cat:"Board", href:F+"chess.html", players:"1–2", bot:true, two:true, scores:true,
+    desc:"Full rules with three bot levels (or bundled Stockfish), hints, takebacks, and saved, replayable games.", tags:"stockfish pgn engine classic" },
+  { id:"remorse", n:19, name:"Remorse Chess", icon:"♞", cat:"Board", href:F+"remorse-chess.html", players:"1–2", bot:true, two:true, scores:true,
+    desc:"Chess where pieces feel guilt after capturing. Dice, absolution, undo, and saves with feelings.", tags:"variant dice guilt bishop pgn weird" },
+  { id:"disguised", n:3, name:"Disguised King Chess", icon:"🕵️", cat:"Board", href:F+"disguised-king-chess.html", players:"1–2", bot:true, two:true, scores:true,
+    desc:"Your king is secretly one of your pawns. Lose it and you lose instantly.", tags:"variant hidden pawn" },
+  { id:"checkers", n:2, name:"Checkers", icon:"🔴", cat:"Board", href:F+"checkers.html", players:"1–2", bot:true, two:true, scores:true,
+    desc:"Play the computer at three levels or a friend, with hints and undo.", tags:"draughts classic" },
+  { id:"mancala", n:18, name:"Mancala", icon:"🪨", cat:"Board", href:F+"mancala.html", players:"1", bot:true, scores:true, new:true,
+    desc:"Kalah: sow stones, chain extra turns, and capture across the board.", tags:"kalah stones seeds" },
+  { id:"uttt", n:4, name:"Ultimate Tic-Tac-Toe", icon:"⭕", cat:"Board", href:F+"ultimate-ttt.html", players:"1–2", bot:true, two:true, scores:true,
+    desc:"Nine boards in one. Where you play decides where your opponent must go.", tags:"noughts crosses x o" },
 
-      .game.soon {
-        opacity: 0.5;
-        pointer-events: none;
-        border-style: dashed;
-      }
+  { id:"hearts", n:15, name:"Hearts", icon:"♥️", cat:"Cards", href:F+"hearts.html", players:"1", bot:true, scores:true,
+    desc:"Pass cards, dodge hearts and the Queen of Spades, or shoot the moon.", tags:"trick taking queen" },
+  { id:"spades", n:16, name:"Spades", icon:"♠️", cat:"Cards", href:F+"spades.html", players:"1", bot:true, scores:true,
+    desc:"Partnership bidding with a bot teammate, Nil bids and bags.", tags:"trick taking bid partner" },
+  { id:"crazy8", n:17, name:"Crazy Eights", icon:"8️⃣", cat:"Cards", href:F+"crazy-eights.html", players:"1", bot:true, scores:true, new:true,
+    desc:"Match suit or rank, eights are wild. 2–4 players with optional action cards.", tags:"uno shedding" },
+  { id:"cribbage", n:20, name:"Cribbage", icon:"📌", cat:"Cards", href:F+"cribbage.html", players:"1", bot:true, scores:true, new:true,
+    desc:"Peg round the board: fifteens, runs, pairs and the crib, with a discard hint.", tags:"pegging board crib" },
+  { id:"bs", n:5, name:"BS (Cheat)", icon:"🤥", cat:"Cards", href:F+"bs.html", players:"1", bot:true, scores:true,
+    desc:"Bluff your cards away against 1–4 bots and call out their lies.", tags:"bluff cheat liar" },
+  { id:"solitaire", n:6, name:"Solitaire", icon:"🂡", cat:"Cards", href:F+"solitaire.html", players:"1", solo:true, scores:true,
+    desc:"Klondike, Spider and FreeCell with drag-and-drop, undo and hints.", tags:"klondike spider freecell patience" },
 
-      footer {
-        margin-top: 2rem;
-        font-size: 0.85rem;
-        color: var(--muted);
-        text-align: center;
-      }
+  { id:"blackjack", n:7, name:"Blackjack", icon:"🃏", cat:"Casino", href:F+"blackjack.html", players:"1", solo:true, money:true, scores:true,
+    desc:"Beat the dealer. Animated dealing, insurance, split, double and strategy hints.", tags:"21 twenty-one dealer chips" },
+  { id:"poker", n:8, name:"Texas Hold'em Poker", icon:"🪙", cat:"Casino", href:F+"poker.html", players:"1", bot:true, money:true, scores:true,
+    desc:"No-limit hold'em against up to three bots.", tags:"holdem texas cards chips" },
+  { id:"videopoker", n:9, name:"Video Poker", icon:"📺", cat:"Casino", href:F+"video-poker.html", players:"1", solo:true, money:true, scores:true,
+    desc:"Jacks or Better 9/6: hold, draw, and gamble on the double-up.", tags:"jacks or better machine" },
+  { id:"baccarat", n:21, name:"Baccarat", icon:"🎴", cat:"Casino", href:F+"baccarat.html", players:"1", solo:true, money:true, scores:true, new:true,
+    desc:"Punto Banco with real third-card rules, Player, Banker, Tie and pair bets.", tags:"punto banco shoe" },
+  { id:"roulette", n:10, name:"Royal Roulette", icon:"🎡", cat:"Casino", href:F+"roulette.html", players:"1", solo:true, money:true, scores:true,
+    desc:"European wheel and the full betting table.", tags:"wheel spin ball" },
+  { id:"slots", n:11, name:"Lucky Reels Slots", icon:"🎰", cat:"Casino", href:F+"slots.html", players:"1", solo:true, money:true, scores:true,
+    desc:"Five reels, ten paylines, wilds and free spins.", tags:"slot machine jackpot" },
+  { id:"dice", n:12, name:"High Roller Dice", icon:"🎲", cat:"Casino", href:F+"dice.html", players:"1", solo:true, money:true, scores:true,
+    desc:"A craps-style dice table with play-money chips.", tags:"craps" },
 
-      @media (max-width: 600px) {
-        .container {
-          padding: 1.5rem 1.25rem;
-        }
-      }
+  { id:"minesweeper", n:13, name:"Minesweeper Ultra Deluxe", icon:"💣", cat:"Puzzle", href:F+"minesweeper.html", players:"1", solo:true, scores:true,
+    desc:"Ripple reveals, hints, custom boards and best times.", tags:"mines flags logic" },
 
-      @media (prefers-reduced-motion: reduce) {
-        .game {
-          transition: none;
-        }
-        .game:hover,
-        .game:focus-visible {
-          transform: none;
-        }
-      }
-    </style>
-    </head>
+  { id:"hotzone", n:14, name:"Pandemic: Hot Zone NA", icon:"🦠", cat:"Strategy", href:"Multi-File%20Games/hotzone-na/index.html", players:"1", solo:true,
+    desc:"Cooperative disease-fighting strategy across North America.", tags:"pandemic coop disease" }
+];
+const CATS = ["Board","Cards","Casino","Puzzle","Strategy"];
+const CAT_ICON = { Board:"♟️", Cards:"🃏", Casino:"🎰", Puzzle:"🧩", Strategy:"🧠" };
+const CAT_VAR = c => "var(--c-" + c.toLowerCase() + ")";
+const FILTERS = [
+  { id:"bot", label:"🤖 Vs computer", test:g => g.bot },
+  { id:"two", label:"👥 2 players, one screen", test:g => g.two },
+  { id:"solo", label:"🙋 Solo", test:g => g.solo },
+  { id:"money", label:"💰 Play-money", test:g => g.money },
+  { id:"scores", label:"🏆 Tracks high scores", test:g => g.scores },
+  { id:"new", label:"✨ New", test:g => g.new }
+];
+const SORTS = [
+  ["featured","Featured"], ["az","Name A → Z"], ["za","Name Z → A"], ["new","Newest first"],
+  ["recent","Recently played"], ["most","Most played"], ["fav","Favorites first"]
+];
 
-  <body>
-    <main class="container">
-      <h1>🎮 Random Games Launcher</h1>
-      <p class="subtitle">Select a game below to start playing</p>
+// ---------- persisted state ----------
+const KEY = "rg_launcher_v2";
+const blank = () => ({ fav:{}, plays:{}, last:{}, sort:"featured", view:"grid", cat:"All", filters:[], theme:"" });
+let S = blank();
+try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch(e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} };
 
-      <section aria-labelledby="one-file">
-        <h2 id="one-file">One File Games</h2>
-        <div class="grid">
-          <a class="game" href="One%20File%20Games/chess.html">
-            <strong>♟️ Chess</strong>
-            <span>Full rules, a computer opponent, hints, takebacks and replays</span>
-          </a>
-          <a class="game" href="One%20File%20Games/disguised-king-chess.html">
-            <strong>👑 Disguised King Chess</strong>
-            <span>A chess variant where the king is hidden</span>
-          </a>
-          <a class="game" href="One%20File%20Games/blackjack.html">
-            <strong>🃏 Blackjack</strong>
-            <span>Beat the dealer with play-money chips, hints and stats</span>
-          </a>
-          <a class="game" href="One%20File%20Games/poker.html">
-            <strong>♠️ Texas Hold'em Poker</strong>
-            <span>No-limit hold'em against up to three bots</span>
-          </a>
-          <a class="game" href="One%20File%20Games/slots.html">
-            <strong>🎰 Lucky Reels Slots</strong>
-            <span>5 reels, 10 paylines, wilds and free spins</span>
-          </a>
-          <a class="game" href="One%20File%20Games/roulette.html">
-            <strong>🎡 Royal Roulette</strong>
-            <span>European wheel, full betting table, play-money chips</span>
-          </a>
-          <a class="game" href="One%20File%20Games/bs.html">
-            <strong>🤥 BS (Cheat)</strong>
-            <span>Bluff your way to an empty hand, or catch the liars</span>
-          </a>
-          <a class="game" href="One%20File%20Games/video-poker.html">
-            <strong>🂡 Video Poker</strong>
-            <span>Jacks or Better with hold/draw and a double-up gamble</span>
-          </a>
-          <a class="game" href="One%20File%20Games/crazy-eights.html">
-            <strong>8 Crazy Eights</strong>
-            <span>Match suit or rank, eights are wild, empty your hand first</span>
-          </a>
-          <a class="game" href="One%20File%20Games/cribbage.html">
-            <strong>♣ Cribbage</strong>
-            <span>Peg round the board against a bot: fifteens, runs, pairs and the crib</span>
-          </a>
-          <a class="game" href="One%20File%20Games/baccarat.html">
-            <strong>🎴 Baccarat</strong>
-            <span>Punto Banco with Player, Banker, Tie and pair bets (play money)</span>
-          </a>
-          <a class="game" href="One%20File%20Games/mancala.html">
-            <strong>🪨 Mancala</strong>
-            <span>Kalah: sow stones, chain extra turns, capture across the board</span>
-          </a>
-          <a class="game" href="One%20File%20Games/hearts.html">
-            <strong>♥ Hearts</strong>
-            <span>Pass cards, dodge hearts and the Queen, shoot the moon</span>
-          </a>
-          <a class="game" href="One%20File%20Games/spades.html">
-            <strong>♠ Spades</strong>
-            <span>Partnership bidding against bots, with Nil bids</span>
-          </a>
-          <a class="game" href="One%20File%20Games/remorse-chess.html">
-            <strong>♞ Remorse Chess</strong>
-            <span>Chess where pieces feel guilt, with dice and absolution</span>
-          </a>
-          <a class="game" href="One%20File%20Games/dice.html">
-            <strong>🎲 High Roller Dice</strong>
-            <span>Craps-style dice table with play-money chips</span>
-          </a>
-          <a class="game" href="One%20File%20Games/checkers.html">
-            <strong>🔴 Checkers</strong>
-            <span>Play the computer or a friend, with hints and undo</span>
-          </a>
-          <a class="game" href="One%20File%20Games/minesweeper.html">
-            <strong>💣 Minesweeper</strong>
-            <span>Ripple reveals, hints, custom boards and best times</span>
-          </a>
-          <a class="game" href="One%20File%20Games/solitaire.html">
-            <strong>🂡 Solitaire</strong>
-            <span>Klondike, Spider &amp; FreeCell with drag-and-drop, undo and hints</span>
-          </a>
-          <a class="game" href="One%20File%20Games/ultimate-ttt.html">
-            <strong>⭕ Ultimate Tic-Tac-Toe</strong>
-            <span>Nine boards, one game — now with a computer opponent</span>
-          </a>
-        </div>
-      </section>
+const $ = id => document.getElementById(id);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if(cls) e.className = cls; if(html != null) e.innerHTML = html; return e; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+let query = "";
 
-      <section aria-labelledby="multi-file">
-        <h2 id="multi-file">Multi-File Games</h2>
-        <div class="grid">
-          <a class="game" href="Multi-File%20Games/hotzone-na/index.html">
-            <strong>🦠 Pandemic: Hot Zone NA</strong>
-            <span>Cooperative disease-fighting strategy</span>
-          </a>
-          <a class="game soon" aria-disabled="true" tabindex="-1">
-            <strong>🌍 Risk</strong>
-            <span>Coming soon</span>
-          </a>
-        </div>
-      </section>
+// ---------- theme ----------
+function applyTheme(){
+  if (S.theme) document.documentElement.dataset.theme = S.theme; else delete document.documentElement.dataset.theme;
+}
+function effectiveTheme(){ return S.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
+if (!S.theme && matchMedia("(prefers-color-scheme: light)").matches) document.documentElement.dataset.theme = "light";
+applyTheme();
+$("theme").onclick = () => { S.theme = effectiveTheme() === "dark" ? "light" : "dark"; applyTheme(); save(); };
 
-      <footer>Local Game Collection • HTML Launcher</footer>
-    </main>
-  </body>
+// ---------- search / filter / sort ----------
+function haystack(g){ return (g.name + " " + g.cat + " " + g.desc + " " + (g.tags || "") + " " + (g.bot ? "bot computer ai" : "") + (g.money ? " casino money chips gamble" : "")).toLowerCase(); }
+function matches(g){
+  if (S.cat === "Favorites" && !S.fav[g.id]) return false;
+  if (S.cat !== "All" && S.cat !== "Favorites" && g.cat !== S.cat) return false;
+  for (const id of S.filters){ const f = FILTERS.find(x => x.id === id); if (f && !f.test(g)) return false; }
+  if (query){
+    const h = haystack(g);
+    return query.split(/\s+/).filter(Boolean).every(w => h.includes(w));
+  }
+  return true;
+}
+function score(g){ // relevance for search ordering
+  const n = g.name.toLowerCase(), w = query.split(/\s+/)[0] || "";
+  return n === query ? 0 : n.startsWith(w) ? 1 : n.includes(w) ? 2 : 3;
+}
+function sorter(){
+  const az = (a,b) => a.name.localeCompare(b.name);
+  switch (S.sort){
+    case "az": return az;
+    case "za": return (a,b) => -az(a,b);
+    case "new": return (a,b) => b.n - a.n;
+    case "recent": return (a,b) => (S.last[b.id]||0) - (S.last[a.id]||0) || az(a,b);
+    case "most": return (a,b) => (S.plays[b.id]||0) - (S.plays[a.id]||0) || az(a,b);
+    case "fav": return (a,b) => (!!S.fav[b.id] - !!S.fav[a.id]) || az(a,b);
+    default: return null; // featured: category order, then the curated order above
+  }
+}
+function visible(){
+  let list = GAMES.filter(matches);
+  if (query) return list.sort((a,b) => score(a) - score(b) || a.name.localeCompare(b.name));
+  const s = sorter();
+  if (s) return list.sort(s);
+  return list; // featured keeps array order (grouped by category)
+}
+
+// ---------- rendering ----------
+function card(g){
+  const a = el("a", "card");
+  a.href = g.href; a.style.setProperty("--c", CAT_VAR(g.cat)); a.dataset.id = g.id;
+  const pills = [`<span class="pill">👤 ${esc(g.players)}</span>`];
+  if (g.bot) pills.push('<span class="pill">🤖 Bot</span>');
+  if (g.two) pills.push('<span class="pill">👥 Hot-seat</span>');
+  if (g.money) pills.push('<span class="pill money">💰 Play money</span>');
+  if (g.scores) pills.push('<span class="pill">🏆 Scores</span>');
+  const p = S.plays[g.id] || 0;
+  a.innerHTML =
+    `<div class="head"><div class="tile">${g.icon}</div><div><div class="cat">${g.cat}</div><h3>${esc(g.name)}</h3></div></div>` +
+    `<p class="desc">${esc(g.desc)}</p>` +
+    `<div class="meta">${pills.join("")}${p ? `<span class="plays">played ${p}×</span>` : ""}</div>`;
+  if (g.new) a.insertAdjacentHTML("beforeend", '<span class="new">NEW</span>');
+  const f = el("button", "fav", S.fav[g.id] ? "★" : "☆");
+  f.type = "button"; f.setAttribute("aria-pressed", !!S.fav[g.id]);
+  f.title = S.fav[g.id] ? "Remove from favorites" : "Add to favorites"; f.setAttribute("aria-label", f.title + ": " + g.name);
+  f.onclick = e => { e.preventDefault(); e.stopPropagation(); if (S.fav[g.id]) delete S.fav[g.id]; else S.fav[g.id] = 1; save(); render(); };
+  a.appendChild(f);
+  a.addEventListener("click", () => { S.plays[g.id] = (S.plays[g.id] || 0) + 1; S.last[g.id] = Date.now(); save(); });
+  return a;
+}
+function section(title, games){
+  const frag = document.createDocumentFragment();
+  if (title) frag.appendChild(el("h2", "sec", title));
+  const grid = el("div", "grid");
+  games.forEach(g => grid.appendChild(card(g)));
+  frag.appendChild(grid);
+  return frag;
+}
+function renderChips(){
+  const cats = $("cats"); cats.textContent = "";
+  const counts = { All: GAMES.length, Favorites: GAMES.filter(g => S.fav[g.id]).length };
+  CATS.forEach(c => counts[c] = GAMES.filter(g => g.cat === c).length);
+  ["All", "Favorites", ...CATS].forEach(c => {
+    const b = el("button", "chip", `${c === "All" ? "🎮" : c === "Favorites" ? "★" : CAT_ICON[c]} ${c} <span class="n">${counts[c]}</span>`);
+    b.type = "button"; b.setAttribute("aria-pressed", S.cat === c);
+    b.onclick = () => { S.cat = c; save(); render(); };
+    cats.appendChild(b);
+  });
+  const fl = $("filters"); fl.textContent = "";
+  FILTERS.forEach(f => {
+    const b = el("button", "chip filter", f.label);
+    b.type = "button"; b.setAttribute("aria-pressed", S.filters.includes(f.id));
+    b.onclick = () => { S.filters = S.filters.includes(f.id) ? S.filters.filter(x => x !== f.id) : [...S.filters, f.id]; save(); render(); };
+    fl.appendChild(b);
+  });
+}
+function render(){
+  renderChips();
+  $("sort").value = S.sort;
+  $("vGrid").setAttribute("aria-pressed", S.view === "grid");
+  $("vList").setAttribute("aria-pressed", S.view === "list");
+  const out = $("out"); out.textContent = "";
+  out.className = S.view === "list" ? "list" : "";
+  const list = visible();
+  const filtered = !!query || S.cat !== "All" || S.filters.length;
+  $("reset").hidden = !(filtered || S.sort !== "featured");
+  $("count").textContent = filtered ? `${list.length} of ${GAMES.length} games` : `${GAMES.length} games`;
+
+  if (!list.length){
+    const e = el("div", "empty", `<div class="big">🫥</div><h3>No games match</h3><div>Try a different word, or clear the filters.</div>`);
+    out.appendChild(e); return;
+  }
+  // "Continue playing" strip when browsing the default view
+  if (!filtered && S.sort === "featured"){
+    const recent = GAMES.filter(g => S.last[g.id]).sort((a,b) => S.last[b.id] - S.last[a.id]).slice(0, 4);
+    const favs = GAMES.filter(g => S.fav[g.id]);
+    if (recent.length) out.appendChild(section("🕘 Jump back in", recent));
+    if (favs.length) out.appendChild(section("★ Your favorites", favs));
+    CATS.forEach(c => { const gs = list.filter(g => g.cat === c); if (gs.length) out.appendChild(section(`${CAT_ICON[c]} ${c}`, gs)); });
+  } else {
+    out.appendChild(section(null, list));
+  }
+}
+
+// ---------- wiring ----------
+SORTS.forEach(([v, l]) => $("sort").appendChild(Object.assign(el("option", "", l), { value: v })));
+$("sort").onchange = e => { S.sort = e.target.value; save(); render(); };
+$("vGrid").onclick = () => { S.view = "grid"; save(); render(); };
+$("vList").onclick = () => { S.view = "list"; save(); render(); };
+const q = $("q");
+q.addEventListener("input", () => { query = q.value.trim().toLowerCase(); q.parentElement.classList.toggle("has-text", !!q.value); render(); });
+$("clear").onclick = () => { q.value = ""; q.dispatchEvent(new Event("input")); q.focus(); };
+$("reset").onclick = () => { S.cat = "All"; S.filters = []; S.sort = "featured"; q.value = ""; query = ""; q.parentElement.classList.remove("has-text"); save(); render(); };
+const randomGame = () => { const pool = visible(); const g = pool[Math.floor(Math.random() * pool.length)] || GAMES[Math.floor(Math.random() * GAMES.length)];
+  S.plays[g.id] = (S.plays[g.id] || 0) + 1; S.last[g.id] = Date.now(); save(); location.href = g.href; };
+$("random").onclick = randomGame;
+document.addEventListener("keydown", e => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey){ e.preventDefault(); q.focus(); q.select(); }
+  else if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)){ e.preventDefault(); q.focus(); q.select(); }
+  else if (e.key === "Escape" && document.activeElement === q){ if (q.value) $("clear").click(); else q.blur(); }
+  else if (e.key === "Enter" && document.activeElement === q){ const first = $("out").querySelector(".card"); if (first) first.click(), location.href = first.href; }
+  else if ((e.key === "r" || e.key === "R") && !typing && !e.metaKey && !e.ctrlKey) randomGame();
+});
+render();
+})();
+</script>
+</body>
 </html>
