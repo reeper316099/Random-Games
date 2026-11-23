@@ -113,6 +113,9 @@ h2.sec:first-child{margin-top:.2rem}
 .new{position:absolute;top:.7rem;right:2.7rem;font-size:.66rem;font-weight:700;letter-spacing:.06em;color:#fff;
   background:linear-gradient(135deg,#f59e0b,#ef4444);padding:.12rem .45rem;border-radius:999px}
 .plays{font-size:.72rem;color:var(--muted);margin-left:auto;align-self:center}
+.credit{align-self:flex-start;font-size:.74rem;font-weight:600;color:var(--muted);border:1px solid var(--line);background:var(--panel2);padding:.15rem .55rem;border-radius:999px;cursor:pointer}
+.credit b{color:#ec4899}
+.credit:hover{border-color:#ec4899;color:var(--text)}
 .fav{position:absolute;top:.55rem;right:.55rem;border:0;background:transparent;cursor:pointer;font-size:1.15rem;line-height:1;
   padding:.3rem;border-radius:8px;color:var(--muted);opacity:.55;transition:all .15s}
 .card:hover .fav,.fav[aria-pressed="true"],.fav:focus-visible{opacity:1}
@@ -181,7 +184,7 @@ footer a{color:var(--accent);text-decoration:none}
   <div class="status"><span id="count"></span><button id="reset" hidden>Reset filters</button></div>
   <main id="out"></main>
 
-  <footer>Everything runs in your browser and works offline · money in the casino games is play money · <a href="https://github.com/reeper316099/Random-Games">GitHub</a></footer>
+  <footer>Everything runs in your browser and works offline · money in the casino games is play money · <a href="https://github.com/reeper316099/Random-Games">GitHub</a> · Remorse Chess and Disguised King Chess ideas by <a href="https://www.instagram.com/bardelo_bardalini/" target="_blank" rel="noopener noreferrer">@bardelo_bardalini</a></footer>
 </div>
 
 <script>
@@ -193,9 +196,9 @@ const GAMES = [
   { id:"chess", n:1, name:"Chess", icon:"♟️", cat:"Board", href:F+"chess.html", players:"1–2", bot:true, two:true, scores:true,
     desc:"Full rules with three bot levels (or bundled Stockfish), hints, takebacks, and saved, replayable games.", tags:"stockfish pgn engine classic" },
   { id:"remorse", n:19, name:"Remorse Chess", icon:"♞", cat:"Board", href:F+"remorse-chess.html", players:"1–2", bot:true, two:true, scores:true,
-    desc:"Chess where pieces feel guilt after capturing. Dice, absolution, undo, and saves with feelings.", tags:"variant dice guilt bishop pgn weird" },
+    desc:"Chess where pieces feel guilt after capturing. Dice, absolution, undo, and saves with feelings.", credit:"bardelo_bardalini", tags:"variant dice guilt bishop pgn weird" },
   { id:"disguised", n:3, name:"Disguised King Chess", icon:"🕵️", cat:"Board", href:F+"disguised-king-chess.html", players:"1–2", bot:true, two:true, scores:true,
-    desc:"Your king is secretly one of your pawns. Lose it and you lose instantly.", tags:"variant hidden pawn" },
+    desc:"Your king is secretly one of your pawns. Lose it and you lose instantly.", credit:"bardelo_bardalini", tags:"variant hidden pawn" },
   { id:"checkers", n:2, name:"Checkers", icon:"🔴", cat:"Board", href:F+"checkers.html", players:"1–2", bot:true, two:true, scores:true,
     desc:"Play the computer at three levels or a friend, with hints and undo.", tags:"draughts classic" },
   { id:"mancala", n:18, name:"Mancala", icon:"🪨", cat:"Board", href:F+"mancala.html", players:"1", bot:true, scores:true, new:true,
@@ -324,6 +327,14 @@ function card(g){
     `<div class="head"><div class="tile">${g.icon}</div><div><div class="cat">${g.cat}</div><h3>${esc(g.name)}</h3></div></div>` +
     `<p class="desc">${esc(g.desc)}</p>` +
     `<div class="meta">${pills.join("")}${p ? `<span class="plays">played ${p}×</span>` : ""}</div>`;
+  if (g.credit){
+    const c = el("span", "credit", `💡 Idea by <b>@${g.credit}</b>`);
+    c.title = "Open @" + g.credit + " on Instagram";
+    c.setAttribute("role", "link"); c.tabIndex = 0;
+    const go = e => { e.preventDefault(); e.stopPropagation(); window.open("https://www.instagram.com/" + g.credit + "/", "_blank", "noopener"); };
+    c.onclick = go; c.onkeydown = e => { if (e.key === "Enter") go(e); };
+    a.querySelector(".desc").after(c);
+  }
   if (g.new) a.insertAdjacentHTML("beforeend", '<span class="new">NEW</span>');
   const f = el("button", "fav", S.fav[g.id] ? "★" : "☆");
   f.type = "button"; f.setAttribute("aria-pressed", !!S.fav[g.id]);

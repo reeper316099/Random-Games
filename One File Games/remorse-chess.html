@@ -112,6 +112,9 @@
   .faint{ color:var(--muted); font-size:12px; font-weight:400; text-transform:none; letter-spacing:0; }
   details summary{ cursor:pointer; }
   @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+.credit{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;font:600 12px system-ui,sans-serif;color:#e2e8f0;text-decoration:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25)}
+.credit:hover{background:rgba(255,255,255,.2)}
+.credit b{color:#f9a8d4}
 </style>
 <script src="../themes.js"></script>
 </head>
@@ -122,6 +125,7 @@
     <div class="title">
       <h1>♞ <span>Remorse Chess</span></h1>
       <div class="sub">Chess where pieces feel guilt — dice decide how they react to taking a life</div>
+<a class="credit" href="https://www.instagram.com/bardelo_bardalini/" target="_blank" rel="noopener noreferrer">💡 Game idea by <b>@bardelo_bardalini</b> on Instagram</a>
     </div>
     <div class="grp">
       <span class="seg" id="modeSeg"><button data-v="bot">vs Computer</button><button data-v="two">2 Players</button></span>

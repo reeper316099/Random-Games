@@ -135,6 +135,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .promo{font-size:2.6rem;padding:6px 14px;background:linear-gradient(135deg,#2b3a6b,#1f2b52)}
 .promo.w{color:#fff;text-shadow:0 0 2px #000,0 0 3px #000}
 .promo.b{color:#14141c;background:linear-gradient(135deg,#cfd8f5,#9fb0e0)}
+.credit{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;font:600 12px system-ui,sans-serif;color:#e2e8f0;text-decoration:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25)}
+.credit:hover{background:rgba(255,255,255,.2)}
+.credit b{color:#f9a8d4}
 </style>
 <script src="../themes.js"></script>
 </head>
@@ -142,6 +145,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <a href="../index.html" style="position:fixed;top:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.8);color:#e2e8f0;font:600 12px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.2)">← Games</a>
 <h1>♚ Disguised King Chess</h1>
 <div class="sub">Capture the secret pawn-king. The real king is just another piece now.</div>
+<a class="credit" href="https://www.instagram.com/bardelo_bardalini/" target="_blank" rel="noopener noreferrer">💡 Game idea by <b>@bardelo_bardalini</b> on Instagram</a>
 
 <div class="layout">
   <div class="card boardwrap">
@@ -468,6 +472,7 @@ function closeModal(){ $('ov').className='overlay'; }
 function showSetup(){
   modal(`<h2>♚ Disguised King Chess</h2>
     <p>Pick a mode to start.</p>
+    <p><a class="credit" href="https://www.instagram.com/bardelo_bardalini/" target="_blank" rel="noopener noreferrer">💡 Game idea by <b>@bardelo_bardalini</b> on Instagram</a></p>
     <div class="opt">
       <label><input type="radio" name="mode" value="ai" checked> vs Computer</label>
       <label><input type="radio" name="mode" value="2p"> 2 Players (same device)</label>

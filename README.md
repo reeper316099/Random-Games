@@ -31,8 +31,8 @@ No build step, no installs, no internet needed once you have it.
 | Game | What it is |
 |---|---|
 | [**Chess**](One%20File%20Games/chess.html) | Three skill levels with a choice of the built-in engine or bundled Stockfish, or a friend. Drag-and-drop, promotion choice, hints, undo, save and replay |
-| [**Remorse Chess**](One%20File%20Games/remorse-chess.html) | Chess where pieces feel guilt after capturing. Every rule is a setting, with Orthodox / Full / Lite presets. Undo (dice repeat the same numbers), and games save in algebraic notation with the dice and feelings recorded, like `Bxa6 {🎲4🙂 👁b7=6⚪}` |
-| [**Disguised King Chess**](One%20File%20Games/disguised-king-chess.html) | Your king is secretly one of your pawns. It moves like a pawn, but if it's captured you lose instantly (no check, no castling) |
+| [**Remorse Chess**](One%20File%20Games/remorse-chess.html) | Chess where pieces feel guilt after capturing (idea by [@bardelo_bardalini](https://www.instagram.com/bardelo_bardalini/)). Every rule is a setting, with Orthodox / Full / Lite presets. Undo (dice repeat the same numbers), and games save in algebraic notation with the dice and feelings recorded, like `Bxa6 {🎲4🙂 👁b7=6⚪}` |
+| [**Disguised King Chess**](One%20File%20Games/disguised-king-chess.html) | Your king is secretly one of your pawns (idea by [@bardelo_bardalini](https://www.instagram.com/bardelo_bardalini/)). It moves like a pawn, but if it's captured you lose instantly (no check, no castling) |
 | [**Checkers**](One%20File%20Games/checkers.html) | Versus the computer (three skill levels) or a friend |
 | [**Mancala**](One%20File%20Games/mancala.html) | Kalah rules: extra turns, captures, 3–6 stones per pit, easy / medium / hard bot, optional hints |
 | [**Ultimate Tic-Tac-Toe**](One%20File%20Games/ultimate-ttt.html) | Nine boards in one, versus the computer (three skill levels) or a friend |
@@ -117,6 +117,12 @@ Everything works offline; nothing is loaded from the internet.
 
 - `vendor/fonts/`: the Inter font (SIL Open Font License, see `OFL-Inter.txt`)
 - `vendor/stockfish/`: [Stockfish.js](https://github.com/nmrugg/stockfish.js) 19, lite single-threaded WebAssembly build (GPL-3.0, see `Copying.txt`), used by Chess when you pick the Stockfish engine. Web Workers don't run from `file://`, so open the games through the website or the desktop app; otherwise Chess falls back to the built-in engine automatically.
+
+---
+
+## 🙌 Credits
+
+**Remorse Chess** and **Disguised King Chess** are based on ideas by [@bardelo_bardalini](https://www.instagram.com/bardelo_bardalini/) on Instagram. Go give them a follow.
 
 ---
 
